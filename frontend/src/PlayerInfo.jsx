@@ -8,59 +8,25 @@ function PlayerInfo() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const getPlayerInfo = async() => {
+   
+
+     const getPlayerInfo = async() => {
 
         try {
             setError("");
-            setResult(null);
             setDetailedInfo(null);
-            setLoading(true);
-
-            if (!name.trim()) {
-                setError("Please enter a name");
-                return;
-            }
-            const response = await fetch(`/api/player/leaderboard/${encodeURIComponent(name)}`);
-
-            if (!response.ok) {
-        throw new Error("Failed to fetch player data");
-            }
-            const data = await response.json();
-            setLoading(false);
-            setResult(data);
+            setResult(null);
            
-                   
-
-
-
-
-        }
-        catch(err) {
-            setError(err.message || "Failed to fetch player data");
-
-
-        }
-
-        
-
-    };
-
-     const getEvents = async() => {
-
-        try {
-            setError("");
-            setDetailedInfo(null);
-            setResult(null);
-            setLoading(true);
 
             if (!name.trim()) {
                 setError("Please enter a name");
                 return;
             }
+            setLoading(true);
             const response = await fetch(`/api/player/details/${encodeURIComponent(name)}?season=1`);
 
             if (!response.ok) {
-        throw new Error("Failed to fetch events");
+        throw new Error("Failed to fetch player data");
             }
             const data = await response.json();
             setLoading(false);
@@ -74,9 +40,12 @@ function PlayerInfo() {
 
         }
         catch(err) {
-            setError(err.message || "Failed to fetch player events");
+            setError(err.message || "Failed to fetch player data");
 
 
+        }
+        finally {
+            setLoading(false);
         }
 
         
@@ -97,8 +66,8 @@ function PlayerInfo() {
             />
             
          
+           
             <button onClick={getPlayerInfo}>Get Player Info</button>
-            <button onClick={getEvents}>Get Events</button>
 
              {error && <p style={{color:"red"}}>{error}</p>}
              {loading && <p>Loading...</p>}
@@ -106,14 +75,30 @@ function PlayerInfo() {
             {detailedInfo && (
 
                 <div>
-
+                    <h1>Stats for {detailedInfo.name}</h1>
+                    <p>Player ID: {detailedInfo.playerId}</p>
                     <p>Overall Rank: {detailedInfo.overallRank}</p>
+                    <p>Current MMR: {detailedInfo.mmr}</p>
+                    <p>Highest MMR: {detailedInfo.maxMmr}</p>
+                    <p>Average Score: {detailedInfo.averageScore.toFixed(2)}</p>
+                    
+                    
                     <p>Total Events Played: {detailedInfo.eventsPlayed}</p>
-                    <p>Last 10 Event Scores:</p>
+                    {
+                        detailedInfo.winRate >= 0.5
+                        ? <p style={{color:"green"}}>Win Rate: {(detailedInfo.winRate *100).toFixed(2) }%</p>
+                        : <p style={{color:"red"}}>Win Rate: {(detailedInfo.winRate * 100).toFixed(2) }%</p>
+
+                    }
+                    <p>Last 10 Events:</p>
                     {
                     
-                    detailedInfo?.mmrChanges?.slice(0,10).map(event => (
-                        <div key={event}>Score: {event.score}</div>
+                    detailedInfo?.mmrChanges?.slice(0,10).map((event,index) => (
+                        
+                        <div key={index}> {event.numPlayers}p: {event.score}
+                        <p>Previous MMR: {event.newMmr - event.mmrDelta} New MMR: {event.newMmr}</p>
+                        </div>
+                        
 
                     
 
@@ -128,17 +113,7 @@ function PlayerInfo() {
             )}
 
 
-           
-            {result && (
-                <div>
-                    
-                   <p>ID: {result.id}</p>
-                   <p>Current MMR: {result.mmr}</p>
-                   <p>Highest MMR: {result.maxMmr}</p>
-                   
-                   
-                    </div>
-            )}
+        
         </div>
 
 

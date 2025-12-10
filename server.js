@@ -39,7 +39,7 @@ app.get("/api/player/details/:name", async (req, res) => {
     const full_url = `${base_url}${playerName}&game=mkworld&season=1`;
     console.log(`Fetching data from ${full_url}`);
     const { data } = await axios.get(full_url);
-    console.log(data);
+
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch events" });
