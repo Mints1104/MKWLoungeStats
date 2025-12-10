@@ -6,7 +6,7 @@ function PlayerInfo() {
     const [result,setResult] = useState(null);
     const [detailedInfo, setDetailedInfo] = useState(null);
     const [error, setError] = useState("");
-    
+    const [loading, setLoading] = useState(false);
 
     const getPlayerInfo = async() => {
 
@@ -14,7 +14,7 @@ function PlayerInfo() {
             setError("");
             setResult(null);
             setDetailedInfo(null);
-            
+            setLoading(true);
 
             if (!name.trim()) {
                 setError("Please enter a name");
@@ -26,6 +26,7 @@ function PlayerInfo() {
         throw new Error("Failed to fetch player data");
             }
             const data = await response.json();
+            setLoading(false);
             setResult(data);
            
                    
@@ -34,8 +35,8 @@ function PlayerInfo() {
 
 
         }
-        catch(error) {
-            setError(error.message || "Failed to fetch player data");
+        catch(err) {
+            setError(err.message || "Failed to fetch player data");
 
 
         }
@@ -50,8 +51,9 @@ function PlayerInfo() {
             setError("");
             setDetailedInfo(null);
             setResult(null);
+            setLoading(true);
 
-            if (!name) {
+            if (!name.trim()) {
                 setError("Please enter a name");
                 return;
             }
@@ -61,6 +63,7 @@ function PlayerInfo() {
         throw new Error("Failed to fetch events");
             }
             const data = await response.json();
+            setLoading(false);
             setDetailedInfo(data);
             
                 
@@ -70,8 +73,8 @@ function PlayerInfo() {
 
 
         }
-        catch(error) {
-            setError(error.message || "Failed to fetch player events");
+        catch(err) {
+            setError(err.message || "Failed to fetch player events");
 
 
         }
@@ -97,6 +100,9 @@ function PlayerInfo() {
             <button onClick={getPlayerInfo}>Get Player Info</button>
             <button onClick={getEvents}>Get Events</button>
 
+             {error && <p style={{color:"red"}}>{error}</p>}
+             {loading && <p>Loading...</p>}
+
             {detailedInfo && (
 
                 <div>
@@ -106,12 +112,14 @@ function PlayerInfo() {
                     <p>Last 10 Event Scores:</p>
                     {
                     
-                    detailedInfo.mmrChanges.slice(0,10).map(event => (
+                    detailedInfo?.mmrChanges?.slice(0,10).map(event => (
                         <div key={event}>Score: {event.score}</div>
 
-
+                    
 
                     ))}
+
+
                     
                     
                     </div>
@@ -120,7 +128,7 @@ function PlayerInfo() {
             )}
 
 
-            {error && <p style={{color:"red"}}>{error}</p>}
+           
             {result && (
                 <div>
                     
