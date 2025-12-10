@@ -32,6 +32,48 @@ app.get("/pokemon/:name", async (req, res) => {
   }
 });
 
+app.get("/api/player/details/:name", async (req, res) => {
+  try {
+    const playerName = req.params.name;
+    const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
+    const full_url = `${base_url}${playerName}&game=mkworld&season=1`;
+    console.log(`Fetching data from ${full_url}`);
+    const { data } = await axios.get(full_url);
+    console.log(data);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
+
+app.get("/api/player/leaderboard/:name", async (req, res) => {
+  try {
+    console.log("test");
+    const playerName = req.params.name;
+    const base_url =
+      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1&search=";
+    const full_url = `${base_url}${encodeURIComponent(playerName)}`;
+    console.log(`Fetching data from ${full_url}`);
+    const { data } = await axios.get(full_url);
+
+    const player = data.data.find(
+      (p) => p.name.toLowerCase() === playerName.toLowerCase()
+    );
+
+    if (player) {
+      console.log(
+        `The player ID of ${playerName} is ${player.id} and their MMR is ${player.mmr}`
+      );
+      res.json(player);
+    } else {
+      res.status(404).json({ error: "Player not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch data" });
+  }
+});
+
 app.get("/posts", async (req, res) => {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");

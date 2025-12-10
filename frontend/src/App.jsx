@@ -6,6 +6,7 @@ import './App.css'
 import PokemonPage from '../../PokemonPage'
 import PostPage from '../PostPage'
 import StarWarsCharacter from '../StarWarsCharacter'
+import PlayerInfo from './PlayerInfo'
 
 
 
@@ -15,7 +16,7 @@ function App() {
 
   return (
     <>
-    <StarWarsCharacter></StarWarsCharacter>
+   <PlayerInfo></PlayerInfo>
     </>
   )
 }

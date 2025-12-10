@@ -27,3 +27,5 @@ async function fetchData() {
     console.error(error);
   }
 }
+
+async function getPlayer(id) {}
