@@ -13,6 +13,8 @@ function PlayerInfo() {
         try {
             setError("");
             setResult(null);
+            setDetailedInfo(null);
+            
 
             if (!name.trim()) {
                 setError("Please enter a name");
@@ -25,7 +27,7 @@ function PlayerInfo() {
             }
             const data = await response.json();
             setResult(data);
-            setId(data.id);
+           
                    
 
 
@@ -47,6 +49,7 @@ function PlayerInfo() {
         try {
             setError("");
             setDetailedInfo(null);
+            setResult(null);
 
             if (!name) {
                 setError("Please enter a name");
@@ -99,7 +102,18 @@ function PlayerInfo() {
                 <div>
 
                     <p>Overall Rank: {detailedInfo.overallRank}</p>
+                    <p>Total Events Played: {detailedInfo.eventsPlayed}</p>
+                    <p>Last 10 Event Scores:</p>
+                    {
+                    
+                    detailedInfo.mmrChanges.slice(0,10).map(event => (
+                        <div key={event}>Score: {event.score}</div>
 
+
+
+                    ))}
+                    
+                    
                     </div>
 
 
