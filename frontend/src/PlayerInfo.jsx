@@ -3,7 +3,6 @@ import { useState } from "react";
 function PlayerInfo() {
 
     const[name,setName] = useState("");
-    const [result,setResult] = useState(null);
     const [detailedInfo, setDetailedInfo] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -15,7 +14,7 @@ function PlayerInfo() {
         try {
             setError("");
             setDetailedInfo(null);
-            setResult(null);
+          
            
 
             if (!name.trim()) {
@@ -29,7 +28,7 @@ function PlayerInfo() {
         throw new Error("Failed to fetch player data");
             }
             const data = await response.json();
-            setLoading(false);
+           
             setDetailedInfo(data);
             
                 
@@ -80,7 +79,8 @@ function PlayerInfo() {
                     <p>Overall Rank: {detailedInfo.overallRank}</p>
                     <p>Current MMR: {detailedInfo.mmr}</p>
                     <p>Highest MMR: {detailedInfo.maxMmr}</p>
-                    <p>Average Score: {detailedInfo.averageScore.toFixed(2)}</p>
+                    <p>Average Score: {detailedInfo.averageScore != null ?
+                    detailedInfo.averageScore.toFixed(2) : "N/A"}</p>
                     
                     
                     <p>Total Events Played: {detailedInfo.eventsPlayed}</p>
@@ -95,9 +95,18 @@ function PlayerInfo() {
                     
                     detailedInfo?.mmrChanges?.slice(0,10).map((event,index) => (
                         
-                        <div key={index}> {event.numPlayers}p: {event.score}
-                        <p>Previous MMR: {event.newMmr - event.mmrDelta} New MMR: {event.newMmr}</p>
+                        <div key={index}>Scored: {event.score} in a {event.numPlayers}p event
+                        {event.mmrDelta > 0 ?
+                        <p style={{color:"green"}}>Change: +{event.mmrDelta}</p>
+                        :
+                        <p style={{color:"red"}}>Change: {event.mmrDelta}</p>
+                    }
+                        <p>New MMR: {event.newMmr}</p>
+                        <a href={`https://lounge.mkcentral.com/mkworld/TableDetails/${event.changeId}`}>View Table</a>
+                        
                         </div>
+
+                        
                         
 
                     
