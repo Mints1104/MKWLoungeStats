@@ -48,6 +48,36 @@ function getNextRank(mmr) {
     return "";
 }
 
+function getRankColor(rank) {
+    if (!rank) return "#e5e7eb";
+
+    const normalized = rank.toLowerCase();
+    switch (normalized) {
+        case "grandmaster":
+            return "#A3022C";
+        case "master":
+            return "#9370DB";
+        case "diamond":
+            return "#B9F2FF";
+        case "ruby":
+            return "#D51C5E";
+        case "sapphire":
+            return "#286CD3";
+        case "platinum":
+            return "#3FABB8";
+        case "gold":
+            return "#F1C232";
+        case "silver":
+            return "#CCCCCC";
+        case "bronze":
+            return "#B45F06";
+        case "iron":
+            return "#817876";
+        default:
+            return "#e5e7eb";
+    }
+}
+
 function PlayerInfo() {
     const [name, setName] = useState("");
     const [detailedInfo, setDetailedInfo] = useState(null);
@@ -133,7 +163,12 @@ function PlayerInfo() {
             {detailedInfo && (
                 <div className="player-results">
                     <div className="player-summary">
-                        <h2>Stats for {detailedInfo.name}</h2>
+                        <h2>
+                            Stats for{" "}
+                            <span style={{ color: getRankColor(detailedInfo.rank) }}>
+                                {detailedInfo.name}
+                            </span>
+                        </h2>
                         <p>Player ID: {detailedInfo.playerId}</p>
                         <p>Overall Rank: {detailedInfo.overallRank}</p>
                         <p>Current Rank: {detailedInfo.rank}</p>
