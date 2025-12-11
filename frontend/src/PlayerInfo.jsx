@@ -82,6 +82,30 @@ function PlayerInfo() {
         }
     };
 
+    // Derived stats for 12p / 24p events
+    let twelveCount = 0;
+    let twentyFourCount = 0;
+    let avg12 = null;
+    let avg24 = null;
+
+    if (detailedInfo && Array.isArray(detailedInfo.mmrChanges)) {
+        const twelves = detailedInfo.mmrChanges.filter((e) => e.numPlayers === 12);
+        const twentyFours = detailedInfo.mmrChanges.filter((e) => e.numPlayers === 24);
+
+        twelveCount = twelves.length;
+        twentyFourCount = twentyFours.length;
+
+        if (twelveCount) {
+            const sum12 = twelves.reduce((acc, e) => acc + (e.score ?? 0), 0);
+            avg12 = sum12 / twelveCount;
+        }
+
+        if (twentyFourCount) {
+            const sum24 = twentyFours.reduce((acc, e) => acc + (e.score ?? 0), 0);
+            avg24 = sum24 / twentyFourCount;
+        }
+    }
+
     return (
         <div className="player-info-page">
             <div className="player-card">
@@ -121,40 +145,21 @@ function PlayerInfo() {
                             {detailedInfo.averageScore != null
                                 ? detailedInfo.averageScore.toFixed(2)
                                 : "N/A"}
+                            {" "}
+                            (
+                            {avg12 != null
+                                ? `${avg12.toFixed(2)} 12p`
+                                : "N/A 12p"}
+                            {" / "}
+                            {avg24 != null
+                                ? `${avg24.toFixed(2)} 24p`
+                                : "N/A 24p"}
+                            )
                         </p>
                         <p>
-                            Average Score (12p):{" "}
-                            {Array.isArray(detailedInfo.mmrChanges)
-                                ? (() => {
-                                      const twelves = detailedInfo.mmrChanges.filter(
-                                          (e) => e.numPlayers === 12,
-                                      );
-                                      if (!twelves.length) return "N/A";
-                                      const sum = twelves.reduce(
-                                          (acc, e) => acc + (e.score ?? 0),
-                                          0,
-                                      );
-                                      return (sum / twelves.length).toFixed(2);
-                                  })()
-                                : "N/A"}
+                            Total Events Played: {detailedInfo.eventsPlayed} (
+                            {twelveCount} 12p / {twentyFourCount} 24p)
                         </p>
-                        <p>
-                            Average Score (24p):{" "}
-                            {Array.isArray(detailedInfo.mmrChanges)
-                                ? (() => {
-                                      const twentyFours = detailedInfo.mmrChanges.filter(
-                                          (e) => e.numPlayers === 24,
-                                      );
-                                      if (!twentyFours.length) return "N/A";
-                                      const sum = twentyFours.reduce(
-                                          (acc, e) => acc + (e.score ?? 0),
-                                          0,
-                                      );
-                                      return (sum / twentyFours.length).toFixed(2);
-                                  })()
-                                : "N/A"}
-                        </p>
-                        <p>Total Events Played: {detailedInfo.eventsPlayed}</p>
                         <p
                             className={`player-winrate ${
                                 detailedInfo.winRate >= 0.5 ? "positive" : "negative"
