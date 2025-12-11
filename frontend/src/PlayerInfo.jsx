@@ -117,6 +117,8 @@ function PlayerInfo() {
     let twentyFourCount = 0;
     let avg12 = null;
     let avg24 = null;
+    let winRate12 = null;
+    let winRate24 = null;
 
     if (detailedInfo && Array.isArray(detailedInfo.mmrChanges)) {
         const twelves = detailedInfo.mmrChanges.filter((e) => e.numPlayers === 12);
@@ -128,11 +130,17 @@ function PlayerInfo() {
         if (twelveCount) {
             const sum12 = twelves.reduce((acc, e) => acc + (e.score ?? 0), 0);
             avg12 = sum12 / twelveCount;
+
+            const wins12 = twelves.filter((e) => (e.mmrDelta ?? 0) > 0).length;
+            winRate12 = wins12 / twelveCount;
         }
 
         if (twentyFourCount) {
             const sum24 = twentyFours.reduce((acc, e) => acc + (e.score ?? 0), 0);
             avg24 = sum24 / twentyFourCount;
+
+            const wins24 = twentyFours.filter((e) => (e.mmrDelta ?? 0) > 0).length;
+            winRate24 = wins24 / twentyFourCount;
         }
     }
 
@@ -201,6 +209,16 @@ function PlayerInfo() {
                             }`}
                         >
                             Win Rate: {(detailedInfo.winRate * 100).toFixed(2)}%
+                            {" "}
+                            (
+                            {winRate12 != null
+                                ? `${(winRate12 * 100).toFixed(2)}% 12p`
+                                : "N/A 12p"}
+                            {" / "}
+                            {winRate24 != null
+                                ? `${(winRate24 * 100).toFixed(2)}% 24p`
+                                : "N/A 24p"}
+                            )
                         </p>
                     </div>
 
