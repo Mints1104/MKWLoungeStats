@@ -83,6 +83,8 @@ function PlayerInfo() {
     const [detailedInfo, setDetailedInfo] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [eventFilter, setEventFilter] = useState("all"); // all | 12 | 24
+    const [eventLimit, setEventLimit] = useState(10);
 
     const getPlayerInfo = async () => {
         try {
@@ -142,6 +144,40 @@ function PlayerInfo() {
             const wins24 = twentyFours.filter((e) => (e.mmrDelta ?? 0) > 0).length;
             winRate24 = wins24 / twentyFourCount;
         }
+    }
+
+    // Events to display based on filter and limit
+    let eventsToShow = [];
+    if (detailedInfo && Array.isArray(detailedInfo.mmrChanges)) {
+        let filtered = detailedInfo.mmrChanges;
+        if (eventFilter === "12") {
+            filtered = filtered.filter((e) => e.numPlayers === 12);
+        } else if (eventFilter === "24") {
+            filtered = filtered.filter((e) => e.numPlayers === 24);
+        }
+        eventsToShow = filtered.slice(0, eventLimit);
+    }
+
+    // Stats for the currently displayed events
+    let recentAvgScore = null;
+    let recentBestScore = null;
+    let recentWinRate = null;
+
+    if (eventsToShow.length) {
+        const withScores = eventsToShow.filter(
+            (e) => typeof e.score === "number" && !Number.isNaN(e.score),
+        );
+        if (withScores.length) {
+            const sum = withScores.reduce((acc, e) => acc + e.score, 0);
+            recentAvgScore = sum / withScores.length;
+            recentBestScore = withScores.reduce(
+                (max, e) => (e.score > max ? e.score : max),
+                withScores[0].score,
+            );
+        }
+
+        const wins = eventsToShow.filter((e) => (e.mmrDelta ?? 0) > 0).length;
+        recentWinRate = wins / eventsToShow.length;
     }
 
     return (
@@ -222,10 +258,95 @@ function PlayerInfo() {
                         </p>
                     </div>
 
-                    <div className="player-events">
-                        <h3>Last 10 Events</h3>
+                    <div className="player-events-card">
+                        <div className="player-events-header">
+                            <h3>Recent Events</h3>
+                            <div className="events-controls">
+                                <div className="events-count">
+                                    <span>Show</span>
+                                    <input
+                                        className="events-count-input"
+                                        type="number"
+                                        min={1}
+                                        max={100}
+                                        value={eventLimit}
+                                        onChange={(e) => {
+                                            const value = Number(e.target.value);
+                                            if (!Number.isNaN(value) && value >= 1 && value <= 100) {
+                                                setEventLimit(value);
+                                            }
+                                        }}
+                                    />
+                                    <span>events</span>
+                                </div>
+                                <div className="filter-toggle">
+                                    <button
+                                        type="button"
+                                        className={`filter-button ${
+                                            eventFilter === "all" ? "filter-button-active" : ""
+                                        }`}
+                                        onClick={() => setEventFilter("all")}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`filter-button ${
+                                            eventFilter === "12" ? "filter-button-active" : ""
+                                        }`}
+                                        onClick={() => setEventFilter("12")}
+                                    >
+                                        12p
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`filter-button ${
+                                            eventFilter === "24" ? "filter-button-active" : ""
+                                        }`}
+                                        onClick={() => setEventFilter("24")}
+                                    >
+                                        24p
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {eventsToShow.length > 0 && (
+                            <div className="recent-stats-row">
+                                <div className="recent-stat">
+                                    <span className="recent-stat-label">Avg score</span>
+                                    <span className="recent-stat-value">
+                                        {recentAvgScore != null
+                                            ? recentAvgScore.toFixed(2)
+                                            : "N/A"}
+                                    </span>
+                                </div>
+                                <div className="recent-stat">
+                                    <span className="recent-stat-label">Best score</span>
+                                    <span className="recent-stat-value">
+                                        {recentBestScore != null
+                                            ? recentBestScore.toFixed(2)
+                                            : "N/A"}
+                                    </span>
+                                </div>
+                                <div className="recent-stat">
+                                    <span className="recent-stat-label">Win rate</span>
+                                    <span className="recent-stat-value">
+                                        {recentWinRate != null
+                                            ? `${(recentWinRate * 100).toFixed(1)}%`
+                                            : "N/A"}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {eventsToShow.length === 0 ? (
+                        <p className="no-events-message">
+                            No events match these filters yet.
+                        </p>
+                    ) : (
                         <div className="events-grid">
-                            {detailedInfo?.mmrChanges?.slice(0, 10).map((event, index) => (
+                            {eventsToShow.map((event, index) => (
                                 <article className="event-card" key={index}>
                                     <div className="event-header">
                                         <p className="event-score">
@@ -244,7 +365,9 @@ function PlayerInfo() {
 
                                         <p
                                             className={`event-delta ${
-                                                event.mmrDelta > 0 ? "positive" : "negative"
+                                                event.mmrDelta > 0
+                                                    ? "positive"
+                                                    : "negative"
                                             }`}
                                         >
                                             {event.mmrDelta > 0 ? "+" : ""}
@@ -266,7 +389,7 @@ function PlayerInfo() {
                                 </article>
                             ))}
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
         </div>
