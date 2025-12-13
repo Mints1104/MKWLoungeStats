@@ -324,7 +324,7 @@ function PlayerInfo() {
                                     <span className="recent-stat-label">Best score</span>
                                     <span className="recent-stat-value">
                                         {recentBestScore != null
-                                            ? recentBestScore.toFixed(2)
+                                            ? recentBestScore
                                             : "N/A"}
                                     </span>
                                 </div>
