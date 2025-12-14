@@ -3,6 +3,13 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 .logo {
@@ -66,6 +73,8 @@
   padding: 1.5rem 1rem 3rem;
   max-width: 760px;
   margin: 0 auto;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 @media (min-width: 768px) {
@@ -461,6 +470,9 @@
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   padding: 1rem 0;
   margin-bottom: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .nav-container {
@@ -859,39 +871,68 @@
     padding-inline: 1rem;
   }
 
-  /* Leaderboard table horizontal scroll */
+  /* Leaderboard table optimized for mobile */
   .leaderboard-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .leaderboard-table {
-    min-width: 600px;
-    font-size: 0.85rem;
+    min-width: 100%;
+    font-size: 0.875rem;
   }
 
   .leaderboard-table th,
   .leaderboard-table td {
-    padding: 0.75rem 0.75rem;
+    padding: 0.875rem 0.5rem;
+  }
+  
+  /* Hide less critical columns on mobile */
+  .leaderboard-table th:nth-child(4),
+  .leaderboard-table td:nth-child(4),
+  .leaderboard-table th:nth-child(6),
+  .leaderboard-table td:nth-child(6) {
+    display: none;
   }
 
-  /* Stack navigation on mobile */
+  /* Compact horizontal navigation on mobile */
+  .navigation {
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+  }
+  
   .nav-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0 1rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+  
+  .nav-logo {
+    font-size: 1.1rem;
+    flex-shrink: 0;
   }
 
   .nav-links {
-    flex-wrap: wrap;
-    width: 100%;
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-shrink: 1;
+  }
+  
+  .nav-links::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-link {
-    flex: 1;
-    text-align: center;
-    min-width: calc(50% - 0.25rem);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   /* Reduce font sizes on mobile */
@@ -950,35 +991,65 @@
     font-size: 0.9rem;
   }
 
-  /* Smaller table text */
+  /* Optimized table text - larger and more readable */
   .leaderboard-table {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
   }
 
   .leaderboard-table th,
   .leaderboard-table td {
-    padding: 0.5rem 0.5rem;
+    padding: 0.75rem 0.4rem;
+  }
+  
+  .leaderboard-table tbody tr {
+    border-bottom: 2px solid rgba(51, 65, 85, 0.5);
   }
 
   /* Compact pagination */
   .pagination-controls {
-    padding: 0 0.75rem;
-    font-size: 0.85rem;
+    padding: 0 0.5rem;
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+  
+  .pagination-info {
+    font-size: 0.75rem;
   }
 
   .pagination-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .pagination-page {
+    font-size: 0.8rem;
   }
 
   /* Navigation adjustments */
+  html {
+    font-size: 14px;
+  }
+  
+  .navigation {
+    padding: 0.4rem 0;
+  }
+  
+  .nav-container {
+    padding: 0 0.5rem;
+  }
+  
   .nav-logo {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
 
   .nav-link {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Hide page size selector on very small screens */
+  .page-size-selector {
+    display: none;
   }
 
   /* Event cards compact */
