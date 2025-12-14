@@ -208,6 +208,7 @@ Once connected to Git, Vercel automatically:
 - Deploys every push to `main` branch → Production
 - Creates preview deployments for pull requests
 - Runs build checks on every commit
+  ok
 
 ---
 
