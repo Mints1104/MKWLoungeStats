@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { formatTimeAgo } from "../utils/playerUtils";
 
-function EventCard({ event, averageScore }) {
+const EventCard = memo(function EventCard({ event, averageScore }) {
     return (
         <article className="event-card">
             <div className="event-header">
@@ -39,6 +40,6 @@ function EventCard({ event, averageScore }) {
             </a>
         </article>
     );
-}
+});
 
 export default EventCard;

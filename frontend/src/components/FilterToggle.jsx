@@ -1,4 +1,6 @@
-function FilterToggle({ activeFilter, onFilterChange, options }) {
+import { memo } from "react";
+
+const FilterToggle = memo(function FilterToggle({ activeFilter, onFilterChange, options }) {
     return (
         <div className="filter-toggle">
             {options.map((option) => (
@@ -15,6 +17,6 @@ function FilterToggle({ activeFilter, onFilterChange, options }) {
             ))}
         </div>
     );
-}
+});
 
 export default FilterToggle;

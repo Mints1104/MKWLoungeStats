@@ -2,6 +2,43 @@ const express = require("express");
 const app = express();
 const axios = require("axios");
 
+// Simple in-memory cache with TTL to reduce repeated upstream calls
+const cacheStore = new Map();
+const DEFAULT_TTL_MS = 60 * 1000; // 1 minute
+
+const getCacheKey = (prefix, params = {}) => {
+  if (!params || Object.keys(params).length === 0) {
+    return prefix;
+  }
+  const sorted = Object.keys(params)
+    .sort()
+    .map((key) => `${key}:${params[key]}`)
+    .join("|");
+  return `${prefix}|${sorted}`;
+};
+
+const setCache = (key, value, ttl = DEFAULT_TTL_MS) => {
+  cacheStore.set(key, { value, expiresAt: Date.now() + ttl });
+};
+
+const getCache = (key) => {
+  const entry = cacheStore.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    cacheStore.delete(key);
+    return null;
+  }
+  return entry.value;
+};
+
+const invalidateCache = (predicate) => {
+  for (const key of cacheStore.keys()) {
+    if (predicate(key)) {
+      cacheStore.delete(key);
+    }
+  }
+};
+
 app.use(express.json());
 
 app.listen(3000, () => {
@@ -37,12 +74,36 @@ app.get("/api/player/details/:name", async (req, res) => {
     const playerName = req.params.name;
     const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
     const full_url = `${base_url}${playerName}&game=mkworld&season=1`;
+
+    const cacheKey = getCacheKey("player-details", { name: playerName });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     console.log(`Fetching data from ${full_url}`);
     const { data } = await axios.get(full_url);
 
+    setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
+
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch events" });
+    invalidateCache((key) => key.startsWith("player-details"));
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 404) {
+        return res.status(404).json({
+          error: `No lounge records found for "${req.params.name}"`,
+        });
+      }
+      if (status) {
+        return res.status(status).json({
+          error:
+            error.response?.data?.error || "Failed to retrieve player details",
+        });
+      }
+    }
+    res.status(500).json({ error: "Failed to fetch player details" });
   }
 });
 
@@ -139,6 +200,12 @@ app.get("/api/leaderboard", async (req, res) => {
     if (maxMmr) params.maxMmr = parseInt(maxMmr);
     if (search) params.search = search;
 
+    const cacheKey = getCacheKey("leaderboard", params);
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     console.log(`Fetching leaderboard from URL:`, base_url);
     console.log(`With params:`, params);
 
@@ -161,55 +228,15 @@ app.get("/api/leaderboard", async (req, res) => {
     console.log(
       `Sending response with ${response.data.length} players, totalCount: ${response.totalCount}`
     );
+
+    setCache(cacheKey, response);
     res.json(response);
   } catch (error) {
     console.error("Leaderboard error:", error.message);
     console.error("Error response status:", error.response?.status);
     console.error("Error response data:", error.response?.data);
+    invalidateCache((key) => key.startsWith("leaderboard"));
     res.status(500).json({ error: "Failed to fetch leaderboard" });
-  }
-});
-
-// Get player percentile ranking
-app.get("/api/player/percentile/:name", async (req, res) => {
-  try {
-    const playerName = req.params.name;
-
-    // First get the player's details
-    const playerUrl = `https://lounge.mkcentral.com/api/player/details?name=${encodeURIComponent(
-      playerName
-    )}&game=mkworld&season=1`;
-    const playerResponse = await axios.get(playerUrl);
-    const playerData = playerResponse.data;
-
-    // Get a sample of the leaderboard to estimate total players
-    const leaderboardUrl =
-      "https://lounge.mkcentral.com/api/player/leaderboard";
-    const leaderboardResponse = await axios.get(leaderboardUrl, {
-      params: {
-        game: "mkworld",
-        season: 1,
-        skip: 0,
-        pageSize: 100,
-        sortBy: "Mmr",
-      },
-    });
-
-    const totalPlayers = leaderboardResponse.data.totalCount || 10000; // Fallback estimate
-    const playerRank = playerData.overallRank;
-    const percentile = ((totalPlayers - playerRank) / totalPlayers) * 100;
-
-    res.json({
-      name: playerData.name,
-      rank: playerRank,
-      totalPlayers,
-      percentile: percentile.toFixed(1),
-      mmr: playerData.mmr,
-      topXPlayers: playerRank,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to calculate percentile" });
   }
 });
 

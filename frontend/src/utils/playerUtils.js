@@ -88,3 +88,23 @@ export const RANK_THRESHOLDS = [
   { name: "Master", min: 12500, max: 13499 },
   { name: "Grandmaster", min: 13500, max: Infinity },
 ];
+
+export function getRankForMmrValue(mmr) {
+  if (mmr == null || Number.isNaN(Number(mmr))) {
+    return { name: null, color: "#38bdf8" };
+  }
+
+  const numericMmr = Number(mmr);
+  const threshold = RANK_THRESHOLDS.find(
+    (rank) => numericMmr >= rank.min && numericMmr <= rank.max
+  );
+
+  if (!threshold) {
+    return { name: null, color: "#38bdf8" };
+  }
+
+  return {
+    name: threshold.name,
+    color: getRankColor(threshold.name),
+  };
+}

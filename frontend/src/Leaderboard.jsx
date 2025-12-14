@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
+import { loungeApi } from "./api/loungeApi";
 
 function Leaderboard() {
     const navigate = useNavigate();
@@ -18,42 +19,54 @@ function Leaderboard() {
     const [maxMmr, setMaxMmr] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("Mmr");
+    const requestRef = useRef(null);
 
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboard = useCallback(async () => {
         try {
             setError("");
             setLoading(true);
 
-            const skip = (currentPage - 1) * pageSize;
-            const params = new URLSearchParams({
-                skip: skip.toString(),
-                pageSize: pageSize.toString(),
-                sortBy,
-            });
-
-            if (minMmr) params.append("minMmr", minMmr);
-            if(maxMmr) params.append("maxMmr", maxMmr)
-            if (searchQuery) params.append("search", searchQuery);
-
-            const response = await fetch(`/api/leaderboard?${params}`);
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch leaderboard");
+            if (requestRef.current) {
+                requestRef.current.abort();
             }
 
-            const data = await response.json();
+            const controller = new AbortController();
+            requestRef.current = controller;
+
+            const data = await loungeApi.getLeaderboard(
+                {
+                    page: currentPage,
+                    pageSize,
+                    sortBy,
+                    minMmr,
+                    maxMmr,
+                    search: searchQuery
+                },
+                controller.signal
+            );
+
             setLeaderboardData(data.data || []);
             setTotalCount(data.totalCount || 0);
+            requestRef.current = null;
         } catch (err) {
+            if (err.name === "AbortError") {
+                return;
+            }
             setError(err.message || "Failed to load leaderboard");
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, searchQuery]);
 
     useEffect(() => {
         fetchLeaderboard();
-    }, [currentPage, pageSize, sortBy]);
+        return () => {
+            if (requestRef.current) {
+                requestRef.current.abort();
+                requestRef.current = null;
+            }
+        };
+    }, [fetchLeaderboard]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -84,7 +97,7 @@ function Leaderboard() {
             <div className="player-card">
                 <h1 className="player-title">Leaderboard</h1>
                 <p className="player-subtitle">
-                    Top players ranked by MMR, win rate, and performance.
+                    Top players ranked by current MMR, max MMR, and events played.
                 </p>
 
                 {/* Filters */}
@@ -147,14 +160,25 @@ function Leaderboard() {
                     </button>
                 </form>
 
-                {error && <p className="player-error">{error}</p>}
-                {loading && <p className="player-loading">Loading leaderboard...</p>}
+                {error && (
+                    <p className="player-error" role="alert" aria-live="assertive">
+                        {error}
+                    </p>
+                )}
+                {loading && (
+                    <p className="player-loading" aria-live="polite">
+                        Loading leaderboard...
+                    </p>
+                )}
             </div>
 
             {leaderboardData.length > 0 && (
-                <div className="leaderboard-container">
+                <div className="player-card leaderboard-card">
                     <div className="leaderboard-table-wrapper">
                         <table className="leaderboard-table">
+                            <caption className="sr-only">
+                                Current leaderboard standings with ranks, MMR, win rate, and events played. Use the player name buttons to open detailed profiles.
+                            </caption>
                             <thead>
                                 <tr>
                                     <th>Rank</th>
@@ -170,17 +194,15 @@ function Leaderboard() {
                                     <tr key={player.id}>
                                         <td className="rank-cell">#{player.overallRank || "N/A"}</td>
                                         <td>
-                                            <span className="leaderboard-name"
-                                                style={{ 
-                                                    color: getRankColor(player.mmrRank.name),
-                                                    cursor: 'pointer',
-                                    
-                                                    
-                                                }}
+                                            <button
+                                                type="button"
+                                                className="leaderboard-name"
+                                                style={{ color: getRankColor(player.mmrRank.name) }}
                                                 onClick={() => takeToProfile(player.name)}
+                                                aria-label={`View profile for ${player.name}`}
                                             >
                                                 {player.name}
-                                            </span>
+                                            </button>
                                         </td>
                                         <td className="mmr-cell">{player.mmr}</td>
                                         <td>{player.maxMmr}</td>
@@ -242,6 +264,14 @@ function Leaderboard() {
                             </select>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {!loading && !error && leaderboardData.length === 0 && (
+                <div className="player-card leaderboard-card">
+                    <p className="player-subtitle" aria-live="polite">
+                        No players match the current filters. Try adjusting your search terms or MMR range.
+                    </p>
                 </div>
             )}
         </div>
