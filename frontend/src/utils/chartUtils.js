@@ -109,3 +109,30 @@ export function calculateMmrHistoryData(
     gradientId: `mmrGradient-${playerId}`,
   };
 }
+
+/**
+ * Prepares MMR history data for comparing multiple players on an overlaid line chart
+ * @param {Array} playersData - Array of player objects with mmrChanges
+ * @returns {Array} Array of data points for the chart with event numbers and player MMR values
+ */
+export function calculateComparisonMmrData(playersData) {
+  if (!playersData || playersData.length === 0) return [];
+
+  const maxEvents = Math.max(
+    ...playersData.map((p) => p.mmrChanges?.length || 0)
+  );
+  const data = [];
+
+  for (let i = 0; i < maxEvents; i++) {
+    const point = { event: i + 1 };
+    playersData.forEach((player) => {
+      const events = player.mmrChanges?.slice().reverse() || [];
+      if (events[i]) {
+        point[player.name] = events[i].newMmr;
+      }
+    });
+    data.push(point);
+  }
+
+  return data;
+}

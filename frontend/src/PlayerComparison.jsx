@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { getRankColor, getNextRank } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
+import { calculateComparisonMmrData } from "./utils/chartUtils";
 import StatCard from "./components/StatCard";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
@@ -69,27 +70,7 @@ function PlayerComparison() {
     };
 
     // Prepare MMR history data for overlaid chart
-    const getMmrHistoryData = () => {
-        if (playersData.length === 0) return [];
-
-        const maxEvents = Math.max(...playersData.map((p) => p.mmrChanges?.length || 0));
-        const data = [];
-
-        for (let i = 0; i < maxEvents; i++) {
-            const point = { event: i + 1 };
-            playersData.forEach((player, pIndex) => {
-                const events = player.mmrChanges?.slice().reverse() || [];
-                if (events[i]) {
-                    point[player.name] = events[i].newMmr;
-                }
-            });
-            data.push(point);
-        }
-
-        return data;
-    };
-
-    const mmrHistoryData = getMmrHistoryData();
+    const mmrHistoryData = calculateComparisonMmrData(playersData);
 
     const chartSummary = playersData.length >= 2
         ? (() => {
@@ -159,9 +140,11 @@ function PlayerComparison() {
                     </p>
                 )}
                 {loading && (
-                    <p className="player-loading" aria-live="polite">
-                        Loading comparison...
-                    </p>
+                    <div className="loading-skeleton" aria-live="polite" aria-label="Comparing players">
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                    </div>
                 )}
             </div>
 

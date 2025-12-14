@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
+import { debounce } from "./utils/debounce";
 
 function Leaderboard() {
     const navigate = useNavigate();
@@ -18,8 +19,24 @@ function Leaderboard() {
     const [minMmr, setMinMmr] = useState("");
     const [maxMmr, setMaxMmr] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [sortBy, setSortBy] = useState("Mmr");
     const requestRef = useRef(null);
+
+    // Debounced search handler
+    const debouncedSetSearch = useMemo(
+        () => debounce((value) => {
+            setDebouncedSearch(value);
+            setCurrentPage(1);
+        }, 300),
+        []
+    );
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        debouncedSetSearch(value);
+    };
 
     const fetchLeaderboard = useCallback(async () => {
         try {
@@ -40,7 +57,7 @@ function Leaderboard() {
                     sortBy,
                     minMmr,
                     maxMmr,
-                    search: searchQuery
+                    search: debouncedSearch
                 },
                 controller.signal
             );
@@ -56,7 +73,7 @@ function Leaderboard() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, searchQuery]);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch]);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -67,12 +84,6 @@ function Leaderboard() {
             }
         };
     }, [fetchLeaderboard]);
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        setCurrentPage(1);
-        fetchLeaderboard();
-    };
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -101,7 +112,7 @@ function Leaderboard() {
                 </p>
 
                 {/* Filters */}
-                <form onSubmit={handleSearch} className="leaderboard-filters">
+                <div className="leaderboard-filters">
                     <div className="filter-row">
                         <div className="filter-group">
                             <label htmlFor="search">Search Player</label>
@@ -110,7 +121,7 @@ function Leaderboard() {
                                 type="text"
                                 className="player-input"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={handleSearchChange}
                                 placeholder="Player name..."
                             />
                         </div>
@@ -154,11 +165,7 @@ function Leaderboard() {
                             </select>
                         </div>
                     </div>
-
-                    <button type="submit" className="player-button">
-                        Apply Filters
-                    </button>
-                </form>
+                </div>
 
                 {error && (
                     <p className="player-error" role="alert" aria-live="assertive">
@@ -166,9 +173,13 @@ function Leaderboard() {
                     </p>
                 )}
                 {loading && (
-                    <p className="player-loading" aria-live="polite">
-                        Loading leaderboard...
-                    </p>
+                    <div className="loading-skeleton" aria-live="polite" aria-label="Loading leaderboard">
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                    </div>
                 )}
             </div>
 

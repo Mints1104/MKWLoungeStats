@@ -43,9 +43,11 @@ function PlayerProfile() {
                     </p>
                 )}
                 {loading && (
-                    <p className="player-loading" aria-live="polite">
-                        Loading player data...
-                    </p>
+                    <div className="loading-skeleton" aria-live="polite" aria-label="Loading player data">
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                        <div className="skeleton-row"></div>
+                    </div>
                 )}
             </div>
 
