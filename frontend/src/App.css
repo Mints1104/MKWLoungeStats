@@ -62,6 +62,12 @@
   }
 }
 
+@media (min-width: 1200px) {
+  .player-info-page {
+    max-width: 1100px;
+  }
+}
+
 .player-card {
   width: 100%;
   margin: 0 auto;
@@ -167,6 +173,20 @@
   align-items: stretch;
 }
 
+@media (min-width: 1200px) {
+  .player-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* keep the list spanning both columns while cards sit side-by-side */
+  .events-grid,
+  .no-events-message {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 900px) {
   .player-info-page {
     padding: 2rem 1rem 3rem;
@@ -208,7 +228,7 @@
 }
 
 .below-average {
-  
+  color: #fbbf24;
 }
 
 .negative {

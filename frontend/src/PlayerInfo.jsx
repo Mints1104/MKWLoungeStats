@@ -1,4 +1,16 @@
 import { useState } from "react";
+import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from "recharts";
 
 function formatTimeAgo(dateInput) {
     const ms =
@@ -83,8 +95,9 @@ function PlayerInfo() {
     const [detailedInfo, setDetailedInfo] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [eventFilter, setEventFilter] = useState("all"); // all | 12 | 24
+    const [eventFilter, setEventFilter] = useState("all");
     const [eventLimit, setEventLimit] = useState(10);
+    const [scoreFilter, setScoreFilter] = useState("all");
 
     const getPlayerInfo = async () => {
         try {
@@ -258,6 +271,130 @@ function PlayerInfo() {
                         </p>
                     </div>
 
+                    {/* MMR History Chart */}
+                    <div className="player-summary">
+                        <h3>MMR History</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart
+                                data={detailedInfo.mmrChanges
+                                    ?.slice()
+                                    .reverse()
+                                    .map((event, index) => ({
+                                        event: index + 1,
+                                        mmr: event.newMmr,
+                                        delta: event.mmrDelta,
+                                    }))}
+                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    dataKey="event"
+                                    stroke="#9ca3af"
+                                    label={{ value: "Events", position: "insideBottom", offset: -5 }}
+                                />
+                                <YAxis
+                                    stroke="#9ca3af"
+                                    label={{ value: "MMR", angle: -90, position: "insideLeft" }}
+                                    domain={["dataMin - 50", "dataMax + 50"]}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#0f172a",
+                                        border: "1px solid #334155",
+                                        borderRadius: "8px",
+                                    }}
+                                    labelStyle={{ color: "#e5e7eb" }}
+                                />
+                                <Legend />
+                                <Line
+                                    type="monotone"
+                                    dataKey="mmr"
+                                    stroke="#38bdf8"
+                                    strokeWidth={2}
+                                    dot={{ fill: "#38bdf8", r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Score Distribution Chart */}
+                    <div className="player-summary">
+                        <div className="player-events-header">
+                            <h3>Score Distribution</h3>
+                            <div className="filter-toggle">
+                                <button
+                                    className={`filter-button ${scoreFilter === "all" ? "filter-button-active" : ""}`}
+                                    onClick={() => setScoreFilter("all")}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    className={`filter-button ${scoreFilter === "12" ? "filter-button-active" : ""}`}
+                                    onClick={() => setScoreFilter("12")}
+                                >
+                                    12p
+                                </button>
+                                <button
+                                    className={`filter-button ${scoreFilter === "24" ? "filter-button-active" : ""}`}
+                                    onClick={() => setScoreFilter("24")}
+                                >
+                                    24p
+                                </button>
+                            </div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                                data={(() => {
+                                    let filteredEvents = detailedInfo.mmrChanges || [];
+                                    if (scoreFilter === "12") {
+                                        filteredEvents = filteredEvents.filter((e) => e.numPlayers === 12);
+                                    } else if (scoreFilter === "24") {
+                                        filteredEvents = filteredEvents.filter((e) => e.numPlayers === 24);
+                                    }
+                                    const scores = filteredEvents.map((e) => e.score);
+                                    const ranges = [
+                                        { range: "0-20", min: 0, max: 20, count: 0 },
+                                        { range: "21-40", min: 21, max: 40, count: 0 },
+                                        { range: "41-60", min: 41, max: 60, count: 0 },
+                                        { range: "61-80", min: 61, max: 80, count: 0 },
+                                        { range: "81-100", min: 81, max: 100, count: 0 },
+                                        { range: "101-120", min: 101, max: 120, count: 0 },
+                                    ];
+                                    scores.forEach((score) => {
+                                        const range = ranges.find(
+                                            (r) => score >= r.min && score <= r.max,
+                                        );
+                                        if (range) range.count++;
+                                    });
+                                    return ranges;
+                                })()}
+                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    dataKey="range"
+                                    stroke="#9ca3af"
+                                    label={{ value: "Score Range", position: "insideBottom", offset: -5 }}
+                                />
+                                <YAxis
+                                    stroke="#9ca3af"
+                                    label={{ value: "Events", angle: -90, position: "insideLeft" }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#0f172a",
+                                        border: "1px solid #334155",
+                                        borderRadius: "8px",
+                                    }}
+                                    labelStyle={{ color: "#e5e7eb" }}
+                                />
+                                <Legend />
+                                <Bar dataKey="count" fill="#22c55e" name="Events" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
                     <div className="player-events-card">
                         <div className="player-events-header">
                             <h3>Recent Events</h3>
@@ -355,7 +492,7 @@ function PlayerInfo() {
                                                 className={
                                                     event.score > detailedInfo.averageScore
                                                         ? "above-average"
-                                                        : ""
+                                                        : "below-average"
                                                 }
                                             >
                                                 {event.score}
