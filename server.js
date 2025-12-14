@@ -74,6 +74,145 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
   }
 });
 
+// Compare multiple players
+app.get("/api/players/compare", async (req, res) => {
+  try {
+    const names = req.query.names?.split(",") || [];
+
+    if (names.length === 0 || names.length > 4) {
+      return res
+        .status(400)
+        .json({ error: "Please provide 1-4 player names separated by commas" });
+    }
+
+    const base_url = "https://lounge.mkcentral.com/api/player/details";
+
+    const promises = names.map((name) =>
+      axios
+        .get(base_url, {
+          params: {
+            name: name.trim(),
+            game: "mkworld",
+            season: 1,
+          },
+        })
+        .then((response) => response.data)
+        .catch((err) => ({
+          error: true,
+          name: name.trim(),
+          message:
+            err.response?.status === 404 ? "Player not found" : err.message,
+        }))
+    );
+
+    const results = await Promise.all(promises);
+
+    res.json(results);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch comparison data" });
+  }
+});
+
+// Get leaderboard with pagination and filters
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const {
+      skip = 0,
+      pageSize = 50,
+      minMmr,
+      maxMmr,
+      search,
+      sortBy = "Mmr",
+    } = req.query;
+
+    const base_url =
+      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1";
+
+    const params = {
+      skip: parseInt(skip),
+      pageSize: Math.min(parseInt(pageSize), 100),
+      sortBy,
+    };
+
+    if (minMmr) params.minMmr = parseInt(minMmr);
+    if (maxMmr) params.maxMmr = parseInt(maxMmr);
+    if (search) params.search = search;
+
+    console.log(`Fetching leaderboard from URL:`, base_url);
+    console.log(`With params:`, params);
+
+    const axiosResponse = await axios.get(base_url, { params });
+
+    console.log(`Response status:`, axiosResponse.status);
+    console.log(`Response headers:`, axiosResponse.headers["content-type"]);
+    console.log(`Response data type:`, typeof axiosResponse.data);
+    console.log(`Response data keys:`, Object.keys(axiosResponse.data || {}));
+
+    const data = axiosResponse.data;
+
+    // The API returns totalPlayers, but we'll normalize it to totalCount for consistency
+    const response = {
+      data: data.data || [],
+      totalCount: data.totalPlayers || 0,
+      totalPlayers: data.totalPlayers || 0,
+    };
+
+    console.log(
+      `Sending response with ${response.data.length} players, totalCount: ${response.totalCount}`
+    );
+    res.json(response);
+  } catch (error) {
+    console.error("Leaderboard error:", error.message);
+    console.error("Error response status:", error.response?.status);
+    console.error("Error response data:", error.response?.data);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+// Get player percentile ranking
+app.get("/api/player/percentile/:name", async (req, res) => {
+  try {
+    const playerName = req.params.name;
+
+    // First get the player's details
+    const playerUrl = `https://lounge.mkcentral.com/api/player/details?name=${encodeURIComponent(
+      playerName
+    )}&game=mkworld&season=1`;
+    const playerResponse = await axios.get(playerUrl);
+    const playerData = playerResponse.data;
+
+    // Get a sample of the leaderboard to estimate total players
+    const leaderboardUrl =
+      "https://lounge.mkcentral.com/api/player/leaderboard";
+    const leaderboardResponse = await axios.get(leaderboardUrl, {
+      params: {
+        game: "mkworld",
+        season: 1,
+        skip: 0,
+        pageSize: 100,
+        sortBy: "Mmr",
+      },
+    });
+
+    const totalPlayers = leaderboardResponse.data.totalCount || 10000; // Fallback estimate
+    const playerRank = playerData.overallRank;
+    const percentile = ((totalPlayers - playerRank) / totalPlayers) * 100;
+
+    res.json({
+      name: playerData.name,
+      rank: playerRank,
+      totalPlayers,
+      percentile: percentile.toFixed(1),
+      mmr: playerData.mmr,
+      topXPlayers: playerRank,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to calculate percentile" });
+  }
+});
+
 app.get("/posts", async (req, res) => {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");

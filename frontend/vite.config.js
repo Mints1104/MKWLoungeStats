@@ -10,8 +10,7 @@ export default defineConfig({
       "/pokemon": "http://localhost:3000",
       "/posts": "http://localhost:3000",
       "/people": "http://localhost:3000",
-      "/api/player/leaderboard": "http://localhost:3000",
-      "/api/player/details": "http://localhost:3000",
+      "/api": "http://localhost:3000",
     },
   },
 });

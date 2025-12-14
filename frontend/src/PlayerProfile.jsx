@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
     LineChart,
     Line,
@@ -16,8 +17,9 @@ import FilterToggle from "./components/FilterToggle";
 import StatCard from "./components/StatCard";
 import EventCard from "./components/EventCard";
 
-function PlayerInfo() {
-    const [name, setName] = useState("");
+function PlayerProfile() {
+    const { playerName } = useParams();
+    const navigate = useNavigate();
     const [detailedInfo, setDetailedInfo] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -25,35 +27,39 @@ function PlayerInfo() {
     const [eventLimit, setEventLimit] = useState(10);
     const [scoreFilter, setScoreFilter] = useState("all");
 
-    const getPlayerInfo = async () => {
-        try {
-            setError("");
-            setDetailedInfo(null);
+    useEffect(() => {
+        const getPlayerInfo = async () => {
+            try {
+                setError("");
+                setDetailedInfo(null);
 
-            if (!name.trim()) {
-                setError("Please enter a name");
-                return;
+                if (!playerName) {
+                    setError("No player name provided");
+                    return;
+                }
+
+                setLoading(true);
+                
+                // Fetch player details
+                const response = await fetch(
+                    `/api/player/details/${encodeURIComponent(playerName)}?season=1`,
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch player data");
+                }
+
+                const data = await response.json();
+                setDetailedInfo(data);
+            } catch (err) {
+                setError(err.message || "Failed to fetch player data");
+            } finally {
+                setLoading(false);
             }
+        };
 
-            setLoading(true);
-            
-            // Fetch player details
-            const response = await fetch(
-                `/api/player/details/${encodeURIComponent(name)}?season=1`,
-            );
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch player data");
-            }
-
-            const data = await response.json();
-            setDetailedInfo(data);
-        } catch (err) {
-            setError(err.message || "Failed to fetch player data");
-        } finally {
-            setLoading(false);
-        }
-    };
+        getPlayerInfo();
+    }, [playerName]);
 
     // Derived stats for 12p / 24p events
     let twelveCount = 0;
@@ -124,22 +130,17 @@ function PlayerInfo() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <h1 className="player-title">Mario Kart Lounge Stats</h1>
+                <button 
+                    className="player-button" 
+                    onClick={() => navigate(-1)}
+                    style={{ marginBottom: '1rem', width: 'auto' }}
+                >
+                    ← Back
+                </button>
+                <h1 className="player-title">Player Profile</h1>
                 <p className="player-subtitle">
-                    Look up a player by name and see their recent event history.
+                    Viewing stats for {detailedInfo?.name || playerName}
                 </p>
-
-                <div className="player-form">
-                    <input
-                        className="player-input"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter a player name"
-                    />
-                    <button className="player-button" onClick={getPlayerInfo}>
-                        Get Player Info
-                    </button>
-                </div>
 
                 {error && <p className="player-error">{error}</p>}
                 {loading && <p className="player-loading">Loading...</p>}
@@ -383,4 +384,4 @@ function PlayerInfo() {
     );
 }
 
-export default PlayerInfo;
+export default PlayerProfile;
