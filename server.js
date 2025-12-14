@@ -53,9 +53,7 @@ const invalidateCache = (predicate) => {
 
 app.use(express.json());
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+// Do not call listen() in serverless/edge environments; Vercel will handle the request lifecycle.
 
 app.get("/api/player/details/:name", async (req, res) => {
   try {
