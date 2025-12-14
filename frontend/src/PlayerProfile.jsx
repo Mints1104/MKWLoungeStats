@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
+import PageHeader from "./components/PageHeader";
 
 function PlayerProfile() {
     const { playerName } = useParams();
@@ -25,17 +26,18 @@ function PlayerProfile() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <button 
-                    className="player-button" 
-                    onClick={handleBack}
-                    style={{ marginBottom: '1rem', width: 'auto' }}
+                <PageHeader 
+                    title="Player Profile" 
+                    subtitle={`Viewing stats for ${detailedInfo?.name || playerName}`}
                 >
-                    ← Back
-                </button>
-                <h1 className="player-title">Player Profile</h1>
-                <p className="player-subtitle">
-                    Viewing stats for {detailedInfo?.name || playerName}
-                </p>
+                    <button 
+                        className="player-button" 
+                        onClick={handleBack}
+                        style={{ marginBottom: '1rem', width: 'auto' }}
+                    >
+                        ← Back
+                    </button>
+                </PageHeader>
 
                 {error && (
                     <p className="player-error" role="alert" aria-live="assertive">

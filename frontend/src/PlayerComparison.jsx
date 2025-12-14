@@ -12,6 +12,7 @@ import {
 import { getRankColor, getNextRank } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
 import { calculateComparisonMmrData } from "./utils/chartUtils";
+import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
@@ -96,10 +97,10 @@ function PlayerComparison() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <h1 className="player-title">Compare Players</h1>
-                <p className="player-subtitle">
-                    Compare up to 4 players side-by-side to see who performs better.
-                </p>
+                <PageHeader 
+                    title="Compare Players" 
+                    subtitle="Compare up to 4 players side-by-side to see who performs better." 
+                />
 
                 <div className="comparison-inputs">
                     {playerNames.map((name, index) => (

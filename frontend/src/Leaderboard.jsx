@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
+import PageHeader from "./components/PageHeader";
 
 function Leaderboard() {
     const navigate = useNavigate();
@@ -106,10 +107,10 @@ function Leaderboard() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <h1 className="player-title">Leaderboard</h1>
-                <p className="player-subtitle">
-                    Top players ranked by current MMR, max MMR, and events played.
-                </p>
+                <PageHeader 
+                    title="Leaderboard" 
+                    subtitle="Top players ranked by current MMR, max MMR, and events played." 
+                />
 
                 {/* Filters */}
                 <div className="leaderboard-filters">

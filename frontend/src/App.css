@@ -786,3 +786,209 @@
 .leaderboard-name:hover {
   text-decoration: underline;
 }
+
+/* ========================================
+   MOBILE RESPONSIVE IMPROVEMENTS
+   ======================================== */
+
+/* Page header component styling */
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.page-header .player-button {
+  margin-bottom: 0.5rem;
+}
+
+/* Mobile breakpoints */
+@media (max-width: 768px) {
+  /* Make player-card full-width on mobile */
+  .player-card {
+    width: 100%;
+    padding: 1.25rem 1rem 1.4rem;
+    border-radius: 12px;
+  }
+
+  /* Stack comparison inputs vertically */
+  .comparison-inputs {
+    gap: 0.5rem;
+  }
+
+  .comparison-input-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .comparison-input-row .player-input {
+    width: 100%;
+  }
+
+  .remove-player-btn {
+    align-self: flex-end;
+  }
+
+  .comparison-actions {
+    flex-direction: column;
+  }
+
+  .comparison-actions button {
+    width: 100%;
+  }
+
+  /* Stack filter row vertically on mobile */
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Reduce padding on mobile */
+  #root {
+    padding: 1rem;
+  }
+
+  .player-info-page {
+    padding: 1rem 0.5rem 2rem;
+  }
+
+  .player-card,
+  .player-summary,
+  .event-card {
+    padding-inline: 1rem;
+  }
+
+  /* Leaderboard table horizontal scroll */
+  .leaderboard-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .leaderboard-table {
+    min-width: 600px;
+    font-size: 0.85rem;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 0.75rem 0.75rem;
+  }
+
+  /* Stack navigation on mobile */
+  .nav-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0 1rem;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .nav-link {
+    flex: 1;
+    text-align: center;
+    min-width: calc(50% - 0.25rem);
+  }
+
+  /* Reduce font sizes on mobile */
+  .player-title {
+    font-size: 1.5rem;
+  }
+
+  .player-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* Stack stat cards better on mobile */
+  .recent-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .percentile-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  #root {
+    padding: 0.5rem;
+  }
+
+  .player-info-page {
+    padding: 0.75rem 0.25rem 1.5rem;
+  }
+
+  .player-card {
+    padding: 1rem 0.75rem 1.2rem;
+    border-radius: 10px;
+  }
+
+  .player-title {
+    font-size: 1.25rem;
+  }
+
+  .player-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .player-button {
+    padding: 0.65rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .player-input {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  /* Smaller table text */
+  .leaderboard-table {
+    font-size: 0.8rem;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 0.5rem 0.5rem;
+  }
+
+  /* Compact pagination */
+  .pagination-controls {
+    padding: 0 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .pagination-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  /* Navigation adjustments */
+  .nav-logo {
+    font-size: 1.25rem;
+  }
+
+  .nav-link {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  /* Event cards compact */
+  .event-card {
+    padding: 0.75rem 0.85rem 0.9rem;
+  }
+
+  .event-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+}

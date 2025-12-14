@@ -1,6 +1,7 @@
 import { useState } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
+import PageHeader from "./components/PageHeader";
 
 function PlayerInfo() {
     const [name, setName] = useState("");
@@ -13,10 +14,10 @@ function PlayerInfo() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <h1 className="player-title">Mario Kart Lounge Stats</h1>
-                <p className="player-subtitle">
-                    Look up a player by name and see their recent event history.
-                </p>
+                <PageHeader 
+                    title="Mario Kart Lounge Stats" 
+                    subtitle="Look up a player by name and see their stats!" 
+                />
 
                 <div className="player-form">
                     <input
