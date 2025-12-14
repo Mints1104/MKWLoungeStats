@@ -22,6 +22,7 @@ function Leaderboard() {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [sortBy, setSortBy] = useState("Mmr");
+    const [filtersVisible, setFiltersVisible] = useState(true);
     const requestRef = useRef(null);
 
     // Debounced search handler
@@ -112,8 +113,21 @@ function Leaderboard() {
                     subtitle="Top players ranked by current MMR, max MMR, and events played." 
                 />
 
+                {/* Filter Toggle Button (Mobile) */}
+                <button 
+                    className="filter-toggle-btn"
+                    onClick={() => setFiltersVisible(!filtersVisible)}
+                    aria-expanded={filtersVisible}
+                    aria-controls="leaderboard-filters"
+                >
+                    {filtersVisible ? '▲ Hide Filters' : '▼ Show Filters'}
+                </button>
+
                 {/* Filters */}
-                <div className="leaderboard-filters">
+                <div 
+                    id="leaderboard-filters"
+                    className={`leaderboard-filters ${filtersVisible ? 'filters-visible' : 'filters-hidden'}`}
+                >
                     <div className="filter-row">
                         <div className="filter-group">
                             <label htmlFor="search">Search Player</label>

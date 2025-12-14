@@ -244,7 +244,7 @@ function PlayerComparison() {
                                     <YAxis
                                         stroke="#9ca3af"
                                         label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                                        domain={["dataMin - 100", "dataMax + 100"]}
+                                        domain={["dataMin - 50", "dataMax + 50"]}
                                     />
                                     <Tooltip
                                         contentStyle={{
@@ -274,10 +274,11 @@ function PlayerComparison() {
                                             type="monotone"
                                             dataKey={player.name}
                                             stroke={PLAYER_COLORS[index]}
-                                            strokeWidth={2}
+                                            strokeWidth={2.5}
                                             strokeDasharray={PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length]}
-                                            dot={{ fill: PLAYER_COLORS[index], r: 2 }}
-                                            activeDot={{ r: 4 }}
+                                            strokeLinecap="round"
+                                            dot={false}
+                                            activeDot={{ r: 5, strokeWidth: 0 }}
                                         />
                                     ))}
                                 </LineChart>
