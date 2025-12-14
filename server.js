@@ -2,6 +2,18 @@ const express = require("express");
 const app = express();
 const axios = require("axios");
 
+// CORS configuration for Vercel deployment
+const cors = require("cors");
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL || "*"
+        : "*",
+    credentials: true,
+  })
+);
+
 // Simple in-memory cache with TTL to reduce repeated upstream calls
 const cacheStore = new Map();
 const DEFAULT_TTL_MS = 60 * 1000; // 1 minute
@@ -215,3 +227,6 @@ app.get("/api/leaderboard", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }
 });
+
+// Export app for Vercel serverless function
+module.exports = app;
