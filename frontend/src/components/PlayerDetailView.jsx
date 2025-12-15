@@ -25,6 +25,7 @@ import EventCard from "./EventCard";
 function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     const [eventFilter, setEventFilter] = useState("all");
     const [eventLimit, setEventLimit] = useState(10);
+    const [eventInputValue, setEventInputValue] = useState("10");
     const [scoreFilter, setScoreFilter] = useState("all");
 
     // Derived stats for 12p / 24p events
@@ -246,24 +247,26 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 type="number"
                                 min={1}
                                 max={100}
-                                value={eventLimit}
+                                value={eventInputValue}
                                 onChange={(e) => {
                                     const value = e.target.value;
-                                    // Allow empty input while typing
-                                    if (value === '') {
-                                        setEventLimit('');
-                                        return;
-                                    }
+                                    setEventInputValue(value);
+                                    
+                                    // Only update the actual limit if valid
                                     const numValue = Number(value);
-                                    // Only update if it's a valid number within range
                                     if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= 100) {
                                         setEventLimit(numValue);
                                     }
                                 }}
                                 onBlur={(e) => {
-                                    // If empty on blur, reset to 1
-                                    if (e.target.value === '' || Number(e.target.value) < 1) {
-                                        setEventLimit(1);
+                                    const value = e.target.value;
+                                    // If empty or invalid on blur, reset to current limit
+                                    if (value === '' || Number(value) < 1) {
+                                        setEventInputValue(String(eventLimit));
+                                    } else {
+                                        const numValue = Math.min(Math.max(Number(value), 1), 100);
+                                        setEventLimit(numValue);
+                                        setEventInputValue(String(numValue));
                                     }
                                 }}
                             />
