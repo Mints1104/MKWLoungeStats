@@ -35,12 +35,13 @@ class ErrorBoundary extends React.Component {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          backgroundColor: '#0f172a'
         }}>
-          <h2 style={{ color: '#e74c3c', marginBottom: '1rem' }}>
+          <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>
             Something went wrong
           </h2>
-          <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+          <p style={{ color: '#e5e7eb', marginBottom: '1.5rem' }}>
             We encountered an unexpected error. Please try refreshing the page.
           </p>
           <button
@@ -60,16 +61,18 @@ class ErrorBoundary extends React.Component {
           
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <details style={{ marginTop: '2rem', textAlign: 'left', maxWidth: '600px' }}>
-              <summary style={{ cursor: 'pointer', color: '#666' }}>
+              <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>
                 Error Details (Development Only)
               </summary>
               <pre style={{
                 marginTop: '1rem',
                 padding: '1rem',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: '#1e293b',
+                color: '#e5e7eb',
                 borderRadius: '4px',
                 overflow: 'auto',
-                fontSize: '0.875rem'
+                fontSize: '0.875rem',
+                border: '1px solid #334155'
               }}>
                 {this.state.error.toString()}
                 {this.state.errorInfo && this.state.errorInfo.componentStack}

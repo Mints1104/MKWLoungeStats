@@ -223,15 +223,15 @@ function Leaderboard() {
                                             <button
                                                 type="button"
                                                 className="leaderboard-name"
-                                                style={{ color: getRankColor(player.mmrRank.name) }}
+                                               
                                                 onClick={() => takeToProfile(player.name)}
                                                 aria-label={`View profile for ${player.name}`}
                                             >
                                                 {player.name}
                                             </button>
                                         </td>
-                                        <td className="mmr-cell">{player.mmr}</td>
-                                        <td>{player.maxMmr}</td>
+                                        <td className="mmr-cell" style={{color: getRankColor(player.mmrRank.name)}}>{player.mmr}</td>
+                                        <td style={{color: getRankColor(player.maxMmrRank.name)}}>{player.maxMmr}</td>
                                         <td
                                             className={
                                                 player.winRate >= 0.5 ? "positive" : "negative"
