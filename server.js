@@ -4,6 +4,7 @@ const axios = require("axios");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
+const logger = require("./server/utils/logger");
 
 // Trust Vercel's proxy to correctly identify client IP
 app.set("trust proxy", 1);
@@ -76,6 +77,12 @@ const limiter = rateLimit({
 // Apply rate limiting to all requests
 app.use(limiter);
 
+// Request logging (development only)
+app.use((req, res, next) => {
+  logger.request(req);
+  next();
+});
+
 // Security constants
 const MAX_CACHE_SIZE = 1000;
 const MAX_PLAYER_NAME_LENGTH = 50;
@@ -113,7 +120,10 @@ const enforceCacheLimit = () => {
       0,
       cacheStore.size - MAX_CACHE_SIZE
     );
-    keysToDelete.forEach((key) => cacheStore.delete(key));
+    keysToDelete.forEach((key) => {
+      cacheStore.delete(key);
+      logger.cache("EVICT", key);
+    });
   }
 };
 
@@ -135,15 +145,21 @@ const getCacheKey = (prefix, params = {}) => {
 const setCache = (key, value, ttl = DEFAULT_TTL_MS) => {
   enforceCacheLimit();
   cacheStore.set(key, { value, expiresAt: Date.now() + ttl });
+  logger.cache("SET", key);
 };
 
 const getCache = (key) => {
   const entry = cacheStore.get(key);
-  if (!entry) return null;
-  if (entry.expiresAt < Date.now()) {
-    cacheStore.delete(key);
+  if (!entry) {
+    logger.cache("MISS", key);
     return null;
   }
+  if (entry.expiresAt < Date.now()) {
+    cacheStore.delete(key);
+    logger.cache("EXPIRED", key);
+    return null;
+  }
+  logger.cache("HIT", key);
   return entry.value;
 };
 
@@ -188,17 +204,20 @@ app.get("/api/player/details/:name", async (req, res) => {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       if (status === 404) {
+        logger.warn(`Player not found: ${req.params.name}`);
         return res.status(404).json({
           error: `No lounge records found for "${req.params.name}"`,
         });
       }
       if (status) {
+        logger.error(`Player details API error (${status}):`, error.message);
         return res.status(status).json({
           error:
             error.response?.data?.error || "Failed to retrieve player details",
         });
       }
     }
+    logger.error("Failed to fetch player details:", error.message);
     res.status(500).json({ error: "Failed to fetch player details" });
   }
 });
@@ -230,9 +249,11 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       setCache(cacheKey, player, DEFAULT_TTL_MS);
       res.json(player);
     } else {
+      logger.warn(`Player not found in leaderboard: ${playerName}`);
       res.status(404).json({ error: "Player not found" });
     }
   } catch (error) {
+    logger.error("Failed to fetch leaderboard search:", error.message);
     res.status(500).json({ error: "Failed to fetch data" });
   }
 });
@@ -293,6 +314,7 @@ app.get("/api/players/compare", async (req, res) => {
     setCache(cacheKey, results, DEFAULT_TTL_MS);
     res.json(results);
   } catch (error) {
+    logger.error("Failed to compare players:", error.message);
     res.status(500).json({ error: "Failed to fetch comparison data" });
   }
 });
@@ -352,6 +374,7 @@ app.get("/api/leaderboard", async (req, res) => {
     res.json(response);
   } catch (error) {
     invalidateCache((key) => key.startsWith("leaderboard"));
+    logger.error("Failed to fetch main leaderboard:", error.message);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }
 });
@@ -363,6 +386,6 @@ module.exports = app;
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on http://localhost:${PORT}`);
   });
 }

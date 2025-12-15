@@ -2,36 +2,86 @@
  * Centralized API service for Mario Kart Lounge endpoints
  * Handles all HTTP requests with consistent error handling and response parsing
  */
+import logger from "../utils/logger.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 /**
- * Base fetch wrapper with error handling and retry logic
+ * Combine multiple abort signals
  */
-async function fetchApi(url, options = {}, retries = 2) {
+function combineAbortSignals(signals) {
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+
+/**
+ * Base fetch wrapper with error handling, retry logic, and timeout
+ */
+async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
   let lastError;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const timeoutController = new AbortController();
+    let timeoutId;
+
     try {
-      const response = await fetch(url, options);
+      // Create timeout controller
+      timeoutId = setTimeout(() => timeoutController.abort(), timeout);
+
+      // Combine timeout with any existing signal
+      const combinedSignal = options.signal
+        ? combineAbortSignals([options.signal, timeoutController.signal])
+        : timeoutController.signal;
+
+      // Clear timeout if request is aborted
+      combinedSignal.addEventListener("abort", () => clearTimeout(timeoutId), {
+        once: true,
+      });
+
+      const response = await fetch(url, { ...options, signal: combinedSignal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
+        const error = new Error(
           errorData.error || `HTTP ${response.status}: ${response.statusText}`
         );
+        error.status = response.status;
+        throw error;
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
+      clearTimeout(timeoutId);
+
+      // Handle AbortError
       if (error.name === "AbortError") {
-        throw error; // Let abort errors propagate for cleanup
+        // If timeout controller aborted, it was a timeout
+        if (timeoutController.signal.aborted) {
+          logger.warn("Request timeout:", url);
+          throw new Error("Request timeout - please try again");
+        }
+        // Otherwise it's a user abort (navigation, etc.) - just rethrow silently
+        throw error;
       }
 
       lastError = error;
+      logger.warn(
+        `API request failed (attempt ${attempt + 1}/${retries + 1}):`,
+        url,
+        error.message
+      );
 
       // Don't retry on 4xx errors (client errors)
-      if (error.message.includes("HTTP 4")) {
+      if (error.status && error.status >= 400 && error.status < 500) {
         throw error;
       }
 
@@ -63,6 +113,7 @@ export const loungeApi = {
     }
 
     const encodedName = encodeURIComponent(name.trim());
+    logger.api("GET", `/player/details/${encodedName}`);
     const url = `${API_BASE}/player/details/${encodedName}?season=${season}`;
 
     return fetchApi(url, { signal });
@@ -83,7 +134,8 @@ export const loungeApi = {
       throw new Error("At least 2 valid player names required");
     }
 
-    const namesParam = encodeURIComponent(validNames.join(","));
+    logger.api("GET", `/players/compare?names=${validNames.join(",")}`);
+    const namesParam = validNames.map((n) => encodeURIComponent(n)).join(",");
     const url = `${API_BASE}/players/compare?names=${namesParam}`;
 
     return fetchApi(url, { signal });
@@ -129,6 +181,7 @@ export const loungeApi = {
       queryParams.set("search", search.trim());
     }
 
+    logger.api("GET", `/leaderboard?${queryParams}`);
     const url = `${API_BASE}/leaderboard?${queryParams}`;
 
     return fetchApi(url, { signal });

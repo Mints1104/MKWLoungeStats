@@ -1,15 +1,15 @@
-import { useState } from "react";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from "recharts";
+import { useState, lazy, Suspense } from "react";
 import { getRankColor, getNextRank } from "./utils/playerUtils";
+
+// Lazy load chart components
+const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
+const Line = lazy(() => import('recharts').then(m => ({ default: m.Line })));
+const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })));
+const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })));
+const Legend = lazy(() => import('recharts').then(m => ({ default: m.Legend })));
+const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
 import { loungeApi } from "./api/loungeApi";
 import { calculateComparisonMmrData } from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
@@ -244,6 +244,7 @@ function PlayerComparison() {
                             role="img"
                             aria-label="Line chart comparing player MMR changes over time with unique dash patterns for each player"
                         >
+                            <Suspense fallback={<div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
                             <ResponsiveContainer width="100%" height={400}>
                                 <LineChart
                                     data={mmrHistoryData}
@@ -297,6 +298,7 @@ function PlayerComparison() {
                                     ))}
                                 </LineChart>
                             </ResponsiveContainer>
+                            </Suspense>
                         </div>
                         <p className="chart-summary" aria-live="polite">{chartSummary}</p>
                     </div>

@@ -1,22 +1,22 @@
-import { useMemo, useState } from "react";
-import {
-    LineChart,
-    Line,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from "recharts";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { getNextRank, getRankForMmrValue, getRankColor } from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
 import { calculateMmrHistoryData, calculateScoreDistribution } from "../utils/chartUtils";
 import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
 import EventCard from "./EventCard";
+
+// Lazy load chart components
+const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
+const BarChart = lazy(() => import('recharts').then(m => ({ default: m.BarChart })));
+const Bar = lazy(() => import('recharts').then(m => ({ default: m.Bar })));
+const Line = lazy(() => import('recharts').then(m => ({ default: m.Line })));
+const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })));
+const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })));
+const Legend = lazy(() => import('recharts').then(m => ({ default: m.Legend })));
+const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
 
 /**
  * Shared player detail view component used by both PlayerInfo and PlayerProfile pages
@@ -184,6 +184,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
             {/* MMR History Chart */}
             <div className="player-summary">
                 <h3>MMR History</h3>
+                <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart
                         data={mmrHistoryData}
@@ -231,6 +232,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         />
                     </LineChart>
                 </ResponsiveContainer>
+                </Suspense>
             </div>
 
             {/* Score Distribution Chart */}
@@ -247,6 +249,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         ]}
                     />
                 </div>
+                <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart
                         data={scoreDistributionData}
@@ -274,6 +277,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         <Bar dataKey="count" fill="#22c55e" name="Events" />
                     </BarChart>
                 </ResponsiveContainer>
+                </Suspense>
             </div>
 
             <div className="player-events-card">
