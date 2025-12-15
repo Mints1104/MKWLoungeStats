@@ -45,13 +45,56 @@ const enforceCacheLimit = () => {
 
 // CORS configuration for Vercel deployment
 const cors = require("cors");
+
+// Define allowed origins for production (using Set for O(1) lookup)
+const allowedOrigins = new Set(
+  ["https://mkw-lounge-stats.vercel.app", process.env.FRONTEND_URL].filter(
+    Boolean
+  )
+);
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? process.env.FRONTEND_URL || "*"
-        : "*",
+    origin(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      try {
+        const { hostname } = new URL(origin);
+
+        // In development, allow localhost and 127.0.0.1
+        if (
+          process.env.NODE_ENV !== "production" &&
+          (hostname === "localhost" || hostname === "127.0.0.1")
+        ) {
+          return callback(null, true);
+        }
+
+        // Allow Vercel preview deployments (e.g., mkw-lounge-stats-git-branch.vercel.app)
+        if (
+          hostname.endsWith(".vercel.app") &&
+          (hostname === "mkw-lounge-stats.vercel.app" ||
+            hostname.endsWith(".mkw-lounge-stats.vercel.app"))
+        ) {
+          return callback(null, true);
+        }
+
+        // Check if origin is in allowed list
+        if (allowedOrigins.has(origin)) {
+          return callback(null, true);
+        }
+
+        // Silently reject (no error throwing)
+        return callback(null, false);
+      } catch {
+        // Invalid URL format - silently reject
+        return callback(null, false);
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400, // Cache preflight requests for 24 hours
   })
 );
 
