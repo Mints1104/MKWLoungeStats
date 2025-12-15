@@ -136,7 +136,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                             href={`https://lounge.mkcentral.com/mkworld/TableDetails/${highestScoreData.changeId}`}
                             target="_blank"
                             rel="noreferrer"
-                            style={{ color: "#60a5fa", textDecoration: "underline" }}
+                            style={{ color: "#60a5fa"}}
                         >
                             {highestScoreData.score}
                         </a>
