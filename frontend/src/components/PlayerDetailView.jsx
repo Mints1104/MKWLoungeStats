@@ -248,9 +248,22 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 max={100}
                                 value={eventLimit}
                                 onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    if (!Number.isNaN(value) && value >= 1 && value <= 100) {
-                                        setEventLimit(value);
+                                    const value = e.target.value;
+                                    // Allow empty input while typing
+                                    if (value === '') {
+                                        setEventLimit('');
+                                        return;
+                                    }
+                                    const numValue = Number(value);
+                                    // Only update if it's a valid number within range
+                                    if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                        setEventLimit(numValue);
+                                    }
+                                }}
+                                onBlur={(e) => {
+                                    // If empty on blur, reset to 1
+                                    if (e.target.value === '' || Number(e.target.value) < 1) {
+                                        setEventLimit(1);
                                     }
                                 }}
                             />
