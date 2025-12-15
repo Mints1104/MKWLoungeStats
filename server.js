@@ -106,7 +106,9 @@ app.get("/api/player/details/:name", async (req, res) => {
 
     const playerName = validation.sanitized;
     const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
-    const full_url = `${base_url}${playerName}&game=mkworld&season=1`;
+    const full_url = `${base_url}${encodeURIComponent(
+      playerName
+    )}&game=mkworld&season=1`;
 
     const cacheKey = getCacheKey("player-details", { name: playerName });
     const cached = getCache(cacheKey);
