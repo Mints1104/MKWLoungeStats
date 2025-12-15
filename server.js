@@ -178,7 +178,6 @@ app.get("/api/player/details/:name", async (req, res) => {
       return res.json(cached);
     }
 
-    console.log(`Fetching data from ${full_url}`);
     const { data } = await axios.get(full_url);
 
     setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
@@ -206,17 +205,21 @@ app.get("/api/player/details/:name", async (req, res) => {
 
 app.get("/api/player/leaderboard/:name", async (req, res) => {
   try {
-    console.log("test");
     const validation = validatePlayerName(req.params.name);
     if (!validation.valid) {
       return res.status(400).json({ error: validation.error });
     }
 
     const playerName = validation.sanitized;
+    const cacheKey = getCacheKey("player-leaderboard", { name: playerName });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const base_url =
       "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1&search=";
     const full_url = `${base_url}${encodeURIComponent(playerName)}`;
-    console.log(`Fetching data from ${full_url}`);
     const { data } = await axios.get(full_url);
 
     const player = data.data.find(
@@ -224,15 +227,12 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
     );
 
     if (player) {
-      console.log(
-        `The player ID of ${playerName} is ${player.id} and their MMR is ${player.mmr}`
-      );
+      setCache(cacheKey, player, DEFAULT_TTL_MS);
       res.json(player);
     } else {
       res.status(404).json({ error: "Player not found" });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Failed to fetch data" });
   }
 });
@@ -260,32 +260,39 @@ app.get("/api/players/compare", async (req, res) => {
       validatedNames.push(validation.sanitized);
     }
 
+    const cacheKey = getCacheKey("players-compare", {
+      names: validatedNames.sort().join(","),
+    });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const base_url = "https://lounge.mkcentral.com/api/player/details";
 
-    const promises = validatedNames.map(
-      (name) => (name) =>
-        axios
-          .get(base_url, {
-            params: {
-              name: name,
-              game: "mkworld",
-              season: 1,
-            },
-          })
-          .then((response) => response.data)
-          .catch((err) => ({
-            error: true,
+    const promises = validatedNames.map((name) =>
+      axios
+        .get(base_url, {
+          params: {
             name: name,
-            message:
-              err.response?.status === 404 ? "Player not found" : err.message,
-          }))
+            game: "mkworld",
+            season: 1,
+          },
+        })
+        .then((response) => response.data)
+        .catch((err) => ({
+          error: true,
+          name: name,
+          message:
+            err.response?.status === 404 ? "Player not found" : err.message,
+        }))
     );
 
     const results = await Promise.all(promises);
 
+    setCache(cacheKey, results, DEFAULT_TTL_MS);
     res.json(results);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Failed to fetch comparison data" });
   }
 });
@@ -330,15 +337,7 @@ app.get("/api/leaderboard", async (req, res) => {
       return res.json(cached);
     }
 
-    console.log(`Fetching leaderboard from URL:`, base_url);
-    console.log(`With params:`, params);
-
     const axiosResponse = await axios.get(base_url, { params });
-
-    console.log(`Response status:`, axiosResponse.status);
-    console.log(`Response headers:`, axiosResponse.headers["content-type"]);
-    console.log(`Response data type:`, typeof axiosResponse.data);
-    console.log(`Response data keys:`, Object.keys(axiosResponse.data || {}));
 
     const data = axiosResponse.data;
 
@@ -349,16 +348,9 @@ app.get("/api/leaderboard", async (req, res) => {
       totalPlayers: data.totalPlayers || 0,
     };
 
-    console.log(
-      `Sending response with ${response.data.length} players, totalCount: ${response.totalCount}`
-    );
-
     setCache(cacheKey, response);
     res.json(response);
   } catch (error) {
-    console.error("Leaderboard error:", error.message);
-    console.error("Error response status:", error.response?.status);
-    console.error("Error response data:", error.response?.data);
     invalidateCache((key) => key.startsWith("leaderboard"));
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }

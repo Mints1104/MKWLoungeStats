@@ -105,16 +105,22 @@ function PlayerComparison() {
                 <div className="comparison-inputs">
                     {playerNames.map((name, index) => (
                         <div key={index} className="comparison-input-row">
+                            <label htmlFor={`player-${index}`} className="sr-only">
+                                Player {index + 1} name
+                            </label>
                             <input
+                                id={`player-${index}`}
                                 className="player-input"
                                 value={name}
                                 onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                                 placeholder={`Player ${index + 1} name`}
+                                aria-label={`Player ${index + 1} name input`}
                             />
                             {playerNames.length > 2 && (
                                 <button
                                     className="remove-player-btn"
                                     onClick={() => removePlayerField(index)}
+                                    aria-label={`Remove player ${index + 1}`}
                                     title="Remove player"
                                 >
                                     ✕
@@ -125,11 +131,19 @@ function PlayerComparison() {
 
                     <div className="comparison-actions">
                         {playerNames.length < 4 && (
-                            <button className="add-player-btn" onClick={addPlayerField}>
+                            <button 
+                                className="add-player-btn" 
+                                onClick={addPlayerField}
+                                aria-label="Add another player to comparison"
+                            >
                                 + Add Player
                             </button>
                         )}
-                        <button className="player-button" onClick={comparePlayers}>
+                        <button 
+                            className="player-button" 
+                            onClick={comparePlayers}
+                            aria-label="Compare selected players"
+                        >
                             Compare Players
                         </button>
                     </div>

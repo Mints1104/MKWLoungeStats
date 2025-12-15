@@ -99,6 +99,13 @@ function Leaderboard() {
         navigate(`/player/${encodeURIComponent(playerName)}`);
     };
 
+    const handleRowKeyPress = (e, playerName) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            takeToProfile(playerName);
+        }
+    };
+
     const goToPrevPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
@@ -223,7 +230,6 @@ function Leaderboard() {
                                             <button
                                                 type="button"
                                                 className="leaderboard-name"
-                                               
                                                 onClick={() => takeToProfile(player.name)}
                                                 aria-label={`View profile for ${player.name}`}
                                             >

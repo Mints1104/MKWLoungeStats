@@ -4,27 +4,30 @@ function Navigation() {
     const location = useLocation();
 
     return (
-        <nav className="navigation">
+        <nav className="navigation" aria-label="Main navigation">
             <div className="nav-container">
-                <Link to="/" className="nav-logo">
+                <Link to="/" className="nav-logo" aria-label="MKW Lounge Stats - Home">
                     MKW Lounge Stats
                 </Link>
-                <div className="nav-links">
+                <div className="nav-links" role="list">
                     <Link 
                         to="/" 
                         className={`nav-link ${location.pathname === "/" ? "nav-link-active" : ""}`}
+                        aria-current={location.pathname === "/" ? "page" : undefined}
                     >
                         Player Stats
                     </Link>
                     <Link 
                         to="/compare" 
                         className={`nav-link ${location.pathname === "/compare" ? "nav-link-active" : ""}`}
+                        aria-current={location.pathname === "/compare" ? "page" : undefined}
                     >
                         Compare
                     </Link>
                     <Link 
                         to="/leaderboard" 
                         className={`nav-link ${location.pathname === "/leaderboard" ? "nav-link-active" : ""}`}
+                        aria-current={location.pathname === "/leaderboard" ? "page" : undefined}
                     >
                         Leaderboard
                     </Link>

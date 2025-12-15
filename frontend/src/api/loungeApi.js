@@ -6,26 +6,45 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 /**
- * Base fetch wrapper with error handling
+ * Base fetch wrapper with error handling and retry logic
  */
-async function fetchApi(url, options = {}) {
-  try {
-    const response = await fetch(url, options);
+async function fetchApi(url, options = {}, retries = 2) {
+  let lastError;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `HTTP ${response.status}: ${response.statusText}`
-      );
-    }
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
 
-    return await response.json();
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw error; // Let abort errors propagate for cleanup
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw error; // Let abort errors propagate for cleanup
+      }
+
+      lastError = error;
+
+      // Don't retry on 4xx errors (client errors)
+      if (error.message.includes("HTTP 4")) {
+        throw error;
+      }
+
+      // If not the last attempt, wait before retrying
+      if (attempt < retries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 500 * (attempt + 1))
+        );
+      }
     }
-    throw new Error(error.message || "Network request failed");
   }
+
+  throw new Error(lastError?.message || "Network request failed");
 }
 
 /**
@@ -91,8 +110,11 @@ export const loungeApi = {
       search,
     } = params;
 
+    // Convert page to skip for backend
+    const skip = (page - 1) * pageSize;
+
     const queryParams = new URLSearchParams({
-      page: String(page),
+      skip: String(skip),
       pageSize: String(pageSize),
       sortBy,
     });
