@@ -124,6 +124,29 @@
   margin-top: 1.6rem;
 }
 
+.recent-searches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.recent-chip {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.recent-chip:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
 @media (min-width: 600px) {
   .player-form {
     flex-direction: row;
