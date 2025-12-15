@@ -57,7 +57,13 @@ function PlayerInfo() {
                     subtitle="Look up a player by name and see their stats!" 
                 />
 
-                <div className="player-form">
+                <form
+                    className="player-form"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        getPlayerInfo();
+                    }}
+                >
                     <input
                         className="player-input"
                         value={name}
@@ -65,13 +71,13 @@ function PlayerInfo() {
                         placeholder="Enter a player name"
                     />
                     <button
+                        type="submit"
                         className="player-button"
-                        onClick={getPlayerInfo}
                         disabled={!name.trim()}
                     >
                         Get Player Info
                     </button>
-                </div>
+                </form>
 
                 {recent.length > 0 && (
                     <div className="recent-searches" aria-label="Recent searches">
