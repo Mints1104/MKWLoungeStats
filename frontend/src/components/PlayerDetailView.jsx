@@ -281,6 +281,14 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                             label="Win rate"
                             value={recentWinRate != null ? `${(recentWinRate * 100).toFixed(1)}%` : "N/A"}
                         />
+
+                        <StatCard
+                            label="MMR delta"
+                            value={eventsToShow.length > 0 ? (() => {
+                                const delta = eventsToShow[0].newMmr - eventsToShow.at(-1).newMmr;
+                                return delta > 0 ? `+${delta}` : delta;
+                            })() : "N/A"}
+                        />
                     </div>
                 )}
             </div>

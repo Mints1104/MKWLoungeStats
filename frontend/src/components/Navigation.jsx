@@ -7,7 +7,7 @@ function Navigation() {
         <nav className="navigation">
             <div className="nav-container">
                 <Link to="/" className="nav-logo">
-                    🏁 MK Lounge Stats
+                    MKW Lounge Stats
                 </Link>
                 <div className="nav-links">
                     <Link 
