@@ -92,6 +92,26 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         return calculateScoreDistribution(playerDetails?.mmrChanges, scoreFilter);
     }, [playerDetails?.mmrChanges, scoreFilter]);
 
+    // Find highest score and its table
+    const highestScoreData = useMemo(() => {
+        if (!playerDetails?.mmrChanges?.length) return null;
+        
+        const eventsWithScores = playerDetails.mmrChanges.filter(
+            (e) => typeof e.score === "number" && !Number.isNaN(e.score)
+        );
+        
+        if (!eventsWithScores.length) return null;
+        
+        const highestEvent = eventsWithScores.reduce((max, e) => 
+            e.score > max.score ? e : max
+        );
+        
+        return {
+            score: highestEvent.score,
+            changeId: highestEvent.changeId,
+        };
+    }, [playerDetails?.mmrChanges]);
+
     if (!playerDetails) return null;
 
     return (
@@ -109,6 +129,19 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                 <p>{getNextRank(playerDetails.mmr)}</p>
                 <p>Current MMR: {playerDetails.mmr}</p>
                 <p>Highest MMR: {playerDetails.maxMmr}</p>
+                <p>
+                    Highest Score:{" "}
+                    {highestScoreData ? (
+                        <a
+                            href={`https://lounge.mkcentral.com/mkworld/TableDetails/${highestScoreData.changeId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#60a5fa", textDecoration: "underline" }}
+                        >
+                            {highestScoreData.score}
+                        </a>
+                    ) : "N/A"}
+                </p>
                 <p>
                     Average Score:{" "}
                     {playerDetails.averageScore != null
