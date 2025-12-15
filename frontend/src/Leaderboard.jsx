@@ -21,7 +21,7 @@ function Leaderboard() {
     const [maxMmr, setMaxMmr] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [sortBy, setSortBy] = useState("Mmr");
+    const [sortBy, setSortBy] = useState("mmr");
     const [filtersVisible, setFiltersVisible] = useState(true);
     const requestRef = useRef(null);
 
@@ -180,10 +180,9 @@ function Leaderboard() {
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                             >
-                                <option value="Mmr">MMR</option>
-                                
-                                <option value="EventsPlayed">Events Played</option>
-                                <option value="MaxMmr">Max MMR</option>
+                                <option value="mmr">MMR</option>
+                                <option value="eventsPlayed">Events Played</option>
+                                <option value="maxMmr">Max MMR</option>
                             </select>
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { loungeApi } from "../api/loungeApi";
 
 /**
@@ -57,6 +57,15 @@ function usePlayerDetails() {
       }
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (inFlightRef.current) {
+        inFlightRef.current.abort();
+        inFlightRef.current = null;
+      }
+    };
   }, []);
 
   return {

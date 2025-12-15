@@ -57,8 +57,26 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
         throw error;
       }
 
-      const data = await response.json();
-      return data;
+      const contentType =
+        response.headers.get("content-type")?.toLowerCase() || "";
+      const contentLength = response.headers.get("content-length");
+      const isJson = contentType.includes("application/json");
+      const isEmptyBody =
+        response.status === 204 ||
+        response.status === 205 ||
+        contentLength === "0";
+
+      if (isEmptyBody) {
+        return null;
+      }
+
+      if (isJson) {
+        return await response.json();
+      }
+
+      // Fallback: return raw text when server doesn't send JSON
+      const text = await response.text();
+      return text || null;
     } catch (error) {
       clearTimeout(timeoutId);
 
