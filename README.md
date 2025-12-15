@@ -59,7 +59,7 @@ A full-stack web application for viewing and analyzing Mario Kart World player s
 
 ```bash
 git clone <repository-url>
-cd Js_practice
+cd MKWorldLoungeStats
 ```
 
 2. Install backend dependencies:
