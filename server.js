@@ -1,51 +1,14 @@
 const express = require("express");
 const app = express();
 const axios = require("axios");
-
-// Security constants
-const MAX_CACHE_SIZE = 1000;
-const MAX_PLAYER_NAME_LENGTH = 50;
-const MAX_SEARCH_LENGTH = 100;
-
-// Input validation and sanitization
-const validatePlayerName = (name) => {
-  if (!name || typeof name !== "string") {
-    return { valid: false, error: "Player name is required" };
-  }
-
-  const trimmed = name.trim();
-
-  if (trimmed.length === 0) {
-    return { valid: false, error: "Player name cannot be empty" };
-  }
-
-  if (trimmed.length > MAX_PLAYER_NAME_LENGTH) {
-    return {
-      valid: false,
-      error: `Player name cannot exceed ${MAX_PLAYER_NAME_LENGTH} characters`,
-    };
-  }
-
-  // Remove control characters that could be used for injection
-  const sanitized = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
-
-  return { valid: true, sanitized };
-};
-
-const enforceCacheLimit = () => {
-  if (cacheStore.size > MAX_CACHE_SIZE) {
-    // Remove oldest entries (simple FIFO)
-    const keysToDelete = Array.from(cacheStore.keys()).slice(
-      0,
-      cacheStore.size - MAX_CACHE_SIZE
-    );
-    keysToDelete.forEach((key) => cacheStore.delete(key));
-  }
-};
-
-// CORS configuration for Vercel deployment
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 
+// Trust Vercel's proxy to correctly identify client IP
+app.set("trust proxy", 1);
+
+// CORS configuration for Vercel deployment
 // Define allowed origins for production (using Set for O(1) lookup)
 const allowedOrigins = new Set(
   ["https://mkw-lounge-stats.vercel.app", process.env.FRONTEND_URL].filter(
@@ -97,6 +60,62 @@ app.use(
     maxAge: 86400, // Cache preflight requests for 24 hours
   })
 );
+
+// Set security headers
+app.use(helmet());
+
+// Rate limiting configuration
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: { error: "Too many requests, please try again later." },
+});
+
+// Apply rate limiting to all requests
+app.use(limiter);
+
+// Security constants
+const MAX_CACHE_SIZE = 1000;
+const MAX_PLAYER_NAME_LENGTH = 50;
+const MAX_SEARCH_LENGTH = 100;
+
+// Input validation and sanitization
+const validatePlayerName = (name) => {
+  if (!name || typeof name !== "string") {
+    return { valid: false, error: "Player name is required" };
+  }
+
+  const trimmed = name.trim();
+
+  if (trimmed.length === 0) {
+    return { valid: false, error: "Player name cannot be empty" };
+  }
+
+  if (trimmed.length > MAX_PLAYER_NAME_LENGTH) {
+    return {
+      valid: false,
+      error: `Player name cannot exceed ${MAX_PLAYER_NAME_LENGTH} characters`,
+    };
+  }
+
+  // Remove control characters that could be used for injection
+  const sanitized = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
+
+  return { valid: true, sanitized };
+};
+
+const enforceCacheLimit = () => {
+  if (cacheStore.size > MAX_CACHE_SIZE) {
+    // Remove oldest entries (simple FIFO)
+    const keysToDelete = Array.from(cacheStore.keys()).slice(
+      0,
+      cacheStore.size - MAX_CACHE_SIZE
+    );
+    keysToDelete.forEach((key) => cacheStore.delete(key));
+  }
+};
 
 // Simple in-memory cache with TTL to reduce repeated upstream calls
 const cacheStore = new Map();
