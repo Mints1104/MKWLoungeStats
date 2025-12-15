@@ -9,22 +9,22 @@ import {
 describe("playerUtils", () => {
   describe("getRankForMmrValue", () => {
     it("should return rank objects for MMR values", () => {
-      expect(getRankForMmrValue(15000).name).toBe("Grandmaster");
+      expect(getRankForMmrValue(14000).name).toBe("Grandmaster");
       expect(getRankForMmrValue(13000).name).toBe("Master");
       expect(getRankForMmrValue(11000).name).toBe("Diamond");
       expect(getRankForMmrValue(9000).name).toBe("Sapphire");
       expect(getRankForMmrValue(7000).name).toBe("Platinum");
       expect(getRankForMmrValue(5000).name).toBe("Gold");
-      expect(getRankForMmrValue(3000).name).toBe("Silver");
-      expect(getRankForMmrValue(1000).name).toBe("Bronze");
+      expect(getRankForMmrValue(3000).name).toBe("Bronze");
+      expect(getRankForMmrValue(2000).name).toBe("Bronze");
       expect(getRankForMmrValue(0).name).toBe("Iron");
     });
 
     it("should handle edge cases at rank boundaries", () => {
-      expect(getRankForMmrValue(15000).name).toBe("Grandmaster");
-      expect(getRankForMmrValue(14999).name).toBe("Master");
-      expect(getRankForMmrValue(13000).name).toBe("Master");
-      expect(getRankForMmrValue(12999).name).toBe("Diamond");
+      expect(getRankForMmrValue(13500).name).toBe("Grandmaster");
+      expect(getRankForMmrValue(13499).name).toBe("Master");
+      expect(getRankForMmrValue(12500).name).toBe("Master");
+      expect(getRankForMmrValue(12499).name).toBe("Diamond");
     });
   });
 
@@ -50,7 +50,7 @@ describe("playerUtils", () => {
 
   describe("getNextRank", () => {
     it("should return correct next rank message", () => {
-      const result1 = getNextRank(14000);
+      const result1 = getNextRank(13000);
       expect(result1).toContain("Grandmaster");
 
       const result2 = getNextRank(12000);
