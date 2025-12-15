@@ -2,6 +2,47 @@ const express = require("express");
 const app = express();
 const axios = require("axios");
 
+// Security constants
+const MAX_CACHE_SIZE = 1000;
+const MAX_PLAYER_NAME_LENGTH = 50;
+const MAX_SEARCH_LENGTH = 100;
+
+// Input validation and sanitization
+const validatePlayerName = (name) => {
+  if (!name || typeof name !== "string") {
+    return { valid: false, error: "Player name is required" };
+  }
+
+  const trimmed = name.trim();
+
+  if (trimmed.length === 0) {
+    return { valid: false, error: "Player name cannot be empty" };
+  }
+
+  if (trimmed.length > MAX_PLAYER_NAME_LENGTH) {
+    return {
+      valid: false,
+      error: `Player name cannot exceed ${MAX_PLAYER_NAME_LENGTH} characters`,
+    };
+  }
+
+  // Remove control characters that could be used for injection
+  const sanitized = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
+
+  return { valid: true, sanitized };
+};
+
+const enforceCacheLimit = () => {
+  if (cacheStore.size > MAX_CACHE_SIZE) {
+    // Remove oldest entries (simple FIFO)
+    const keysToDelete = Array.from(cacheStore.keys()).slice(
+      0,
+      cacheStore.size - MAX_CACHE_SIZE
+    );
+    keysToDelete.forEach((key) => cacheStore.delete(key));
+  }
+};
+
 // CORS configuration for Vercel deployment
 const cors = require("cors");
 app.use(
@@ -30,6 +71,7 @@ const getCacheKey = (prefix, params = {}) => {
 };
 
 const setCache = (key, value, ttl = DEFAULT_TTL_MS) => {
+  enforceCacheLimit();
   cacheStore.set(key, { value, expiresAt: Date.now() + ttl });
 };
 
@@ -57,7 +99,12 @@ app.use(express.json());
 
 app.get("/api/player/details/:name", async (req, res) => {
   try {
-    const playerName = req.params.name;
+    const validation = validatePlayerName(req.params.name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const playerName = validation.sanitized;
     const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
     const full_url = `${base_url}${playerName}&game=mkworld&season=1`;
 
@@ -96,7 +143,12 @@ app.get("/api/player/details/:name", async (req, res) => {
 app.get("/api/player/leaderboard/:name", async (req, res) => {
   try {
     console.log("test");
-    const playerName = req.params.name;
+    const validation = validatePlayerName(req.params.name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const playerName = validation.sanitized;
     const base_url =
       "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1&search=";
     const full_url = `${base_url}${encodeURIComponent(playerName)}`;
@@ -132,24 +184,37 @@ app.get("/api/players/compare", async (req, res) => {
         .json({ error: "Please provide 1-4 player names separated by commas" });
     }
 
+    // Validate all player names
+    const validatedNames = [];
+    for (const name of names) {
+      const validation = validatePlayerName(name);
+      if (!validation.valid) {
+        return res
+          .status(400)
+          .json({ error: `Invalid player name: ${validation.error}` });
+      }
+      validatedNames.push(validation.sanitized);
+    }
+
     const base_url = "https://lounge.mkcentral.com/api/player/details";
 
-    const promises = names.map((name) =>
-      axios
-        .get(base_url, {
-          params: {
-            name: name.trim(),
-            game: "mkworld",
-            season: 1,
-          },
-        })
-        .then((response) => response.data)
-        .catch((err) => ({
-          error: true,
-          name: name.trim(),
-          message:
-            err.response?.status === 404 ? "Player not found" : err.message,
-        }))
+    const promises = validatedNames.map(
+      (name) => (name) =>
+        axios
+          .get(base_url, {
+            params: {
+              name: name,
+              game: "mkworld",
+              season: 1,
+            },
+          })
+          .then((response) => response.data)
+          .catch((err) => ({
+            error: true,
+            name: name,
+            message:
+              err.response?.status === 404 ? "Player not found" : err.message,
+          }))
     );
 
     const results = await Promise.all(promises);
@@ -184,7 +249,16 @@ app.get("/api/leaderboard", async (req, res) => {
 
     if (minMmr) params.minMmr = parseInt(minMmr);
     if (maxMmr) params.maxMmr = parseInt(maxMmr);
-    if (search) params.search = search;
+    if (search) {
+      // Sanitize search parameter
+      const sanitized = search
+        .trim()
+        .slice(0, MAX_SEARCH_LENGTH)
+        .replace(/[\x00-\x1F\x7F]/g, "");
+      if (sanitized) {
+        params.search = sanitized;
+      }
+    }
 
     const cacheKey = getCacheKey("leaderboard", params);
     const cached = getCache(cacheKey);
