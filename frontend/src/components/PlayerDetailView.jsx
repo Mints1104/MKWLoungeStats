@@ -62,6 +62,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     let recentAvgScore = null;
     let recentBestScore = null;
     let recentWinRate = null;
+    let largestGain = null;
+    let largestLoss = null;
 
     if (eventsToShow.length) {
         const withScores = eventsToShow.filter(
@@ -78,6 +80,11 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
 
         const wins = eventsToShow.filter((e) => (e.mmrDelta ?? 0) > 0).length;
         recentWinRate = wins / eventsToShow.length;
+
+        // Calculate largest gain and loss
+        const deltas = eventsToShow.map(e => e.mmrDelta ?? 0);
+        largestGain = Math.max(...deltas);
+        largestLoss = Math.min(...deltas);
     }
 
     // Score distribution data computation
@@ -297,13 +304,20 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                             label="Win rate"
                             value={recentWinRate != null ? `${(recentWinRate * 100).toFixed(1)}%` : "N/A"}
                         />
-
                         <StatCard
                             label="MMR delta"
                             value={eventsToShow.length > 0 ? (() => {
                                 const delta = eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0);
                                 return delta > 0 ? `+${delta}` : delta;
                             })() : "N/A"}
+                        />
+                        <StatCard
+                            label="Largest gain"
+                            value={largestGain != null ? (largestGain > 0 ? `+${largestGain}` : largestGain) : "N/A"}
+                        />
+                        <StatCard
+                            label="Largest loss"
+                            value={largestLoss != null ? largestLoss : "N/A"}
                         />
                     </div>
                 )}
