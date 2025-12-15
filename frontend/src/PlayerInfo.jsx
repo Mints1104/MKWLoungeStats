@@ -38,9 +38,14 @@ function PlayerInfo() {
     };
 
     const getPlayerInfo = async () => {
-        const data = await fetchPlayerDetails(name);
+        const trimmed = name.trim();
+        if (!trimmed) {
+            return;
+        }
+
+        const data = await fetchPlayerDetails(trimmed);
         if (data) {
-            rememberRecent(name);
+            rememberRecent(trimmed);
         }
     };
 
@@ -59,7 +64,11 @@ function PlayerInfo() {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter a player name"
                     />
-                    <button className="player-button" onClick={getPlayerInfo}>
+                    <button
+                        className="player-button"
+                        onClick={getPlayerInfo}
+                        disabled={!name.trim()}
+                    >
                         Get Player Info
                     </button>
                 </div>
