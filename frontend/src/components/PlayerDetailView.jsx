@@ -301,7 +301,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         <StatCard
                             label="MMR delta"
                             value={eventsToShow.length > 0 ? (() => {
-                                const delta = eventsToShow[0].newMmr - eventsToShow.at(-1).newMmr;
+                                const delta = eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0);
                                 return delta > 0 ? `+${delta}` : delta;
                             })() : "N/A"}
                         />
