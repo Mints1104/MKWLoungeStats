@@ -5,19 +5,22 @@ describe("chartUtils", () => {
   describe("calculateScoreDistribution", () => {
     it("should create correct score distribution for all events", () => {
       const events = [
+        { score: 10, numPlayers: 12 },
+        { score: 30, numPlayers: 12 },
         { score: 55, numPlayers: 12 },
-        { score: 65, numPlayers: 12 },
-        { score: 75, numPlayers: 12 },
         { score: 85, numPlayers: 12 },
-        { score: 95, numPlayers: 12 },
+        { score: 115, numPlayers: 12 },
       ];
 
       const result = calculateScoreDistribution(events, "all");
 
-      expect(result).toHaveLength(10); // 10 bins from 0-100
-      expect(result[5].range).toBe("50-60");
-      expect(result[5].count).toBe(1); // One score in 50-60 range
-      expect(result[6].count).toBe(1); // One score in 60-70 range
+      expect(result).toHaveLength(6); // 6 bins defined in chartUtils
+      expect(result[0].count).toBe(1); // 0-20
+      expect(result[1].count).toBe(1); // 21-40
+      expect(result[2].count).toBe(1); // 41-60
+      expect(result[3].count).toBe(0); // 61-80
+      expect(result[4].count).toBe(1); // 81-100
+      expect(result[5].count).toBe(1); // 101-120
     });
 
     it("should filter by player count", () => {
@@ -42,12 +45,8 @@ describe("chartUtils", () => {
       const result1 = calculateScoreDistribution(null, "all");
       const result2 = calculateScoreDistribution([], "all");
 
-      expect(result1).toHaveLength(10);
-      expect(result2).toHaveLength(10);
-
-      // All bins should have 0 count
-      expect(result1.every((bin) => bin.count === 0)).toBe(true);
-      expect(result2.every((bin) => bin.count === 0)).toBe(true);
+      expect(result1).toEqual([]);
+      expect(result2).toEqual([]);
     });
 
     it("should ignore events without valid scores", () => {
