@@ -24,9 +24,10 @@ function PlayerInfo() {
     }, []);
 
     // Restore last viewed player details (so going back doesn't clear them)
+    // Uses sessionStorage so it only persists during the current tab session
     useEffect(() => {
         try {
-            const raw = localStorage.getItem(LAST_DETAILS_KEY);
+            const raw = sessionStorage.getItem(LAST_DETAILS_KEY);
             if (!raw) return;
             const parsed = JSON.parse(raw);
             if (parsed && parsed.name && parsed.data) {
@@ -56,7 +57,7 @@ function PlayerInfo() {
     const rememberLastDetails = (playerName, data) => {
         if (!data) return;
         try {
-            localStorage.setItem(
+            sessionStorage.setItem(
                 LAST_DETAILS_KEY,
                 JSON.stringify({ name: playerName, data })
             );
