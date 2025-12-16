@@ -173,7 +173,71 @@ const invalidateCache = (predicate) => {
 
 app.use(express.json());
 
-// Do not call listen() in serverless/edge environments; Vercel will handle the request lifecycle.
+// Lightweight validation for table IDs (numeric, reasonable length)
+const validateTableId = (id) => {
+  if (!id || typeof id !== "string") {
+    return { valid: false, error: "Table ID is required" };
+  }
+
+  const trimmed = id.trim();
+
+  if (!/^\d{1,10}$/.test(trimmed)) {
+    return {
+      valid: false,
+      error: "Table ID must be a numeric value up to 10 digits",
+    };
+  }
+
+  return { valid: true, sanitized: trimmed };
+};
+
+// Get a single lounge table by ID
+app.get("/api/table/:tableid", async (req, res) => {
+  try {
+    const validation = validateTableId(req.params.tableid);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const tableid = validation.sanitized;
+    const cacheKey = getCacheKey("table", { tableid });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const base_url = "https://lounge.mkcentral.com/api/table";
+    const full_url = `${base_url}?tableid=${encodeURIComponent(tableid)}`;
+
+    const { data } = await axios.get(full_url);
+
+    setCache(cacheKey, data, DEFAULT_TTL_MS);
+
+    res.json(data);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+
+      if (status === 404) {
+        logger.warn(`Table not found: ${req.params.tableid}`);
+        return res
+          .status(404)
+          .json({ error: "No lounge table found for that ID" });
+      }
+
+      if (status) {
+        logger.error(`Table API error (${status}):`, error.message);
+        return res.status(status).json({
+          error:
+            error.response?.data?.error || "Failed to retrieve table details",
+        });
+      }
+    }
+
+    logger.error("Failed to fetch table:", error.message);
+    res.status(500).json({ error: "Failed to fetch table" });
+  }
+});
 
 app.get("/api/player/details/:name", async (req, res) => {
   try {

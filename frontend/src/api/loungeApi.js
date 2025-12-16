@@ -204,6 +204,27 @@ export const loungeApi = {
 
     return fetchApi(url, { signal });
   },
+
+  /**
+   * Fetch a single lounge event table by table ID
+   * @param {string|number} tableId - Lounge table ID
+   * @param {AbortSignal} signal - Optional abort signal for cancellation
+   */
+  async getTableById(tableId, signal) {
+    if (tableId === undefined || tableId === null) {
+      throw new Error("Table ID is required");
+    }
+
+    const idStr = String(tableId).trim();
+    if (!idStr) {
+      throw new Error("Table ID cannot be empty");
+    }
+
+    logger.api("GET", `/table/${idStr}`);
+    const url = `${API_BASE}/table/${encodeURIComponent(idStr)}`;
+
+    return fetchApi(url, { signal });
+  },
 };
 
 export default loungeApi;

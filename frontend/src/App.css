@@ -485,11 +485,42 @@ html, body {
   gap: 0.3rem;
   font-size: 0.85rem;
   color: #38bdf8;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
 }
 
 .event-link:hover {
   color: #7dd3fc;
   text-decoration: underline;
+}
+
+/* Table image layout */
+.table-image-card {
+  padding-inline: 0;
+  overflow: hidden;
+}
+
+.table-image-wrapper {
+  width: 100%;
+  background: #020617;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.table-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.table-image-link {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
 }
 
 /* Navigation styling */

@@ -1,4 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { getNextRank, getRankForMmrValue, getRankColor } from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
 import { calculateMmrHistoryData, calculateScoreDistribution } from "../utils/chartUtils";
@@ -29,6 +30,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     const [scoreFilter, setScoreFilter] = useState("all");
 
     // Derived stats for 12p / 24p events
+    const navigate = useNavigate();
+
     const {
         twelveCount,
         twentyFourCount,
@@ -132,14 +135,13 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                 <p>
                     Highest Score:{" "}
                     {highestScoreData ? (
-                        <a
-                            href={`https://lounge.mkcentral.com/mkworld/TableDetails/${highestScoreData.changeId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ color: "#60a5fa"}}
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/table/${highestScoreData.changeId}`)}
+                            className="event-link"
                         >
                             {highestScoreData.score}
-                        </a>
+                        </button>
                     ) : "N/A"}
                 </p>
                 <p>

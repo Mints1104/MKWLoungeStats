@@ -1,7 +1,10 @@
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { formatTimeAgo } from "../utils/playerUtils";
 
 const EventCard = memo(function EventCard({ event, averageScore }) {
+    const navigate = useNavigate();
+
     return (
         <article className="event-card">
             <div className="event-header">
@@ -30,14 +33,13 @@ const EventCard = memo(function EventCard({ event, averageScore }) {
             </div>
             <p className="event-mmr">New MMR: {event.newMmr}</p>
             <p className="event-time">Played {formatTimeAgo(event.time)}</p>
-            <a
+            <button
+                type="button"
                 className="event-link"
-                href={`https://lounge.mkcentral.com/mkworld/TableDetails/${event.changeId}`}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() => navigate(`/table/${event.changeId}`)}
             >
                 View Table
-            </a>
+            </button>
         </article>
     );
 });
