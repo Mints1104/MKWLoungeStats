@@ -1,6 +1,11 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
 #root {
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   text-align: center;
@@ -436,7 +441,7 @@
 }
 
 .event-card:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 /* Keep all main cards visually aligned horizontally */
@@ -512,6 +517,9 @@
 }
 
 .nav-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: 700;
   color: #e5e7eb;
@@ -521,6 +529,18 @@
 
 .nav-logo:hover {
   color: #38bdf8;
+}
+
+.nav-logo-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: conic-gradient(from 140deg, #22c55e, #16a3d6, #38bdf8, #22c55e);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.nav-logo-text {
+  letter-spacing: 0.02em;
 }
 
 .nav-links {
@@ -937,10 +957,6 @@
   }
 
   /* Reduce padding on mobile */
-  #root {
-    padding: 1rem;
-  }
-
   .player-info-page {
     padding: 1rem 0.5rem 2rem;
   }

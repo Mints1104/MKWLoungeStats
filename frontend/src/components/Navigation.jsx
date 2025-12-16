@@ -7,7 +7,8 @@ function Navigation() {
         <nav className="navigation" aria-label="Main navigation">
             <div className="nav-container">
                 <Link to="/" className="nav-logo" aria-label="MKW Lounge Stats - Home">
-                    MKW Lounge Stats
+                    <span className="nav-logo-mark" aria-hidden="true"></span>
+                    <span className="nav-logo-text">MKW Lounge Stats</span>
                 </Link>
                 <div className="nav-links" role="list">
                     <Link 

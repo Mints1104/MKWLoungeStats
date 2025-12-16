@@ -54,7 +54,7 @@ function PlayerInfo() {
             <div className="player-card">
                 <PageHeader 
                     title="Mario Kart Lounge Stats" 
-                    subtitle="Look up a player by name and see their stats!" 
+                    subtitle="Look up a player by name and see their stats."
                 />
 
                 <form
@@ -69,6 +69,7 @@ function PlayerInfo() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter a player name"
+                        aria-label="Player name"
                     />
                     <button
                         type="submit"

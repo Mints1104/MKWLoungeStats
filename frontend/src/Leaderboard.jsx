@@ -117,7 +117,7 @@ function Leaderboard() {
             <div className="player-card">
                 <PageHeader 
                     title="Leaderboard" 
-                    subtitle="Top players ranked by current MMR, max MMR, and events played." 
+                    subtitle="Browse top players by MMR, max MMR, events played, and win rate. Use filters to narrow down specific ranges or search by name." 
                 />
 
                 {/* Filter Toggle Button (Mobile) */}
@@ -223,7 +223,11 @@ function Leaderboard() {
                             </thead>
                             <tbody>
                                 {leaderboardData.map((player) => (
-                                    <tr key={player.id}>
+                                    <tr
+                                        key={player.id}
+                                        tabIndex={0}
+                                        onKeyDown={(e) => handleRowKeyPress(e, player.name)}
+                                    >
                                         <td className="rank-cell">#{player.overallRank || "N/A"}</td>
                                         <td>
                                             <button

@@ -184,55 +184,60 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
             {/* MMR History Chart */}
             <div className="player-summary">
                 <h3>MMR History</h3>
-                <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
-                <ResponsiveContainer width="100%" height={300}>
-                    <LineChart
-                        data={mmrHistoryData}
-                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                    >
-                        <defs>
-                            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                                {gradientStops.map((stop, idx) => (
-                                    <stop
-                                        key={idx}
-                                        offset={stop.offset}
-                                        stopColor={stop.color}
-                                    />
-                                ))}
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis
-                            dataKey="event"
-                            stroke="#9ca3af"
-                            label={{ value: "Events", position: "insideBottom", offset: -5 }}
-                        />
-                        <YAxis
-                            stroke="#9ca3af"
-                            label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                            domain={["dataMin - 50", "dataMax + 50"]}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: "#0f172a",
-                                border: "1px solid #334155",
-                                borderRadius: "8px",
-                            }}
-                            labelStyle={{ color: "#e5e7eb" }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="mmr"
-                            stroke={`url(#${gradientId})`}
-                            strokeWidth={2.5}
-                            dot={false}
-                            activeDot={false}
-                            isAnimationActive={false}
-                            strokeLinecap="round"
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-                </Suspense>
+                <div
+                    role="img"
+                    aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
+                >
+                    <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart
+                                data={mmrHistoryData}
+                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                            >
+                                <defs>
+                                    <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                                        {gradientStops.map((stop, idx) => (
+                                            <stop
+                                                key={idx}
+                                                offset={stop.offset}
+                                                stopColor={stop.color}
+                                            />
+                                        ))}
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    dataKey="event"
+                                    stroke="#9ca3af"
+                                    label={{ value: "Events", position: "insideBottom", offset: -5 }}
+                                />
+                                <YAxis
+                                    stroke="#9ca3af"
+                                    label={{ value: "MMR", angle: -90, position: "insideLeft" }}
+                                    domain={["dataMin - 50", "dataMax + 50"]}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#0f172a",
+                                        border: "1px solid "#334155",
+                                        borderRadius: "8px",
+                                    }}
+                                    labelStyle={{ color: "#e5e7eb" }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="mmr"
+                                    stroke={`url(#${gradientId})`}
+                                    strokeWidth={2.5}
+                                    dot={false}
+                                    activeDot={false}
+                                    isAnimationActive={false}
+                                    strokeLinecap="round"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </Suspense>
+                </div>
             </div>
 
             {/* Score Distribution Chart */}
@@ -249,35 +254,40 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         ]}
                     />
                 </div>
-                <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                        data={scoreDistributionData}
-                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis
-                            dataKey="range"
-                            stroke="#9ca3af"
-                            label={{ value: "Score Range", position: "insideBottom", offset: -5 }}
-                        />
-                        <YAxis
-                            stroke="#9ca3af"
-                            label={{ value: "Events", angle: -90, position: "insideLeft" }}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: "#0f172a",
-                                border: "1px solid #334155",
-                                borderRadius: "8px",
-                            }}
-                            labelStyle={{ color: "#e5e7eb" }}
-                        />
-                        <Legend />
-                        <Bar dataKey="count" fill="#22c55e" name="Events" />
-                    </BarChart>
-                </ResponsiveContainer>
-                </Suspense>
+                <div
+                    role="img"
+                    aria-label="Bar chart showing how often different score ranges occur in this player's events. Horizontal axis shows score ranges, vertical axis shows event counts."
+                >
+                    <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                                data={scoreDistributionData}
+                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    dataKey="range"
+                                    stroke="#9ca3af"
+                                    label={{ value: "Score Range", position: "insideBottom", offset: -5 }}
+                                />
+                                <YAxis
+                                    stroke="#9ca3af"
+                                    label={{ value: "Events", angle: -90, position: "insideLeft" }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#0f172a",
+                                        border: "1px solid #334155",
+                                        borderRadius: "8px",
+                                    }}
+                                    labelStyle={{ color: "#e5e7eb" }}
+                                />
+                                <Legend />
+                                <Bar dataKey="count" fill="#22c55e" name="Events" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Suspense>
+                </div>
             </div>
 
             <div className="player-events-card">

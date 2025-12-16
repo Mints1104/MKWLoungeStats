@@ -99,7 +99,7 @@ function PlayerComparison() {
             <div className="player-card">
                 <PageHeader 
                     title="Compare Players" 
-                    subtitle="Compare up to 4 players side-by-side to see who performs better." 
+                    subtitle="Compare up to 4 players side-by-side using recent lounge events."
                 />
 
                 <div className="comparison-inputs">
@@ -113,8 +113,8 @@ function PlayerComparison() {
                                 className="player-input"
                                 value={name}
                                 onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                                placeholder={`Player ${index + 1} name`}
-                                aria-label={`Player ${index + 1} name input`}
+                                placeholder={`Enter player ${index + 1} name`}
+                                aria-label={`Player ${index + 1} name`}
                             />
                             {playerNames.length > 2 && (
                                 <button
@@ -242,7 +242,7 @@ function PlayerComparison() {
                         <h3>MMR History Comparison</h3>
                         <div
                             role="img"
-                            aria-label="Line chart comparing player MMR changes over time with unique dash patterns for each player"
+                            aria-label="Line chart comparing player MMR changes over time with unique dash patterns for each player. Horizontal axis shows events over time, vertical axis shows MMR."
                         >
                             <Suspense fallback={<div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
                             <ResponsiveContainer width="100%" height={400}>
@@ -300,7 +300,9 @@ function PlayerComparison() {
                             </ResponsiveContainer>
                             </Suspense>
                         </div>
-                        <p className="chart-summary" aria-live="polite">{chartSummary}</p>
+                        <p className="chart-summary" aria-live="polite">
+                            <span className="sr-only">Summary of chart trends:</span> {chartSummary}
+                        </p>
                     </div>
                 </>
             )}
