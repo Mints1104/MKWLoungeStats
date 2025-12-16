@@ -219,7 +219,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 <Tooltip
                                     contentStyle={{
                                         backgroundColor: "#0f172a",
-                                        border: "1px solid "#334155",
+                                        border: "1px solid #334155",
                                         borderRadius: "8px",
                                     }}
                                     labelStyle={{ color: "#e5e7eb" }}
