@@ -23,38 +23,60 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
  * Shared player detail view component used by both PlayerInfo and PlayerProfile pages
  * Displays player stats, MMR history chart, score distribution, and recent events
  */
-const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimit";
+const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 
 function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
-    // Restore event limit from sessionStorage, default to 10
-    const [eventLimit, setEventLimit] = useState(() => {
+    // Restore event limit preference from sessionStorage, default to number mode with 10
+    const [eventLimitMode, setEventLimitMode] = useState(() => {
         try {
             const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
             if (saved) {
-                const parsed = parseInt(saved, 10);
-                if (!Number.isNaN(parsed) && parsed >= 1) {
-                    return parsed;
+                const parsed = JSON.parse(saved);
+                if (parsed?.mode === "all" || parsed?.mode === "number") {
+                    return parsed.mode;
                 }
             }
         } catch (e) {
-            console.warn("Failed to load event limit from sessionStorage", e);
+            console.warn("Failed to load event limit mode from sessionStorage", e);
+        }
+        return "number";
+    });
+
+    const [eventLimitPreference, setEventLimitPreference] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const val = parseInt(parsed?.value, 10);
+                if (!Number.isNaN(val) && val >= 1) {
+                    return val;
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to load event limit preference from sessionStorage", e);
         }
         return 10;
     });
-    
+
+    const [eventLimit, setEventLimit] = useState(() => Math.max(1, eventLimitPreference));
     const [eventInputValue, setEventInputValue] = useState(() => String(eventLimit));
     const [eventFilter, setEventFilter] = useState("all");
     const [scoreFilter, setScoreFilter] = useState("all");
 
-    // Save event limit to sessionStorage whenever it changes
+    // Persist preference (mode + last chosen value) to sessionStorage
     useEffect(() => {
         try {
-            sessionStorage.setItem(EVENT_LIMIT_STORAGE_KEY, String(eventLimit));
-            setEventInputValue(String(eventLimit));
+            sessionStorage.setItem(
+                EVENT_LIMIT_STORAGE_KEY,
+                JSON.stringify({
+                    mode: eventLimitMode,
+                    value: eventLimitPreference,
+                })
+            );
         } catch (e) {
-            console.warn("Failed to save event limit to sessionStorage", e);
+            console.warn("Failed to save event limit preference to sessionStorage", e);
         }
-    }, [eventLimit]);
+    }, [eventLimitMode, eventLimitPreference]);
 
     // Derived stats for 12p / 24p events
     const navigate = useNavigate();
@@ -89,6 +111,28 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         totalFilteredEvents = filtered.length;
         eventsToShow = filtered.slice(0, eventLimit);
     }
+
+    // Sync effective limit when player/filter changes, honoring "show all"
+    useEffect(() => {
+        if (!playerDetails) return;
+        const total = totalFilteredEvents;
+
+        if (eventLimitMode === "all") {
+            const newLimit = Math.max(0, total);
+            if (newLimit !== eventLimit) {
+                setEventLimit(newLimit);
+                setEventInputValue(String(newLimit));
+            }
+        } else {
+            const desired = Math.max(1, eventLimitPreference);
+            const newLimit = Math.max(1, Math.min(desired, total || desired));
+            if (newLimit !== eventLimit) {
+                setEventLimit(newLimit);
+                setEventInputValue(String(newLimit));
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playerDetails, eventFilter, totalFilteredEvents, eventLimitMode, eventLimitPreference]);
 
     // Stats for the currently displayed events
     let recentAvgScore = null;
@@ -346,6 +390,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                     // Only update the actual limit if valid
                                     const numValue = Number(value);
                                     if (!Number.isNaN(numValue) && numValue >= 1) {
+                                        setEventLimitMode("number");
+                                        setEventLimitPreference(numValue);
                                         setEventLimit(numValue);
                                     }
                                 }}
@@ -356,6 +402,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                         setEventInputValue(String(eventLimit));
                                     } else {
                                         const numValue = Math.max(Number(value), 1);
+                                        setEventLimitMode("number");
+                                        setEventLimitPreference(numValue);
                                         setEventLimit(numValue);
                                         setEventInputValue(String(numValue));
                                     }
@@ -367,6 +415,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                     type="button"
                                     className="show-all-events-btn"
                                     onClick={() => {
+                                        setEventLimitMode("all");
+                                        setEventLimitPreference(totalFilteredEvents);
                                         setEventLimit(totalFilteredEvents);
                                         setEventInputValue(String(totalFilteredEvents));
                                     }}
