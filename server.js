@@ -175,20 +175,26 @@ app.use(express.json());
 
 // Lightweight validation for table IDs (numeric, reasonable length)
 const validateTableId = (id) => {
-  if (!id || typeof id !== "string") {
+  if (id === null || id === undefined) {
     return { valid: false, error: "Table ID is required" };
   }
 
-  const trimmed = id.trim();
+  // Convert to string if it's a number
+  const idStr = String(id).trim();
 
-  if (!/^\d{1,10}$/.test(trimmed)) {
+  if (idStr.length === 0) {
+    return { valid: false, error: "Table ID is required" };
+  }
+
+  // Check if it's a valid numeric string (1-10 digits)
+  if (!/^\d{1,10}$/.test(idStr)) {
     return {
       valid: false,
       error: "Table ID must be a numeric value up to 10 digits",
     };
   }
 
-  return { valid: true, sanitized: trimmed };
+  return { valid: true, sanitized: idStr };
 };
 
 // Get a single lounge table by ID

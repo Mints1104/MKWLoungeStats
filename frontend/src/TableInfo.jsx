@@ -12,8 +12,9 @@ function TableInfo() {
   const requestRef = useRef(null);
 
   const fetchTable = useCallback(async () => {
-    const trimmedId = (tableId || "").trim();
-    if (!trimmedId) {
+    // Ensure tableId is converted to string and trimmed
+    const idStr = tableId != null ? String(tableId).trim() : "";
+    if (!idStr || idStr === "undefined" || idStr === "null") {
       setError("No table ID provided in URL");
       return;
     }
@@ -30,7 +31,7 @@ function TableInfo() {
       const controller = new AbortController();
       requestRef.current = controller;
 
-      const data = await loungeApi.getTableById(trimmedId, controller.signal);
+      const data = await loungeApi.getTableById(idStr, controller.signal);
       setResult(data || null);
       requestRef.current = null;
     } catch (err) {

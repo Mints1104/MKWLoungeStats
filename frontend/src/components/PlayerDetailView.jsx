@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { getNextRank, getRankForMmrValue, getRankColor } from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
@@ -23,11 +23,38 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
  * Shared player detail view component used by both PlayerInfo and PlayerProfile pages
  * Displays player stats, MMR history chart, score distribution, and recent events
  */
+const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimit";
+
 function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
+    // Restore event limit from sessionStorage, default to 10
+    const [eventLimit, setEventLimit] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
+            if (saved) {
+                const parsed = parseInt(saved, 10);
+                if (!Number.isNaN(parsed) && parsed >= 1) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to load event limit from sessionStorage", e);
+        }
+        return 10;
+    });
+    
+    const [eventInputValue, setEventInputValue] = useState(() => String(eventLimit));
     const [eventFilter, setEventFilter] = useState("all");
-    const [eventLimit, setEventLimit] = useState(10);
-    const [eventInputValue, setEventInputValue] = useState("10");
     const [scoreFilter, setScoreFilter] = useState("all");
+
+    // Save event limit to sessionStorage whenever it changes
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(EVENT_LIMIT_STORAGE_KEY, String(eventLimit));
+            setEventInputValue(String(eventLimit));
+        } catch (e) {
+            console.warn("Failed to save event limit to sessionStorage", e);
+        }
+    }, [eventLimit]);
 
     // Derived stats for 12p / 24p events
     const navigate = useNavigate();
@@ -51,6 +78,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
 
     // Events to display based on filter and limit
     let eventsToShow = [];
+    let totalFilteredEvents = 0;
     if (playerDetails && Array.isArray(playerDetails.mmrChanges)) {
         let filtered = playerDetails.mmrChanges;
         if (eventFilter === "12") {
@@ -58,6 +86,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         } else if (eventFilter === "24") {
             filtered = filtered.filter((e) => e.numPlayers === 24);
         }
+        totalFilteredEvents = filtered.length;
         eventsToShow = filtered.slice(0, eventLimit);
     }
 
@@ -134,14 +163,21 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                 <p>Highest MMR: {playerDetails.maxMmr}</p>
                 <p>
                     Highest Score:{" "}
-                    {highestScoreData ? (
+                    {highestScoreData && highestScoreData.changeId != null ? (
                         <button
                             type="button"
-                            onClick={() => navigate(`/table/${highestScoreData.changeId}`)}
+                            onClick={() => {
+                                const tableId = String(highestScoreData.changeId).trim();
+                                if (tableId && tableId !== 'undefined' && tableId !== 'null') {
+                                    navigate(`/table/${tableId}`);
+                                }
+                            }}
                             className="event-link"
                         >
                             {highestScoreData.score}
                         </button>
+                    ) : highestScoreData ? (
+                        highestScoreData.score
                     ) : "N/A"}
                 </p>
                 <p>
@@ -302,7 +338,6 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 className="events-count-input"
                                 type="number"
                                 min={1}
-                                max={100}
                                 value={eventInputValue}
                                 onChange={(e) => {
                                     const value = e.target.value;
@@ -310,7 +345,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                     
                                     // Only update the actual limit if valid
                                     const numValue = Number(value);
-                                    if (!Number.isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                    if (!Number.isNaN(numValue) && numValue >= 1) {
                                         setEventLimit(numValue);
                                     }
                                 }}
@@ -320,13 +355,26 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                     if (value === '' || Number(value) < 1) {
                                         setEventInputValue(String(eventLimit));
                                     } else {
-                                        const numValue = Math.min(Math.max(Number(value), 1), 100);
+                                        const numValue = Math.max(Number(value), 1);
                                         setEventLimit(numValue);
                                         setEventInputValue(String(numValue));
                                     }
                                 }}
                             />
                             <span>events</span>
+                            {totalFilteredEvents > eventLimit && (
+                                <button
+                                    type="button"
+                                    className="show-all-events-btn"
+                                    onClick={() => {
+                                        setEventLimit(totalFilteredEvents);
+                                        setEventInputValue(String(totalFilteredEvents));
+                                    }}
+                                    aria-label={`Show all ${totalFilteredEvents} events`}
+                                >
+                                    Show All ({totalFilteredEvents})
+                                </button>
+                            )}
                         </div>
                         <FilterToggle
                             activeFilter={eventFilter}

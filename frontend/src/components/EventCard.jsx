@@ -9,17 +9,23 @@ const EventCard = memo(function EventCard({ event, averageScore }) {
         <article className="event-card">
             <div className="event-header">
                 <p className="event-score">
-                    Scored{" "}
-                    <span
-                        className={
-                            event.score > averageScore
-                                ? "above-average"
-                                : "below-average"
-                        }
-                    >
-                        {event.score}
-                    </span>{" "}
-                    in a {event.numPlayers}p event
+                    {event.changeId != null ? (
+                        <>
+                            Scored{" "}
+                            <span
+                                className={
+                                    event.score > averageScore
+                                        ? "above-average"
+                                        : "below-average"
+                                }
+                            >
+                                {event.score}
+                            </span>{" "}
+                            in a {event.numPlayers}p event
+                        </>
+                    ) : (
+                        "Placement Event"
+                    )}
                 </p>
 
                 <p
@@ -33,13 +39,20 @@ const EventCard = memo(function EventCard({ event, averageScore }) {
             </div>
             <p className="event-mmr">New MMR: {event.newMmr}</p>
             <p className="event-time">Played {formatTimeAgo(event.time)}</p>
-            <button
-                type="button"
-                className="event-link"
-                onClick={() => navigate(`/table/${event.changeId}`)}
-            >
-                View Table
-            </button>
+            {event.changeId != null && (
+                <button
+                    type="button"
+                    className="event-link"
+                    onClick={() => {
+                        const tableId = String(event.changeId).trim();
+                        if (tableId && tableId !== 'undefined' && tableId !== 'null') {
+                            navigate(`/table/${tableId}`);
+                        }
+                    }}
+                >
+                    View Table
+                </button>
+            )}
         </article>
     );
 });
