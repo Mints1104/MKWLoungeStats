@@ -4,11 +4,12 @@ import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 
 const RECENT_KEY = "recentPlayerSearches";
+const LAST_DETAILS_KEY = "lastPlayerDetails";
 
 function PlayerInfo() {
     const [name, setName] = useState("");
     const [recent, setRecent] = useState([]);
-    const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails();
+    const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails, setPlayerDetails } = usePlayerDetails();
 
     // Load recent searches once on mount
     useEffect(() => {
@@ -21,6 +22,21 @@ function PlayerInfo() {
             console.warn("Failed to load recent searches", e);
         }
     }, []);
+
+    // Restore last viewed player details (so going back doesn't clear them)
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(LAST_DETAILS_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.name && parsed.data) {
+                setName(parsed.name);
+                setPlayerDetails(parsed.data);
+            }
+        } catch (e) {
+            console.warn("Failed to restore last player details", e);
+        }
+    }, [setPlayerDetails]);
 
     const rememberRecent = (value) => {
         const clean = value.trim();
@@ -37,6 +53,18 @@ function PlayerInfo() {
         }
     };
 
+    const rememberLastDetails = (playerName, data) => {
+        if (!data) return;
+        try {
+            localStorage.setItem(
+                LAST_DETAILS_KEY,
+                JSON.stringify({ name: playerName, data })
+            );
+        } catch (e) {
+            console.warn("Failed to save last player details", e);
+        }
+    };
+
     const getPlayerInfo = async () => {
         const trimmed = name.trim();
         if (!trimmed) {
@@ -46,6 +74,7 @@ function PlayerInfo() {
         const data = await fetchPlayerDetails(trimmed);
         if (data) {
             rememberRecent(trimmed);
+            rememberLastDetails(trimmed, data);
         }
     };
 
@@ -89,7 +118,10 @@ function PlayerInfo() {
                                 onClick={() => {
                                     setName(r);
                                     fetchPlayerDetails(r).then((data) => {
-                                        if (data) rememberRecent(r);
+                                        if (data) {
+                                            rememberRecent(r);
+                                            rememberLastDetails(r, data);
+                                        }
                                     });
                                 }}
                             >

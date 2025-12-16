@@ -73,6 +73,7 @@ function usePlayerDetails() {
     loading,
     error,
     fetchPlayerDetails,
+    setPlayerDetails,
   };
 }
 
