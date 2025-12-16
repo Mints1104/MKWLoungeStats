@@ -18,9 +18,24 @@ function ScrollToTop() {
   return null;
 }
 
+function ScrollRestorationManager() {
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      const previous = window.history.scrollRestoration;
+      window.history.scrollRestoration = 'manual';
+      return () => {
+        window.history.scrollRestoration = previous;
+      };
+    }
+  }, []);
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <ScrollRestorationManager />
       <ScrollToTop />
       <Navigation />
       <Routes>
