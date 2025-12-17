@@ -214,7 +214,10 @@ function Stats() {
                       border: "1px solid rgba(148,163,184,0.6)",
                       borderRadius: 8,
                       fontSize: 12,
+                      color: "#e5e7eb",
                     }}
+                    labelStyle={{ color: "#e5e7eb" }}
+                    itemStyle={{ color: "#e5e7eb" }}
                     formatter={(value) => [formatNumber(value), "Players"]}
                   />
                   <Bar dataKey="count" radius={[8, 8, 0, 0]}>
