@@ -7,6 +7,7 @@ import PlayerComparison from './PlayerComparison'
 import Leaderboard from './Leaderboard'
 import PlayerProfile from './PlayerProfile'
 import TableInfo from './TableInfo'
+import Stats from './Stats'
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -42,6 +43,7 @@ function App() {
         <Route path="/" element={<PlayerInfo />} />
         <Route path="/compare" element={<PlayerComparison />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/stats" element={<Stats />} />
         <Route path="/table/:tableId" element={<TableInfo />} />
         <Route path="/player/:playerName" element={<PlayerProfile />} />
       </Routes>

@@ -87,6 +87,7 @@ app.use((req, res, next) => {
 const MAX_CACHE_SIZE = 1000;
 const MAX_PLAYER_NAME_LENGTH = 50;
 const MAX_SEARCH_LENGTH = 100;
+const ALLOWED_GAMES = new Set(["mkworld"]);
 
 // Input validation and sanitization
 const validatePlayerName = (name) => {
@@ -171,6 +172,40 @@ const invalidateCache = (predicate) => {
   }
 };
 
+// Validate season (positive integer in a reasonable range)
+const validateSeason = (season) => {
+  if (season === undefined || season === null || season === "") {
+    return { valid: false, error: "Season is required" };
+  }
+
+  const num = Number(season);
+  if (!Number.isInteger(num) || num <= 0 || num > 100) {
+    return {
+      valid: false,
+      error: "Season must be a positive integer less than or equal to 100",
+    };
+  }
+
+  return { valid: true, sanitized: num };
+};
+
+// Validate game code against allowed values
+const validateGame = (game) => {
+  if (!game || typeof game !== "string") {
+    return { valid: false, error: "Game is required" };
+  }
+
+  const trimmed = game.trim().toLowerCase();
+  if (!ALLOWED_GAMES.has(trimmed)) {
+    return {
+      valid: false,
+      error: "Unsupported game. Currently only mkworld is supported",
+    };
+  }
+
+  return { valid: true, sanitized: trimmed };
+};
+
 app.use(express.json());
 
 // Lightweight validation for table IDs (numeric, reasonable length)
@@ -242,6 +277,63 @@ app.get("/api/table/:tableid", async (req, res) => {
 
     logger.error("Failed to fetch table:", error.message);
     res.status(500).json({ error: "Failed to fetch table" });
+  }
+});
+
+// Global player stats (players per rank, activity, etc.)
+app.get("/api/player/stats", async (req, res) => {
+  try {
+    const { season, game } = req.query;
+
+    const seasonValidation = validateSeason(season);
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+
+    const gameValidation = validateGame(game);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+
+    const normalizedSeason = seasonValidation.sanitized;
+    const normalizedGame = gameValidation.sanitized;
+
+    const cacheKey = getCacheKey("player-stats", {
+      season: normalizedSeason,
+      game: normalizedGame,
+    });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const baseUrl = "https://lounge.mkcentral.com/api/player/stats";
+    const { data } = await axios.get(baseUrl, {
+      params: {
+        season: normalizedSeason,
+        game: normalizedGame,
+      },
+    });
+
+    setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
+    res.json(data);
+  } catch (error) {
+    invalidateCache((key) => key.startsWith("player-stats"));
+
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Player stats API error (${status}):`, error.message);
+        return res.status(status).json({
+          error:
+            error.response?.data?.error ||
+            "Failed to retrieve global player stats",
+        });
+      }
+    }
+
+    logger.error("Failed to fetch player stats:", error.message);
+    res.status(500).json({ error: "Failed to fetch player stats" });
   }
 });
 

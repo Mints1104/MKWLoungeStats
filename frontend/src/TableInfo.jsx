@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
+import { getRankForMmrValue } from "./utils/playerUtils";
 
 function TableInfo() {
   const { tableId } = useParams();
@@ -178,44 +179,57 @@ function TableInfo() {
                   </thead>
                   <tbody>
                     {result.teams.map((team, teamIndex) =>
-                      (team.scores || []).map((score, scoreIndex) => (
-                        <tr
-                          key={`${teamIndex}-${score.playerId}-${scoreIndex}`}
-                        >
-                          <td className="rank-cell">#{team.rank}</td>
-                          <td>
-                            <button
-                              type="button"
-                              className="leaderboard-name"
-                              onClick={() =>
-                                navigate(
-                                  `/player/${encodeURIComponent(
-                                    score.playerName
-                                  )}`
-                                )
-                              }
-                              aria-label={`View profile for ${score.playerName}`}
-                            >
-                              {score.playerName}
-                            </button>
-                          </td>
-                          <td>{score.playerCountryCode || "—"}</td>
-                          <td>{score.score}</td>
-                          <td>{score.prevMmr}</td>
-                          <td>{score.newMmr}</td>
-                          <td
-                            className={
-                              score.delta > 0
-                                ? "positive"
-                                : score.delta < 0
-                                ? "negative"
-                                : ""
-                            }
+                      (team.scores || []).map((score, scoreIndex) => {
+                        const prevRank = getRankForMmrValue(score.prevMmr);
+                        const newRank = getRankForMmrValue(score.newMmr);
+
+                        return (
+                          <tr
+                            key={`${teamIndex}-${score.playerId}-${scoreIndex}`}
                           >
-                            {score.delta > 0 ? `+${score.delta}` : score.delta}
-                          </td>
-                        </tr>
-                      ))
+                            <td className="rank-cell">#{team.rank}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="leaderboard-name"
+                                onClick={() =>
+                                  navigate(
+                                    `/player/${encodeURIComponent(
+                                      score.playerName
+                                    )}`
+                                  )
+                                }
+                                aria-label={`View profile for ${score.playerName}`}
+                              >
+                                {score.playerName}
+                              </button>
+                            </td>
+                            <td>{score.playerCountryCode || "—"}</td>
+                            <td>{score.score}</td>
+                            <td>
+                              <span style={{ color: prevRank.color }}>
+                                {score.prevMmr}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ color: newRank.color }}>
+                                {score.newMmr}
+                              </span>
+                            </td>
+                            <td
+                              className={
+                                score.delta > 0
+                                  ? "positive"
+                                  : score.delta < 0
+                                  ? "negative"
+                                  : ""
+                              }
+                            >
+                              {score.delta > 0 ? `+${score.delta}` : score.delta}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

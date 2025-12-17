@@ -907,6 +907,49 @@ html, body {
   margin-top: 1rem;
 }
 
+/* Stats page */
+
+.stats-card {
+  margin-top: 0.5rem;
+}
+
+.stats-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.stats-chart {
+  width: 100%;
+  min-height: 220px;
+}
+
+.stats-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.stats-table {
+  min-width: 480px;
+}
+
+.stats-division-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #020617;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stats-summary-grid {
+  margin-top: 1.25rem;
+}
+
 @media (max-width: 768px) {
   .comparison-grid {
     grid-template-columns: 1fr;
@@ -1104,6 +1147,10 @@ html, body {
 
   .percentile-stats {
     grid-template-columns: 1fr;
+  }
+
+  .stats-table {
+    min-width: 420px;
   }
 }
 

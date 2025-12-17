@@ -225,6 +225,37 @@ export const loungeApi = {
 
     return fetchApi(url, { signal });
   },
+
+  /**
+   * Fetch global player statistics (players per rank, activity, etc.)
+   * @param {Object} params - Query parameters
+   * @param {number} params.season - Season number (default: 1)
+   * @param {string} params.game - Game identifier (default: "mkworld")
+   * @param {AbortSignal} signal - Optional abort signal for cancellation
+   */
+  async getPlayerStats(params = {}, signal) {
+    const { season = 1, game = "mkworld" } = params;
+
+    const seasonNum = Number(season);
+    if (!Number.isInteger(seasonNum) || seasonNum <= 0 || seasonNum > 100) {
+      throw new Error("Season must be a positive integer less than or equal to 100");
+    }
+
+    const gameStr = String(game).trim().toLowerCase();
+    if (!gameStr) {
+      throw new Error("Game is required");
+    }
+
+    logger.api("GET", `/player/stats?season=${seasonNum}&game=${gameStr}`);
+
+    const queryParams = new URLSearchParams({
+      season: String(seasonNum),
+      game: gameStr,
+    });
+
+    const url = `${API_BASE}/player/stats?${queryParams.toString()}`;
+    return fetchApi(url, { signal });
+  },
 };
 
 export default loungeApi;
