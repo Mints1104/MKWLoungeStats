@@ -38,6 +38,7 @@ function Stats() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const requestRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,6 +71,18 @@ function Stats() {
       controller.abort();
       requestRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    function handleResize() {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 640);
+      }
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const divisionTable = useMemo(() => {
@@ -188,8 +201,16 @@ function Stats() {
           </h2>
           <div className="stats-layout">
             <div className="stats-chart">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
+              <ResponsiveContainer width="100%" height={isMobile ? 280 : 260}>
+                <BarChart
+                  data={chartData}
+                  margin={{
+                    top: 10,
+                    right: 10,
+                    left: -10,
+                    bottom: isMobile ? 40 : 20,
+                  }}
+                >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="rgba(148, 163, 184, 0.4)"
@@ -197,9 +218,16 @@ function Stats() {
                   />
                   <XAxis
                     dataKey="tier"
-                    tick={{ fontSize: 12, fill: "#e5e7eb" }}
+                    tick={{
+                      fontSize: isMobile ? 10 : 12,
+                      fill: "#e5e7eb",
+                    }}
                     axisLine={{ stroke: "rgba(148,163,184,0.6)" }}
                     tickLine={false}
+                    interval={0}
+                    tickMargin={isMobile ? 10 : 4}
+                    angle={isMobile ? -35 : 0}
+                    textAnchor={isMobile ? "end" : "middle"}
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: "#9ca3af" }}
