@@ -104,9 +104,12 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     if (playerDetails && Array.isArray(playerDetails.mmrChanges)) {
         let filtered = playerDetails.mmrChanges;
         if (eventFilter === "12") {
-            filtered = filtered.filter((e) => e.numPlayers === 12);
+            filtered = filtered.filter((e) => e.reason === "Table" && e.numPlayers === 12);
         } else if (eventFilter === "24") {
-            filtered = filtered.filter((e) => e.numPlayers === 24);
+            filtered = filtered.filter((e) => e.reason === "Table" && e.numPlayers === 24);
+        } else {
+            // For "all" filter, include both tables and penalties
+            filtered = filtered;
         }
         totalFilteredEvents = filtered.length;
         eventsToShow = filtered.slice(0, eventLimit);
@@ -142,7 +145,9 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     let largestLoss = null;
 
     if (eventsToShow.length) {
-        const withScores = eventsToShow.filter(
+        // Only calculate score stats for table events (exclude penalties)
+        const tableEvents = eventsToShow.filter((e) => e.reason === "Table");
+        const withScores = tableEvents.filter(
             (e) => typeof e.score === "number" && !Number.isNaN(e.score),
         );
         if (withScores.length) {
@@ -154,10 +159,11 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
             );
         }
 
-        const wins = eventsToShow.filter((e) => (e.mmrDelta ?? 0) > 0).length;
-        recentWinRate = wins / eventsToShow.length;
+        // Win rate only counts table events where MMR increased
+        const tableWins = tableEvents.filter((e) => (e.mmrDelta ?? 0) > 0).length;
+        recentWinRate = tableEvents.length > 0 ? tableWins / tableEvents.length : null;
 
-        // Calculate largest gain and loss
+        // Calculate largest gain and loss (include all events including penalties)
         const deltas = eventsToShow.map(e => e.mmrDelta ?? 0);
         largestGain = Math.max(...deltas);
         largestLoss = Math.min(...deltas);
@@ -168,17 +174,18 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         return calculateScoreDistribution(playerDetails?.mmrChanges, scoreFilter);
     }, [playerDetails?.mmrChanges, scoreFilter]);
 
-    // Find highest score and its table
+    // Find highest score and its table (only from table events, not penalties)
     const highestScoreData = useMemo(() => {
         if (!playerDetails?.mmrChanges?.length) return null;
         
-        const eventsWithScores = playerDetails.mmrChanges.filter(
-            (e) => typeof e.score === "number" && !Number.isNaN(e.score)
+        // Only consider table events (exclude penalties)
+        const tableEvents = playerDetails.mmrChanges.filter(
+            (e) => e.reason === "Table" && typeof e.score === "number" && !Number.isNaN(e.score)
         );
         
-        if (!eventsWithScores.length) return null;
+        if (!tableEvents.length) return null;
         
-        const highestEvent = eventsWithScores.reduce((max, e) => 
+        const highestEvent = tableEvents.reduce((max, e) => 
             e.score > max.score ? e : max
         );
         

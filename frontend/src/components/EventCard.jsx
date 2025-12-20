@@ -4,12 +4,19 @@ import { formatTimeAgo } from "../utils/playerUtils";
 
 const EventCard = memo(function EventCard({ event, averageScore }) {
     const navigate = useNavigate();
+    const isTable = event.reason === "Table";
+    const isPenalty = event.reason === "Strike";
 
     return (
         <article className="event-card">
             <div className="event-header">
                 <p className="event-score">
-                    {event.changeId != null ? (
+                    {isPenalty ? (
+                        <>
+                            Received a{" "}
+                            <span className="penalty-label">Penalty (Strike)</span>
+                        </>
+                    ) : isTable && event.changeId != null ? (
                         <>
                             Scored{" "}
                             <span
@@ -38,8 +45,10 @@ const EventCard = memo(function EventCard({ event, averageScore }) {
                 </p>
             </div>
             <p className="event-mmr">New MMR: {event.newMmr}</p>
-            <p className="event-time">Played {formatTimeAgo(event.time)}</p>
-            {event.changeId != null && (
+            <p className="event-time">
+                {isPenalty ? "Penalty applied" : "Played"} {formatTimeAgo(event.time)}
+            </p>
+            {isTable && event.changeId != null && (
                 <button
                     type="button"
                     className="event-link"

@@ -480,6 +480,11 @@ html, body {
   font-size: 0.9rem;
 }
 
+.penalty-label {
+  color: #f87171;
+  font-weight: 600;
+}
+
 .event-time {
   margin: 0;
   font-size: 0.9rem;

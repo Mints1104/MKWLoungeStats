@@ -7,11 +7,14 @@
 export function calculateScoreDistribution(events, filter = "all") {
   if (!events || !Array.isArray(events)) return [];
 
-  let filteredEvents = events;
+  // Only include table events (exclude penalties)
+  const tableEvents = events.filter((e) => e.reason === "Table");
+  
+  let filteredEvents = tableEvents;
   if (filter === "12") {
-    filteredEvents = events.filter((e) => e.numPlayers === 12);
+    filteredEvents = tableEvents.filter((e) => e.numPlayers === 12);
   } else if (filter === "24") {
-    filteredEvents = events.filter((e) => e.numPlayers === 24);
+    filteredEvents = tableEvents.filter((e) => e.numPlayers === 24);
   }
 
   const ranges = [

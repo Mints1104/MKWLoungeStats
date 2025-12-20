@@ -10,8 +10,11 @@ export const calculateEventStats = (mmrChanges = []) => {
     };
   }
 
-  const twelves = mmrChanges.filter((event) => event.numPlayers === 12);
-  const twentyFours = mmrChanges.filter((event) => event.numPlayers === 24);
+  // Only include table events (exclude penalties)
+  const tableEvents = mmrChanges.filter((event) => event.reason === "Table");
+  
+  const twelves = tableEvents.filter((event) => event.numPlayers === 12);
+  const twentyFours = tableEvents.filter((event) => event.numPlayers === 24);
 
   const twelveCount = twelves.length;
   const twentyFourCount = twentyFours.length;
