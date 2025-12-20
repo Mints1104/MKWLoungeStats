@@ -2,10 +2,17 @@ import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatTimeAgo } from "../utils/playerUtils";
 
-const EventCard = memo(function EventCard({ event, averageScore }) {
+const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 }) {
     const navigate = useNavigate();
     const isTable = event.reason === "Table";
     const isPenalty = event.reason === "Strike";
+
+    // Determine which average to use based on event type, falling back to overall average if specific average is null
+    const relevantAverage = event.numPlayers === 12 
+        ? (avg12 != null ? avg12 : averageScore)
+        : event.numPlayers === 24 
+        ? (avg24 != null ? avg24 : averageScore)
+        : averageScore;
 
     return (
         <article className="event-card">
@@ -21,7 +28,7 @@ const EventCard = memo(function EventCard({ event, averageScore }) {
                             Scored{" "}
                             <span
                                 className={
-                                    event.score > averageScore
+                                    relevantAverage != null && event.score > relevantAverage
                                         ? "above-average"
                                         : "below-average"
                                 }

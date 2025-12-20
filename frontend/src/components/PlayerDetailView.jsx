@@ -488,6 +488,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                             key={event.changeId || `${event.time}-${event.newMmr}`}
                             event={event}
                             averageScore={playerDetails.averageScore}
+                            avg12={avg12}
+                            avg24={avg24}
                         />
                     ))}
                 </div>
