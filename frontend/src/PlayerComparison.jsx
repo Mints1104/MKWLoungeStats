@@ -14,6 +14,7 @@ import { loungeApi } from "./api/loungeApi";
 import { calculateComparisonMmrData } from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
+import SeasonSelector from "./components/SeasonSelector";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
@@ -23,6 +24,7 @@ function PlayerComparison() {
     const [playersData, setPlayersData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [season, setSeason] = useState(1);
 
     const handlePlayerNameChange = (index, value) => {
         const newNames = [...playerNames];
@@ -54,7 +56,7 @@ function PlayerComparison() {
             }
 
             setLoading(true);
-            const data = await loungeApi.comparePlayers(validNames);
+            const data = await loungeApi.comparePlayers(validNames, season);
             const validPlayers = data.filter((p) => !p.error);
 
             if (validPlayers.length < 2) {
@@ -97,8 +99,8 @@ function PlayerComparison() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <PageHeader 
-                    title="Compare Players" 
+                <PageHeader
+                    title="Compare Players"
                     subtitle="Compare up to 4 players side-by-side using recent lounge events."
                 />
 
@@ -131,21 +133,30 @@ function PlayerComparison() {
 
                     <div className="comparison-actions">
                         {playerNames.length < 4 && (
-                            <button 
-                                className="add-player-btn" 
+                            <button
+                                className="add-player-btn"
                                 onClick={addPlayerField}
                                 aria-label="Add another player to comparison"
                             >
                                 + Add Player
                             </button>
                         )}
-                        <button 
-                            className="player-button" 
+
+
+
+                        <button
+                            className="player-button"
                             onClick={comparePlayers}
                             aria-label="Compare selected players"
                         >
                             Compare Players
                         </button>
+
+                        <SeasonSelector
+                            selectedSeason={season}
+                            onSeasonChange={setSeason}
+                            className="comparison-season-selector"
+                        />
                     </div>
                 </div>
 
@@ -188,9 +199,8 @@ function PlayerComparison() {
                                 </p>
                                 <p>Events Played: {player.eventsPlayed}</p>
                                 <p
-                                    className={`player-winrate ${
-                                        player.winRate >= 0.5 ? "positive" : "negative"
-                                    }`}
+                                    className={`player-winrate ${player.winRate >= 0.5 ? "positive" : "negative"
+                                        }`}
                                 >
                                     Win Rate: {(player.winRate * 100).toFixed(2)}%
                                 </p>
@@ -245,59 +255,59 @@ function PlayerComparison() {
                             aria-label="Line chart comparing player MMR changes over time with unique dash patterns for each player. Horizontal axis shows events over time, vertical axis shows MMR."
                         >
                             <Suspense fallback={<div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
-                            <ResponsiveContainer width="100%" height={400}>
-                                <LineChart
-                                    data={mmrHistoryData}
-                                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                    <XAxis
-                                        dataKey="event"
-                                        stroke="#9ca3af"
-                                        label={{ value: "Events", position: "insideBottom", offset: -5 }}
-                                    />
-                                    <YAxis
-                                        stroke="#9ca3af"
-                                        label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                                        domain={["dataMin - 50", "dataMax + 50"]}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: "#0f172a",
-                                            border: "1px solid #334155",
-                                            borderRadius: "8px",
-                                        }}
-                                        labelStyle={{ color: "#e5e7eb" }}
-                                    />
-                                    <Legend
-                                        formatter={(value, entry, index) => (
-                                            <span>
-                                                <span aria-hidden="true" style={{
-                                                    display: "inline-block",
-                                                    width: 12,
-                                                    height: 2,
-                                                    marginRight: 6,
-                                                    borderBottom: `2px ${PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length] ? "dashed" : "solid"} ${PLAYER_COLORS[index]}`,
-                                                }} />
-                                                {value}
-                                            </span>
-                                        )}
-                                    />
-                                    {playersData.map((player, index) => (
-                                        <Line
-                                            key={player.playerId}
-                                            type="monotone"
-                                            dataKey={player.name}
-                                            stroke={PLAYER_COLORS[index]}
-                                            strokeWidth={2.5}
-                                            strokeDasharray={PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length]}
-                                            strokeLinecap="round"
-                                            dot={false}
-                                            activeDot={{ r: 5, strokeWidth: 0 }}
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <LineChart
+                                        data={mmrHistoryData}
+                                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                        <XAxis
+                                            dataKey="event"
+                                            stroke="#9ca3af"
+                                            label={{ value: "Events", position: "insideBottom", offset: -5 }}
                                         />
-                                    ))}
-                                </LineChart>
-                            </ResponsiveContainer>
+                                        <YAxis
+                                            stroke="#9ca3af"
+                                            label={{ value: "MMR", angle: -90, position: "insideLeft" }}
+                                            domain={["dataMin - 50", "dataMax + 50"]}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: "#0f172a",
+                                                border: "1px solid #334155",
+                                                borderRadius: "8px",
+                                            }}
+                                            labelStyle={{ color: "#e5e7eb" }}
+                                        />
+                                        <Legend
+                                            formatter={(value, entry, index) => (
+                                                <span>
+                                                    <span aria-hidden="true" style={{
+                                                        display: "inline-block",
+                                                        width: 12,
+                                                        height: 2,
+                                                        marginRight: 6,
+                                                        borderBottom: `2px ${PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length] ? "dashed" : "solid"} ${PLAYER_COLORS[index]}`,
+                                                    }} />
+                                                    {value}
+                                                </span>
+                                            )}
+                                        />
+                                        {playersData.map((player, index) => (
+                                            <Line
+                                                key={player.playerId}
+                                                type="monotone"
+                                                dataKey={player.name}
+                                                stroke={PLAYER_COLORS[index]}
+                                                strokeWidth={2.5}
+                                                strokeDasharray={PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length]}
+                                                strokeLinecap="round"
+                                                dot={false}
+                                                activeDot={{ r: 5, strokeWidth: 0 }}
+                                            />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
                             </Suspense>
                         </div>
                         <p className="chart-summary" aria-live="polite">

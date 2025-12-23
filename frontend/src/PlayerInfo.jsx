@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
+import SeasonSelector from "./components/SeasonSelector";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
 
 function PlayerInfo() {
     const [name, setName] = useState("");
+    const [season, setSeason] = useState(1);
     const [recent, setRecent] = useState([]);
     const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails, setPlayerDetails } = usePlayerDetails();
 
@@ -72,7 +74,7 @@ function PlayerInfo() {
             return;
         }
 
-        const data = await fetchPlayerDetails(trimmed);
+        const data = await fetchPlayerDetails(trimmed, season);
         if (data) {
             rememberRecent(trimmed);
             rememberLastDetails(trimmed, data);
@@ -82,10 +84,11 @@ function PlayerInfo() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <PageHeader 
-                    title="Mario Kart Lounge Stats" 
+                <PageHeader
+                    title="Mario Kart Lounge Stats"
                     subtitle="Look up a player by name and see their stats."
-                />
+                >
+                </PageHeader>
 
                 <form
                     className="player-form"
@@ -100,7 +103,14 @@ function PlayerInfo() {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter a player name"
                         aria-label="Player name"
+                        style={{ maxWidth: '300px' }} // Shorten text box as requested
                     />
+
+                    <SeasonSelector
+                        selectedSeason={season}
+                        onSeasonChange={setSeason}
+                    />
+
                     <button
                         type="submit"
                         className="player-button"
@@ -118,7 +128,7 @@ function PlayerInfo() {
                                 className="recent-chip"
                                 onClick={() => {
                                     setName(r);
-                                    fetchPlayerDetails(r).then((data) => {
+                                    fetchPlayerDetails(r, season).then((data) => {
                                         if (data) {
                                             rememberRecent(r);
                                             rememberLastDetails(r, data);
@@ -147,9 +157,9 @@ function PlayerInfo() {
             </div>
 
             {detailedInfo && (
-                <PlayerDetailView 
-                    playerDetails={detailedInfo} 
-                    gradientIdPrefix="mmrGradient-info" 
+                <PlayerDetailView
+                    playerDetails={detailedInfo}
+                    gradientIdPrefix="mmrGradient-info"
                 />
             )}
         </div>

@@ -4,18 +4,20 @@ import { getRankColor } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
 import PageHeader from "./components/PageHeader";
+import SeasonSelector from "./components/SeasonSelector";
 
 function Leaderboard() {
     const navigate = useNavigate();
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    
+    const [season, setSeason] = useState(1);
+
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
     const [totalCount, setTotalCount] = useState(0);
-    
+
     // Filters
     const [minMmr, setMinMmr] = useState("");
     const [maxMmr, setMaxMmr] = useState("");
@@ -59,7 +61,8 @@ function Leaderboard() {
                     sortBy,
                     minMmr,
                     maxMmr,
-                    search: debouncedSearch
+                    search: debouncedSearch,
+                    season
                 },
                 controller.signal
             );
@@ -75,7 +78,7 @@ function Leaderboard() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch]);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season]);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -96,7 +99,7 @@ function Leaderboard() {
     };
 
     const takeToProfile = (playerName) => {
-        navigate(`/player/${encodeURIComponent(playerName)}`);
+        navigate(`/player/${encodeURIComponent(playerName)}?season=${season}`);
     };
 
     const handleRowKeyPress = (e, playerName) => {
@@ -115,13 +118,14 @@ function Leaderboard() {
     return (
         <div className="player-info-page">
             <div className="player-card">
-                <PageHeader 
-                    title="Leaderboard" 
-                    subtitle="Browse top players by MMR, max MMR, events played, and win rate. Use filters to narrow down specific ranges or search by name." 
-                />
+                <PageHeader
+                    title="Leaderboard"
+                    subtitle="Browse top players by MMR, max MMR, events played, and win rate. Use filters to narrow down specific ranges or search by name."
+                >
+                </PageHeader>
 
                 {/* Filter Toggle Button (Mobile) */}
-                <button 
+                <button
                     className="filter-toggle-btn"
                     onClick={() => setFiltersVisible(!filtersVisible)}
                     aria-expanded={filtersVisible}
@@ -131,7 +135,7 @@ function Leaderboard() {
                 </button>
 
                 {/* Filters */}
-                <div 
+                <div
                     id="leaderboard-filters"
                     className={`leaderboard-filters ${filtersVisible ? 'filters-visible' : 'filters-hidden'}`}
                 >
@@ -160,7 +164,9 @@ function Leaderboard() {
                             />
                         </div>
 
-                         <div className="filter-group">
+
+
+                        <div className="filter-group">
                             <label htmlFor="maxMmr">Max MMR</label>
                             <input
                                 id="maxMmr"
@@ -184,6 +190,15 @@ function Leaderboard() {
                                 <option value="eventsPlayed">Events Played</option>
                                 <option value="maxMmr">Max MMR</option>
                             </select>
+                        </div>
+
+                        <div className="filter-group">
+                            <label htmlFor="season-select-filter">Season</label>
+                            <SeasonSelector
+                                selectedSeason={season}
+                                onSeasonChange={setSeason}
+                                id="season-select-filter"
+                            />
                         </div>
                     </div>
                 </div>
@@ -239,8 +254,8 @@ function Leaderboard() {
                                                 {player.name}
                                             </button>
                                         </td>
-                                        <td className="mmr-cell" style={{color: getRankColor(player.mmrRank.name)}}>{player.mmr}</td>
-                                        <td style={{color: getRankColor(player.maxMmrRank.name)}}>{player.maxMmr}</td>
+                                        <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank.name) }}>{player.mmr}</td>
+                                        <td style={{ color: getRankColor(player.maxMmrRank.name) }}>{player.maxMmr}</td>
                                         <td
                                             className={
                                                 player.winRate >= 0.5 ? "positive" : "negative"
