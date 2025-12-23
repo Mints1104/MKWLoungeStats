@@ -140,9 +140,10 @@ export const loungeApi = {
   /**
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
+   * @param {number} season - Season number (default: 1)
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
-  async comparePlayers(names, signal) {
+  async comparePlayers(names, season = 1, signal) {
     if (!Array.isArray(names) || names.length < 2 || names.length > 4) {
       throw new Error("Must provide between 2 and 4 player names");
     }
@@ -152,9 +153,9 @@ export const loungeApi = {
       throw new Error("At least 2 valid player names required");
     }
 
-    logger.api("GET", `/players/compare?names=${validNames.join(",")}`);
+    logger.api("GET", `/players/compare?names=${validNames.join(",")}&season=${season}`);
     const namesParam = validNames.map((n) => encodeURIComponent(n)).join(",");
-    const url = `${API_BASE}/players/compare?names=${namesParam}`;
+    const url = `${API_BASE}/players/compare?names=${namesParam}&season=${season}`;
 
     return fetchApi(url, { signal });
   },
@@ -168,6 +169,7 @@ export const loungeApi = {
    * @param {number} params.minMmr - Minimum MMR filter
    * @param {number} params.maxMmr - Maximum MMR filter
    * @param {string} params.search - Player name search query
+   * @param {number} params.season - Season number (default: 1)
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
   async getLeaderboard(params = {}, signal) {
@@ -178,6 +180,7 @@ export const loungeApi = {
       minMmr,
       maxMmr,
       search,
+      season = 1,
     } = params;
 
     // Convert page to skip for backend
@@ -187,6 +190,7 @@ export const loungeApi = {
       skip: String(skip),
       pageSize: String(pageSize),
       sortBy,
+      season: String(season),
     });
 
     if (minMmr !== undefined && minMmr !== null && minMmr !== "") {

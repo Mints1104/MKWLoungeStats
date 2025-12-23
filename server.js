@@ -172,17 +172,17 @@ const invalidateCache = (predicate) => {
   }
 };
 
-// Validate season (positive integer in a reasonable range)
+// Validate season (non-negative integer in a reasonable range, 0 allowed for pre-season)
 const validateSeason = (season) => {
   if (season === undefined || season === null || season === "") {
     return { valid: false, error: "Season is required" };
   }
 
   const num = Number(season);
-  if (!Number.isInteger(num) || num <= 0 || num > 100) {
+  if (!Number.isInteger(num) || num < 0 || num > 100) {
     return {
       valid: false,
-      error: "Season must be a positive integer less than or equal to 100",
+      error: "Season must be a non-negative integer less than or equal to 100",
     };
   }
 
@@ -344,13 +344,22 @@ app.get("/api/player/details/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
+    const seasonValidation = validateSeason(req.query.season || "1");
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+
     const playerName = validation.sanitized;
+    const season = seasonValidation.sanitized;
     const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
     const full_url = `${base_url}${encodeURIComponent(
       playerName
-    )}&game=mkworld&season=1`;
+    )}&game=mkworld&season=${season}`;
 
-    const cacheKey = getCacheKey("player-details", { name: playerName });
+    const cacheKey = getCacheKey("player-details", {
+      name: playerName,
+      season,
+    });
     const cached = getCache(cacheKey);
     if (cached) {
       return res.json(cached);
@@ -391,16 +400,27 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
+    const seasonValidation = validateSeason(req.query.season || "1");
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+
     const playerName = validation.sanitized;
-    const cacheKey = getCacheKey("player-leaderboard", { name: playerName });
+    const season = seasonValidation.sanitized;
+    const cacheKey = getCacheKey("player-leaderboard", {
+      name: playerName,
+      season,
+    });
     const cached = getCache(cacheKey);
     if (cached) {
       return res.json(cached);
     }
 
     const base_url =
-      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1&search=";
-    const full_url = `${base_url}${encodeURIComponent(playerName)}`;
+      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=";
+    const full_url = `${base_url}${season}&search=${encodeURIComponent(
+      playerName
+    )}`;
     const { data } = await axios.get(full_url);
 
     const player = data.data.find(
@@ -431,6 +451,11 @@ app.get("/api/players/compare", async (req, res) => {
         .json({ error: "Please provide 1-4 player names separated by commas" });
     }
 
+    const seasonValidation = validateSeason(req.query.season || "1");
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+
     // Validate all player names
     const validatedNames = [];
     for (const name of names) {
@@ -443,8 +468,10 @@ app.get("/api/players/compare", async (req, res) => {
       validatedNames.push(validation.sanitized);
     }
 
+    const season = seasonValidation.sanitized;
     const cacheKey = getCacheKey("players-compare", {
       names: validatedNames.sort().join(","),
+      season,
     });
     const cached = getCache(cacheKey);
     if (cached) {
@@ -459,7 +486,7 @@ app.get("/api/players/compare", async (req, res) => {
           params: {
             name: name,
             game: "mkworld",
-            season: 1,
+            season: season,
           },
         })
         .then((response) => response.data)
@@ -491,10 +518,17 @@ app.get("/api/leaderboard", async (req, res) => {
       maxMmr,
       search,
       sortBy = "Mmr",
+      season,
     } = req.query;
 
+    const seasonValidation = validateSeason(season || "1");
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+
+    const normalizedSeason = seasonValidation.sanitized;
     const base_url =
-      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=1";
+      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=";
 
     const params = {
       skip: parseInt(skip),
@@ -515,13 +549,17 @@ app.get("/api/leaderboard", async (req, res) => {
       }
     }
 
-    const cacheKey = getCacheKey("leaderboard", params);
+    const cacheKey = getCacheKey("leaderboard", {
+      ...params,
+      season: normalizedSeason,
+    });
     const cached = getCache(cacheKey);
     if (cached) {
       return res.json(cached);
     }
 
-    const axiosResponse = await axios.get(base_url, { params });
+    const full_url = `${base_url}${normalizedSeason}`;
+    const axiosResponse = await axios.get(full_url, { params });
 
     const data = axiosResponse.data;
 
