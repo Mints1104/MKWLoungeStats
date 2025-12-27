@@ -78,6 +78,29 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         }
     }, [eventLimitMode, eventLimitPreference]);
 
+    // Sanitize and deduplicate events to prevent mutation bugs and recursive duplication
+    const sanitizedEvents = useMemo(() => {
+        if (!playerDetails || !Array.isArray(playerDetails.mmrChanges)) return [];
+
+        const unique = new Map();
+        // Traverse original array
+        playerDetails.mmrChanges.forEach((e) => {
+            // Create a unique key. Prefer changeId, fallback to composite key.
+            const key = e.changeId
+                ? `id-${e.changeId}`
+                : `${e.time}-${e.newMmr}-${e.reason}`;
+
+            // Only add if not already present
+            if (!unique.has(key)) {
+                // Store a shallow copy to prevent mutation
+                unique.set(key, { ...e });
+            }
+        });
+
+        // Return values, preserving original order
+        return Array.from(unique.values());
+    }, [playerDetails]);
+
     // Derived stats for 12p / 24p events
     const navigate = useNavigate();
 
@@ -88,28 +111,28 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         avg24,
         winRate12,
         winRate24,
-    } = calculateEventStats(playerDetails?.mmrChanges);
+    } = calculateEventStats(sanitizedEvents);
 
     const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
         return calculateMmrHistoryData(
-            playerDetails?.mmrChanges,
+            sanitizedEvents,
             getRankForMmrValue,
             `${gradientIdPrefix}-${playerDetails?.playerId || 'default'}`
         );
-    }, [playerDetails?.mmrChanges, playerDetails?.playerId, gradientIdPrefix]);
+    }, [sanitizedEvents, playerDetails?.playerId, gradientIdPrefix]);
 
     // Events to display based on filter and limit
     let eventsToShow = [];
     let totalFilteredEvents = 0;
-    if (playerDetails && Array.isArray(playerDetails.mmrChanges)) {
-        let filtered = playerDetails.mmrChanges;
+    if (sanitizedEvents.length > 0) {
+        let filtered;
         if (eventFilter === "12") {
-            filtered = filtered.filter((e) => e.reason === "Table" && e.numPlayers === 12);
+            filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 12);
         } else if (eventFilter === "24") {
-            filtered = filtered.filter((e) => e.reason === "Table" && e.numPlayers === 24);
+            filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 24);
         } else {
-            // For "all" filter, include both tables and penalties
-            filtered = filtered;
+            // For "all" filter, include everything (tables, penalties, deleted, etc.)
+            filtered = sanitizedEvents;
         }
         totalFilteredEvents = filtered.length;
         eventsToShow = filtered.slice(0, eventLimit);
@@ -171,29 +194,29 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
 
     // Score distribution data computation
     const scoreDistributionData = useMemo(() => {
-        return calculateScoreDistribution(playerDetails?.mmrChanges, scoreFilter);
-    }, [playerDetails?.mmrChanges, scoreFilter]);
+        return calculateScoreDistribution(sanitizedEvents, scoreFilter);
+    }, [sanitizedEvents, scoreFilter]);
 
     // Find highest score and its table (only from table events, not penalties)
     const highestScoreData = useMemo(() => {
-        if (!playerDetails?.mmrChanges?.length) return null;
-        
+        if (!sanitizedEvents.length) return null;
+
         // Only consider table events (exclude penalties)
-        const tableEvents = playerDetails.mmrChanges.filter(
+        const tableEvents = sanitizedEvents.filter(
             (e) => e.reason === "Table" && typeof e.score === "number" && !Number.isNaN(e.score)
         );
-        
+
         if (!tableEvents.length) return null;
-        
-        const highestEvent = tableEvents.reduce((max, e) => 
+
+        const highestEvent = tableEvents.reduce((max, e) =>
             e.score > max.score ? e : max
         );
-        
+
         return {
             score: highestEvent.score,
             changeId: highestEvent.changeId,
         };
-    }, [playerDetails?.mmrChanges]);
+    }, [sanitizedEvents]);
 
     if (!playerDetails) return null;
 
@@ -252,9 +275,8 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                     {twelveCount} 12p / {twentyFourCount} 24p)
                 </p>
                 <p
-                    className={`player-winrate ${
-                        playerDetails.winRate >= 0.5 ? "positive" : "negative"
-                    }`}
+                    className={`player-winrate ${playerDetails.winRate >= 0.5 ? "positive" : "negative"
+                        }`}
                 >
                     Win Rate: {(playerDetails.winRate * 100).toFixed(2)}%
                     {" "}
@@ -393,7 +415,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 onChange={(e) => {
                                     const value = e.target.value;
                                     setEventInputValue(value);
-                                    
+
                                     // Only update the actual limit if valid
                                     const numValue = Number(value);
                                     if (!Number.isNaN(numValue) && numValue >= 1) {
