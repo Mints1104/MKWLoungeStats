@@ -6,6 +6,9 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
     const navigate = useNavigate();
     const isTable = event.reason === "Table";
     const isPenalty = event.reason === "Strike";
+    const isTableDeleted = event.reason ==="TableDelete";
+    const isBonus = event.reason ==="Bonus";
+    const isPlacement = event.reason ==="Placement"
 
     // Determine which average to use based on event type, falling back to overall average if specific average is null
     const relevantAverage = event.numPlayers === 12 
@@ -14,32 +17,43 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
         ? (avg24 != null ? avg24 : averageScore)
         : averageScore;
 
+    const getEventMessage = () => {
+    if (isPenalty) {
+        return (
+            <>
+                Received a <span className="penalty-label">Penalty (Strike)</span>
+            </>
+        );
+    }
+    if (isTable && event.changeId != null) {
+        const isAboveAvg = relevantAverage != null && event.score > relevantAverage;
+        return (
+            <>
+                Scored{" "}
+                <span className={isAboveAvg ? "above-average" : "below-average"}>
+                    {event.score}
+                </span>{" "}
+                in a {event.numPlayers}p event
+            </>
+        );
+    }
+    if (isPlacement) return "Placement Event";
+    if (isBonus) return "Bonus";
+    if (isTableDeleted) return "Table Deleted";
+
+    // 4. Fallback if no conditions are met
+    return "Unknown";
+};
+    
+
+
+    
+
     return (
         <article className="event-card">
             <div className="event-header">
                 <p className="event-score">
-                    {isPenalty ? (
-                        <>
-                            Received a{" "}
-                            <span className="penalty-label">Penalty (Strike)</span>
-                        </>
-                    ) : isTable && event.changeId != null ? (
-                        <>
-                            Scored{" "}
-                            <span
-                                className={
-                                    relevantAverage != null && event.score > relevantAverage
-                                        ? "above-average"
-                                        : "below-average"
-                                }
-                            >
-                                {event.score}
-                            </span>{" "}
-                            in a {event.numPlayers}p event
-                        </>
-                    ) : (
-                        "Placement Event"
-                    )}
+                   {getEventMessage()}
                 </p>
 
                 <p
