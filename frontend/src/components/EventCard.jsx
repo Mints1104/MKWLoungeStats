@@ -17,6 +17,8 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
         ? (avg24 != null ? avg24 : averageScore)
         : averageScore;
 
+
+    //Helper function to show the correct message regarding the player's event based on the API's event "reason".
     const getEventMessage = () => {
     if (isPenalty) {
         return (
@@ -44,10 +46,6 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
     // 4. Fallback if no conditions are met
     return "Unknown";
 };
-    
-
-
-    
 
     return (
         <article className="event-card">

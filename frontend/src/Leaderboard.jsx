@@ -27,7 +27,7 @@ function Leaderboard() {
     const [filtersVisible, setFiltersVisible] = useState(true);
     const requestRef = useRef(null);
 
-    // Debounced search handler
+    // Debounced search handler to prevent searching on every keystroke
     const debouncedSetSearch = useMemo(
         () => debounce((value) => {
             setDebouncedSearch(value);

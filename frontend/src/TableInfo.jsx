@@ -62,6 +62,7 @@ function TableInfo() {
     return date.toLocaleString();
   };
 
+  //get the table image from lounge API
   const tableImageUrl =
     result?.url && typeof result.url === "string"
       ? `https://lounge.mkcentral.com${result.url}`

@@ -103,7 +103,7 @@ function PlayerInfo() {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter a player name"
                         aria-label="Player name"
-                        style={{ maxWidth: '300px' }} // Shorten text box as requested
+                        
                     />
 
                     <SeasonSelector
