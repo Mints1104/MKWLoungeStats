@@ -58,7 +58,7 @@ A full-stack web application for viewing and analyzing Mario Kart World player s
 1. Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Mints1104/MKWLoungeStats
 cd MKWorldLoungeStats
 ```
 
@@ -176,10 +176,6 @@ The application implements an in-memory cache with the following characteristics
 - Player details cache: 120 seconds
 - Maximum cache size: 1000 entries
 - Automatic cache invalidation on errors
-
-## License
-
-ISC
 
 ## Data Source
 
