@@ -36,7 +36,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
                         <span className={isAboveAvg ? "above-average" : "below-average"}>
                             {event.score}
                         </span>{" "}
-                        in a {event.numPlayers}p event
+
                     </div>
                     <div>
                         Placed: #{event.rank}
