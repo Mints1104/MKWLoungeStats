@@ -15,7 +15,7 @@ function PlayerProfile() {
     const season = seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 1;
 
     const handleSeasonChange = (newSeason) => {
-        setSearchParams({ season: newSeason });
+        setSearchParams({ season: newSeason }, { replace: true });
     };
 
     const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails();
