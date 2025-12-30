@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
@@ -13,7 +14,9 @@ html, body {
   box-sizing: border-box;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -23,9 +26,11 @@ html, body {
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -34,6 +39,7 @@ html, body {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -69,7 +75,7 @@ html, body {
 
 .player-info-page {
   min-height: 100vh;
-  
+
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -224,12 +230,10 @@ html, body {
 
 .skeleton-row {
   height: 3rem;
-  background: linear-gradient(
-    90deg,
-    #1e293b 0%,
-    #334155 50%,
-    #1e293b 100%
-  );
+  background: linear-gradient(90deg,
+      #1e293b 0%,
+      #334155 50%,
+      #1e293b 100%);
   background-size: 200% 100%;
   border-radius: 8px;
   animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -239,6 +243,7 @@ html, body {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -454,7 +459,7 @@ html, body {
   text-align: left;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
-  
+
 }
 
 .event-card:hover {
@@ -480,7 +485,7 @@ html, body {
   font-size: 0.9rem;
 }
 
-.event-score > div + div {
+.event-score>div+div {
   margin-top: 0.25rem;
 }
 
@@ -1017,6 +1022,7 @@ html, body {
 
 /* Mobile breakpoints */
 @media (max-width: 768px) {
+
   /* Make player-card full-width on mobile */
   .player-card {
     width: 100%;
@@ -1071,7 +1077,7 @@ html, body {
   .filter-toggle-btn {
     display: block;
   }
-  
+
   /* Leaderboard table with horizontal scroll and all columns visible */
   .leaderboard-table-wrapper {
     overflow-x: auto;
@@ -1089,7 +1095,7 @@ html, body {
   .leaderboard-table td {
     padding: 0.875rem 0.75rem;
   }
-  
+
   /* Fix iOS Safari auto-zoom on input focus */
   .player-input,
   .page-size-select {
@@ -1101,7 +1107,7 @@ html, body {
     padding: 0.5rem 0;
     margin-bottom: 1rem;
   }
-  
+
   .nav-container {
     flex-direction: row;
     justify-content: space-between;
@@ -1109,7 +1115,7 @@ html, body {
     gap: 0.5rem;
     padding: 0 0.75rem;
   }
-  
+
   .nav-logo {
     font-size: 1.1rem;
     flex-shrink: 0;
@@ -1124,7 +1130,7 @@ html, body {
     -ms-overflow-style: none;
     flex-shrink: 1;
   }
-  
+
   .nav-links::-webkit-scrollbar {
     display: none;
   }
@@ -1195,7 +1201,7 @@ html, body {
     padding: 0.65rem 0.85rem;
     font-size: 16px;
   }
-  
+
   .page-size-select {
     font-size: 16px;
   }
@@ -1210,7 +1216,7 @@ html, body {
     padding: 0.75rem 0.6rem;
     white-space: nowrap;
   }
-  
+
   .leaderboard-table tbody tr {
     border-bottom: 2px solid rgba(51, 65, 85, 0.5);
   }
@@ -1221,7 +1227,7 @@ html, body {
     font-size: 0.8rem;
     gap: 0.5rem;
   }
-  
+
   .pagination-info {
     font-size: 0.75rem;
   }
@@ -1230,7 +1236,7 @@ html, body {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }
-  
+
   .pagination-page {
     font-size: 0.8rem;
   }
@@ -1239,15 +1245,15 @@ html, body {
   html {
     font-size: 14px;
   }
-  
+
   .navigation {
     padding: 0.4rem 0;
   }
-  
+
   .nav-container {
     padding: 0 0.5rem;
   }
-  
+
   .nav-logo {
     font-size: 1rem;
   }
@@ -1256,7 +1262,7 @@ html, body {
     padding: 0.4rem 0.6rem;
     font-size: 0.8rem;
   }
-  
+
   /* Hide page size selector on very small screens */
   .page-size-selector {
     display: none;
@@ -1265,6 +1271,70 @@ html, body {
   /* Event cards compact */
   .event-card {
     padding: 0.75rem 0.85rem 0.9rem;
+  }
+
+  /* ErrorBoundary Styling */
+  .error-boundary-container {
+    padding: 2rem;
+    text-align: center;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #0f172a;
+  }
+
+  .error-boundary-title {
+    color: #ef4444;
+    margin-bottom: 1rem;
+  }
+
+  .error-boundary-message {
+    color: #e5e7eb;
+    margin-bottom: 1.5rem;
+  }
+
+  .error-boundary-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .error-details {
+    margin-top: 2rem;
+    text-align: left;
+    max-width: 600px;
+  }
+
+  .error-summary {
+    cursor: pointer;
+    color: #9ca3af;
+  }
+
+  .error-pre {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #1e293b;
+    color: #e5e7eb;
+    border-radius: 4px;
+    overflow: auto;
+    font-size: 0.875rem;
+    border: 1px solid #334155;
+  }
+
+  /* Chart Loader */
+  .chart-loader {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 0.9rem;
   }
 
   .event-header {

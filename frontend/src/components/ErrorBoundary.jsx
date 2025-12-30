@@ -14,7 +14,7 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // Log error details for debugging
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error: error,
       errorInfo: errorInfo
@@ -28,52 +28,26 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // Fallback UI
       return (
-        <div style={{
-          padding: '2rem',
-          textAlign: 'center',
-          minHeight: '400px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#0f172a'
-        }}>
-          <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>
+        <div className="error-boundary-container">
+          <h2 className="error-boundary-title">
             Something went wrong
           </h2>
-          <p style={{ color: '#e5e7eb', marginBottom: '1.5rem' }}>
+          <p className="error-boundary-message">
             We encountered an unexpected error. Please try refreshing the page.
           </p>
           <button
             onClick={() => window.location.reload()}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '1rem'
-            }}
+            className="error-boundary-btn"
           >
             Refresh Page
           </button>
-          
+
           {process.env.NODE_ENV === 'development' && this.state.error && (
-            <details style={{ marginTop: '2rem', textAlign: 'left', maxWidth: '600px' }}>
-              <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>
+            <details className="error-details">
+              <summary className="error-summary">
                 Error Details (Development Only)
               </summary>
-              <pre style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: '#1e293b',
-                color: '#e5e7eb',
-                borderRadius: '4px',
-                overflow: 'auto',
-                fontSize: '0.875rem',
-                border: '1px solid #334155'
-              }}>
+              <pre className="error-pre">
                 {this.state.error.toString()}
                 {this.state.errorInfo && this.state.errorInfo.componentStack}
               </pre>

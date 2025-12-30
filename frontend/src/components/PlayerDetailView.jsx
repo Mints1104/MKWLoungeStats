@@ -299,7 +299,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                     role="img"
                     aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
                 >
-                    <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
+                    <Suspense fallback={<div className="chart-loader">Loading chart...</div>}>
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart
                                 data={mmrHistoryData}
@@ -369,7 +369,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                     role="img"
                     aria-label="Bar chart showing how often different score ranges occur in this player's events. Horizontal axis shows score ranges, vertical axis shows event counts."
                 >
-                    <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart...</div>}>
+                    <Suspense fallback={<div className="chart-loader">Loading chart...</div>}>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart
                                 data={scoreDistributionData}
@@ -479,6 +479,7 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                         <StatCard
                             label="Win rate"
                             value={recentWinRate != null ? `${(recentWinRate * 100).toFixed(1)}%` : "N/A"}
+                            valueClassName={recentWinRate >= 0.5 ? "positive" : "negative"}
                         />
                         <StatCard
                             label="MMR delta"
@@ -486,14 +487,17 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 const delta = eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0);
                                 return delta > 0 ? `+${delta}` : delta;
                             })() : "N/A"}
+                            valueClassName={eventsToShow.length > 0 && eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0) > 0 ? "positive" : "negative"}
                         />
                         <StatCard
                             label="Largest gain"
                             value={largestGain != null ? (largestGain > 0 ? `+${largestGain}` : largestGain) : "N/A"}
+                            valueClassName="positive"
                         />
                         <StatCard
                             label="Largest loss"
                             value={largestLoss != null ? largestLoss : "N/A"}
+                            valueClassName="negative"
                         />
                     </div>
                 )}
