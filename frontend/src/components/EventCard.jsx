@@ -1,63 +1,70 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatTimeAgo } from "../utils/playerUtils";
+import { formatTimeAgo, getEventFormat } from "../utils/playerUtils";
 
 const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 }) {
     const navigate = useNavigate();
     const isTable = event.reason === "Table";
     const isPenalty = event.reason === "Strike";
-    const isTableDeleted = event.reason ==="TableDelete";
-    const isBonus = event.reason ==="Bonus";
-    const isPlacement = event.reason ==="Placement"
+    const isTableDeleted = event.reason === "TableDelete";
+    const isBonus = event.reason === "Bonus";
+    const isPlacement = event.reason === "Placement"
 
     // Determine which average to use based on event type, falling back to overall average if specific average is null
-    const relevantAverage = event.numPlayers === 12 
+    const relevantAverage = event.numPlayers === 12
         ? (avg12 != null ? avg12 : averageScore)
-        : event.numPlayers === 24 
-        ? (avg24 != null ? avg24 : averageScore)
-        : averageScore;
+        : event.numPlayers === 24
+            ? (avg24 != null ? avg24 : averageScore)
+            : averageScore;
 
 
     //Helper function to show the correct message regarding the player's event based on the API's event "reason".
     const getEventMessage = () => {
-    if (isPenalty) {
-        return (
-            <>
-                Received a <span className="penalty-label">Penalty (Strike)</span>
-            </>
-        );
-    }
-    if (isTable && event.changeId != null) {
-        const isAboveAvg = relevantAverage != null && event.score > relevantAverage;
-        return (
-            <>
-                Scored{" "}
-                <span className={isAboveAvg ? "above-average" : "below-average"}>
-                    {event.score}
-                </span>{" "}
-                in a {event.numPlayers}p event
-            </>
-        );
-    }
-    if (isPlacement) return "Placement Event";
-    if (isBonus) return "Bonus";
-    if (isTableDeleted) return "Table Deleted";
+        if (isPenalty) {
+            return (
+                <>
+                    Received a <span className="penalty-label">Penalty (Strike)</span>
+                </>
+            );
+        }
+        if (isTable && event.changeId != null) {
+            const isAboveAvg = relevantAverage != null && event.score > relevantAverage;
+            return (
+                <>
+                    <div>
+                        Scored{" "}
+                        <span className={isAboveAvg ? "above-average" : "below-average"}>
+                            {event.score}
+                        </span>{" "}
+                        in a {event.numPlayers}p event
+                    </div>
+                    <div>
+                        Placed: #{event.rank}
+                    </div>
+                    <div>
+                        Format: {event.numPlayers}p {getEventFormat(event.numPlayers, event.numTeams)} {event.tier}
+                    </div>
+                </>
+            );
+        }
+        if (isPlacement) return "Placement Event";
+        if (isBonus) return "Bonus";
+        if (isTableDeleted) return "Table Deleted";
 
-    // 4. Fallback if no conditions are met
-    return "Unknown";
-};
+        // 4. Fallback if no conditions are met
+        return "Unknown";
+    };
 
     return (
         <article className="event-card">
             <div className="event-header">
-                <p className="event-score">
-                   {getEventMessage()}
-                </p>
+                <div className="event-score">
+                    {getEventMessage()}
+                </div>
 
                 <p
-                    className={`event-delta ${
-                        event.mmrDelta > 0 ? "positive" : "negative"
-                    }`}
+                    className={`event-delta ${event.mmrDelta > 0 ? "positive" : "negative"
+                        }`}
                 >
                     {event.mmrDelta > 0 ? "+" : ""}
                     {event.mmrDelta}

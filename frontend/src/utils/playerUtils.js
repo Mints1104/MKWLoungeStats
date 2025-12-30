@@ -108,3 +108,11 @@ export function getRankForMmrValue(mmr) {
     color: getRankColor(threshold.name),
   };
 }
+
+export function getEventFormat(numPlayers, numTeams) {
+  if (!numPlayers || !numTeams) return "";
+  if (numPlayers === numTeams) return "FFA";
+
+  const teamSize = Math.floor(numPlayers / numTeams);
+  return `${teamSize}v${teamSize}`;
+}
