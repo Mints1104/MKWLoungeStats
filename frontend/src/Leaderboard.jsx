@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Flag from "react-world-flags";
 import { useNavigate } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
@@ -244,15 +245,24 @@ function Leaderboard() {
                                         onKeyDown={(e) => handleRowKeyPress(e, player.name)}
                                     >
                                         <td className="rank-cell">#{player.overallRank || "N/A"}</td>
-                                        <td>
-                                            <button
-                                                type="button"
-                                                className="leaderboard-name"
-                                                onClick={() => takeToProfile(player.name)}
-                                                aria-label={`View profile for ${player.name}`}
-                                            >
-                                                {player.name}
-                                            </button>
+                                        <td className="player-name-cell">
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                {player.countryCode && (
+                                                    <Flag
+                                                        code={player.countryCode}
+                                                        style={{ width: "20px", height: "15px", objectFit: "cover" }}
+                                                        aria-label={`Flag of ${player.countryCode}`}
+                                                    />
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    className="leaderboard-name"
+                                                    onClick={() => takeToProfile(player.name)}
+                                                    aria-label={`View profile for ${player.name}`}
+                                                >
+                                                    {player.name}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank.name) }}>{player.mmr}</td>
                                         <td style={{ color: getRankColor(player.maxMmrRank.name) }}>{player.maxMmr}</td>
