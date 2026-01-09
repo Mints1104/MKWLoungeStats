@@ -406,6 +406,8 @@ body {
   .events-controls {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
   }
 }
 
