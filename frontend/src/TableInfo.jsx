@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import Flag from "react-world-flags";
 import { useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
@@ -149,7 +150,7 @@ function TableInfo() {
             </p>
             <p>
               <strong>Players:</strong> {result.numPlayers ?? "N/A"}
-              
+
             </p>
             <p>
               <strong>Created:</strong> {formatIso(result.createdOn)}
@@ -205,7 +206,22 @@ function TableInfo() {
                                 {score.playerName}
                               </button>
                             </td>
-                            <td>{score.playerCountryCode || "—"}</td>
+                            <td>
+                              {score.playerCountryCode ? (
+                                <Flag
+                                  code={score.playerCountryCode}
+                                  style={{
+                                    width: "20px",
+                                    height: "15px",
+                                    objectFit: "cover",
+                                    display: "inline-block",
+                                  }}
+                                  aria-label={`Flag of ${score.playerCountryCode}`}
+                                />
+                              ) : (
+                                "—"
+                              )}
+                            </td>
                             <td>{score.score}</td>
                             <td>
                               <span style={{ color: prevRank.color }}>
@@ -222,8 +238,8 @@ function TableInfo() {
                                 score.delta > 0
                                   ? "positive"
                                   : score.delta < 0
-                                  ? "negative"
-                                  : ""
+                                    ? "negative"
+                                    : ""
                               }
                             >
                               {score.delta > 0 ? `+${score.delta}` : score.delta}
