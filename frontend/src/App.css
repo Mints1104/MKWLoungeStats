@@ -292,6 +292,10 @@ body {
 .player-summary h2 {
   margin-top: 0;
   margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .player-summary p {
@@ -1344,4 +1348,29 @@ body {
     align-items: flex-start;
     gap: 0.35rem;
   }
+}
+
+/* Flag Icon Styling */
+.flag-icon-small {
+  width: 20px;
+  height: 15px;
+  object-fit: cover;
+}
+
+.flag-icon-medium {
+  width: 30px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.player-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-flag {
+  display: inline-block;
 }

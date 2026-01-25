@@ -210,12 +210,7 @@ function TableInfo() {
                               {score.playerCountryCode ? (
                                 <Flag
                                   code={score.playerCountryCode}
-                                  style={{
-                                    width: "20px",
-                                    height: "15px",
-                                    objectFit: "cover",
-                                    display: "inline-block",
-                                  }}
+                                  className="flag-icon-small inline-flag"
                                   aria-label={`Flag of ${score.playerCountryCode}`}
                                 />
                               ) : (

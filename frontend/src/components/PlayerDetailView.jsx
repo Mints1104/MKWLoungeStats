@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
+import Flag from "react-world-flags";
 import { getNextRank, getRankForMmrValue, getRankColor } from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
 import { calculateMmrHistoryData, calculateScoreDistribution } from "../utils/chartUtils";
@@ -224,7 +225,14 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
         <div className="player-results">
             <div className="player-summary">
                 <h2>
-                    Stats for{" "}
+                    <span>Stats for</span>
+                    {playerDetails.countryCode && (
+                        <Flag
+                            code={playerDetails.countryCode}
+                            className="flag-icon-medium"
+                            aria-label={`Flag of ${playerDetails.countryCode}`}
+                        />
+                    )}
                     <span style={{ color: getRankColor(playerDetails.rank) }}>
                         {playerDetails.name}
                     </span>

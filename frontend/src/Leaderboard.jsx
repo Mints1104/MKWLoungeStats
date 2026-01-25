@@ -246,11 +246,11 @@ function Leaderboard() {
                                     >
                                         <td className="rank-cell">#{player.overallRank || "N/A"}</td>
                                         <td className="player-name-cell">
-                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                            <div className="player-name-container">
                                                 {player.countryCode && (
                                                     <Flag
                                                         code={player.countryCode}
-                                                        style={{ width: "20px", height: "15px", objectFit: "cover" }}
+                                                        className="flag-icon-small"
                                                         aria-label={`Flag of ${player.countryCode}`}
                                                     />
                                                 )}
