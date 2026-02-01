@@ -266,9 +266,9 @@ export const loungeApi = {
     const { season = 2, game = "mkworld" } = params;
 
     const seasonNum = Number(season);
-    if (!Number.isInteger(seasonNum) || seasonNum <= 0 || seasonNum > 100) {
+    if (!Number.isInteger(seasonNum) || seasonNum < 0 || seasonNum > 100) {
       throw new Error(
-        "Season must be a positive integer less than or equal to 100",
+        "Season must be a positive integer (or 0) less than or equal to 100",
       );
     }
 

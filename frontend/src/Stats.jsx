@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
+import SeasonSelector from "./components/SeasonSelector";
 import { getRankColor } from "./utils/playerUtils";
 import {
   ResponsiveContainer,
@@ -37,6 +38,7 @@ function Stats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [season, setSeason] = useState(2);
   const requestRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -51,7 +53,7 @@ function Stats() {
         setStats(null);
 
         const data = await loungeApi.getPlayerStats(
-          { season: 1, game: "mkworld" },
+          { season, game: "mkworld" },
           controller.signal
         );
         setStats(data || null);
@@ -71,7 +73,7 @@ function Stats() {
       controller.abort();
       requestRef.current = null;
     };
-  }, []);
+  }, [season]);
 
   useEffect(() => {
     function handleResize() {
@@ -150,10 +152,13 @@ function Stats() {
   return (
     <div className="player-info-page">
       <div className="player-card">
-        <PageHeader
-          title="Lounge Overview"
-          subtitle="Global player statistics for Mario Kart World Lounge."
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <PageHeader
+            title="Lounge Overview"
+            subtitle="Global player statistics for Mario Kart World Lounge."
+          />
+          <SeasonSelector selectedSeason={season} onSeasonChange={setSeason} />
+        </div>
 
         {error && (
           <p className="player-error" role="alert" aria-live="assertive">
