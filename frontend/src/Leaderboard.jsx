@@ -205,14 +205,16 @@ function Leaderboard() {
                             />
                         </div>
 
-                        <div className="filter-group">
-                            <label htmlFor="mmr-select-filter">MMR Type</label>
-                            <MMRSelector
-                                selectedMMR={mmrType}
-                                onMMRChange={setMmrType}
-                                id="mmr-select-filter"
-                            />
-                        </div>
+                        {season >= 2 && (
+                            <div className="filter-group">
+                                <label htmlFor="mmr-select-filter">MMR Type</label>
+                                <MMRSelector
+                                    selectedMMR={mmrType}
+                                    onMMRChange={setMmrType}
+                                    id="mmr-select-filter"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

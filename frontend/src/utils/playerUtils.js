@@ -89,6 +89,19 @@ export const RANK_THRESHOLDS = [
   { name: "Grandmaster", min: 14500, max: Infinity },
 ];
 
+export const RANK_THRESHOLDS_24P = [
+  { name: "Iron", min: 0, max: 1999 },
+  { name: "Bronze", min: 2000, max: 3999 },
+  { name: "Silver", min: 4000, max: 5999 },
+  { name: "Gold", min: 6000, max: 7999 },
+  { name: "Platinum", min: 8000, max: 9999 },
+  { name: "Sapphire", min: 10000, max: 11499 },
+  { name: "Ruby", min: 11500, max: 12999 },
+  { name: "Diamond", min: 13000, max: 14499 },
+  { name: "Master", min: 14500, max: 15499 },
+  { name: "Grandmaster", min: 15500, max: Infinity },
+];
+
 export function getRankForMmrValue(mmr) {
   if (mmr == null || Number.isNaN(Number(mmr))) {
     return { name: null, color: "#38bdf8" };
