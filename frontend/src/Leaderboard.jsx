@@ -6,13 +6,15 @@ import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
+import MMRSelector from "./components/MMRSelector";
 
 function Leaderboard() {
     const navigate = useNavigate();
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [season, setSeason] = useState(1);
+    const [season, setSeason] = useState(2);
+    const [mmrType, setMmrType] = useState(24);
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +65,8 @@ function Leaderboard() {
                     minMmr,
                     maxMmr,
                     search: debouncedSearch,
-                    season
+                    season,
+                    mmrType 
                 },
                 controller.signal
             );
@@ -79,7 +82,7 @@ function Leaderboard() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season]);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season, mmrType]);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -199,6 +202,15 @@ function Leaderboard() {
                                 selectedSeason={season}
                                 onSeasonChange={setSeason}
                                 id="season-select-filter"
+                            />
+                        </div>
+
+                        <div className="filter-group">
+                            <label htmlFor="mmr-select-filter">MMR Type</label>
+                            <MMRSelector
+                                selectedMMR={mmrType}
+                                onMMRChange={setMmrType}
+                                id="mmr-select-filter"
                             />
                         </div>
                     </div>

@@ -1,46 +1,46 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
+import MMRSelector from "./components/MMRSelector";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
 
 function PlayerInfo() {
-    const [name, setName] = useState("");
-    const [season, setSeason] = useState(1);
-    const [recent, setRecent] = useState([]);
-    const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails, setPlayerDetails } = usePlayerDetails();
-
-    // Load recent searches once on mount
-    useEffect(() => {
+    // 1. Initialize 'recent' lazily from localStorage
+    const [recent, setRecent] = useState(() => {
         try {
             const saved = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
-            if (Array.isArray(saved)) {
-                setRecent(saved.slice(0, 3));
-            }
+            return Array.isArray(saved) ? saved.slice(0, 3) : [];
         } catch (e) {
             console.warn("Failed to load recent searches", e);
+            return [];
         }
-    }, []);
+    });
 
-    // Restore last viewed player details (so going back doesn't clear them)
-    // Uses sessionStorage so it only persists during the current tab session
-    useEffect(() => {
+    // 2. Initialize 'name' and 'initialDetails' lazily from sessionStorage
+    const [initialState] = useState(() => {
         try {
             const raw = sessionStorage.getItem(LAST_DETAILS_KEY);
-            if (!raw) return;
+            if (!raw) return { name: "", details: null };
             const parsed = JSON.parse(raw);
             if (parsed && parsed.name && parsed.data) {
-                setName(parsed.name);
-                setPlayerDetails(parsed.data);
+                return { name: parsed.name, details: parsed.data };
             }
         } catch (e) {
             console.warn("Failed to restore last player details", e);
         }
-    }, [setPlayerDetails]);
+        return { name: "", details: null };
+    });
 
+    const [name, setName] = useState(initialState.name);
+    const [season, setSeason] = useState(2);
+    const [mmrType, setMmrType] = useState(24);
+
+    // 3. Pass initialDetails to the hook
+    const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails(initialState.details);
     const rememberRecent = (value) => {
         const clean = value.trim();
         if (!clean) return;
@@ -74,12 +74,20 @@ function PlayerInfo() {
             return;
         }
 
-        const data = await fetchPlayerDetails(trimmed, season);
+        const data = await fetchPlayerDetails(trimmed, season, mmrType);
         if (data) {
             rememberRecent(trimmed);
             rememberLastDetails(trimmed, data);
         }
     };
+
+    // Auto-fetch when season or mmrType changes, if we have a valid name
+    useEffect(() => {
+        if (name.trim()) {
+            getPlayerInfo();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [season, mmrType]);
 
     return (
         <div className="player-info-page">
@@ -106,10 +114,18 @@ function PlayerInfo() {
                         
                     />
 
-                    <SeasonSelector
-                        selectedSeason={season}
-                        onSeasonChange={setSeason}
-                    />
+                    <div className="season-selector-container" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
+                        <SeasonSelector
+                            selectedSeason={season}
+                            onSeasonChange={setSeason}
+                        />
+                        {season >= 2 && (
+                            <MMRSelector
+                                selectedMMR={mmrType}
+                                onMMRChange={setMmrType}
+                            />
+                        )}
+                    </div>
 
                     <button
                         type="submit"
@@ -128,7 +144,7 @@ function PlayerInfo() {
                                 className="recent-chip"
                                 onClick={() => {
                                     setName(r);
-                                    fetchPlayerDetails(r, season).then((data) => {
+                                    fetchPlayerDetails(r, season, mmrType).then((data) => {
                                         if (data) {
                                             rememberRecent(r);
                                             rememberLastDetails(r, data);
@@ -159,6 +175,7 @@ function PlayerInfo() {
             {detailedInfo && (
                 <PlayerDetailView
                     playerDetails={detailedInfo}
+                    season={season}
                     gradientIdPrefix="mmrGradient-info"
                 />
             )}

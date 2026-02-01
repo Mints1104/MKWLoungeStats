@@ -1,10 +1,10 @@
 export function formatTimeAgo(dateInput) {
   const ms =
-    typeof dateInput === "number"
-      ? dateInput.toString().length === 10
-        ? dateInput * 1000
-        : dateInput
-      : new Date(dateInput).getTime();
+    typeof dateInput === "number" ?
+      dateInput.toString().length === 10 ?
+        dateInput * 1000
+      : dateInput
+    : new Date(dateInput).getTime();
 
   const diff = Date.now() - ms;
   const sec = Math.floor(diff / 1000);
@@ -78,15 +78,15 @@ export function getRankColor(rank) {
 
 export const RANK_THRESHOLDS = [
   { name: "Iron", min: 0, max: 1999 },
-  { name: "Bronze", min: 2000, max: 3499 },
-  { name: "Silver", min: 3500, max: 4999 },
-  { name: "Gold", min: 5000, max: 6499 },
-  { name: "Platinum", min: 6500, max: 7999 },
-  { name: "Sapphire", min: 8000, max: 9499 },
-  { name: "Ruby", min: 9500, max: 10999 },
-  { name: "Diamond", min: 11000, max: 12499 },
-  { name: "Master", min: 12500, max: 13499 },
-  { name: "Grandmaster", min: 13500, max: Infinity },
+  { name: "Bronze", min: 2000, max: 3999 },
+  { name: "Silver", min: 4000, max: 5999 },
+  { name: "Gold", min: 6000, max: 7499 },
+  { name: "Platinum", min: 7500, max: 8999 },
+  { name: "Sapphire", min: 9000, max: 10499 },
+  { name: "Ruby", min: 10500, max: 11999 },
+  { name: "Diamond", min: 12000, max: 13499 },
+  { name: "Master", min: 13500, max: 14499 },
+  { name: "Grandmaster", min: 14500, max: Infinity },
 ];
 
 export function getRankForMmrValue(mmr) {
@@ -96,7 +96,7 @@ export function getRankForMmrValue(mmr) {
 
   const numericMmr = Number(mmr);
   const threshold = RANK_THRESHOLDS.find(
-    (rank) => numericMmr >= rank.min && numericMmr <= rank.max
+    (rank) => numericMmr >= rank.min && numericMmr <= rank.max,
   );
 
   if (!threshold) {

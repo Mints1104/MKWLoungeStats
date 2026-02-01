@@ -3,8 +3,10 @@ import React from 'react';
 function SeasonSelector({ selectedSeason, onSeasonChange, className = "", id = "season-select" }) {
     // Currently only supporting Season 1 and Season 0 (Preseason)
     const seasons = [
+          { value: 2, label: "Season 2" },
         { value: 1, label: "Season 1" },
-        { value: 0, label: "Preseason" }
+        { value: 0, label: "Preseason" },
+      
     ];
 
     return (

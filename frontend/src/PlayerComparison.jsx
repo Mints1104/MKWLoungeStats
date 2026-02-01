@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { getRankColor, getNextRank } from "./utils/playerUtils";
 
 // Lazy load chart components
@@ -15,6 +15,7 @@ import { calculateComparisonMmrData } from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
+import MMRSelector from "./components/MMRSelector";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
@@ -24,7 +25,8 @@ function PlayerComparison() {
     const [playersData, setPlayersData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [season, setSeason] = useState(1);
+    const [season, setSeason] = useState(2);
+    const [mmrType, setMmrType] = useState(24);
 
     const handlePlayerNameChange = (index, value) => {
         const newNames = [...playerNames];
@@ -56,7 +58,7 @@ function PlayerComparison() {
             }
 
             setLoading(true);
-            const data = await loungeApi.comparePlayers(validNames, season);
+            const data = await loungeApi.comparePlayers(validNames, season, mmrType);
             const validPlayers = data.filter((p) => !p.error);
 
             if (validPlayers.length < 2) {
@@ -71,6 +73,15 @@ function PlayerComparison() {
             setLoading(false);
         }
     };
+
+    // Auto-fetch when season or mmrType changes
+    useEffect(() => {
+        const validNames = playerNames.filter((name) => name.trim());
+        if (validNames.length >= 2) {
+            comparePlayers();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [season, mmrType]);
 
     // Prepare MMR history data for overlaid chart
     const mmrHistoryData = calculateComparisonMmrData(playersData);
@@ -152,11 +163,19 @@ function PlayerComparison() {
                             Compare Players
                         </button>
 
-                        <SeasonSelector
-                            selectedSeason={season}
-                            onSeasonChange={setSeason}
-                            className="comparison-season-selector"
-                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <SeasonSelector
+                                selectedSeason={season}
+                                onSeasonChange={setSeason}
+                                className="comparison-season-selector"
+                            />
+                            {season >= 2 && (
+                                <MMRSelector
+                                    selectedMMR={mmrType}
+                                    onMMRChange={setMmrType}
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
 

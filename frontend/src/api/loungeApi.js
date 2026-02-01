@@ -36,8 +36,9 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
       timeoutId = setTimeout(() => timeoutController.abort(), timeout);
 
       // Combine timeout with any existing signal
-      const combinedSignal = options.signal
-        ? combineAbortSignals([options.signal, timeoutController.signal])
+      const combinedSignal =
+        options.signal ?
+          combineAbortSignals([options.signal, timeoutController.signal])
         : timeoutController.signal;
 
       // Clear timeout if request is aborted
@@ -51,7 +52,7 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const error = new Error(
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`,
         );
         error.status = response.status;
         throw error;
@@ -95,7 +96,7 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
       logger.warn(
         `API request failed (attempt ${attempt + 1}/${retries + 1}):`,
         url,
-        error.message
+        error.message,
       );
 
       // Don't retry on 4xx errors (client errors)
@@ -106,7 +107,7 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
       // If not the last attempt, wait before retrying
       if (attempt < retries) {
         await new Promise((resolve) =>
-          setTimeout(resolve, 500 * (attempt + 1))
+          setTimeout(resolve, 500 * (attempt + 1)),
         );
       }
     }
@@ -123,16 +124,25 @@ export const loungeApi = {
    * Fetch detailed player information including MMR history
    * @param {string} name - Player name
    * @param {number} season - Season number (default: 1)
+   * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
-  async getPlayerDetails(name, season = 1, signal) {
+  async getPlayerDetails(name, season = 2, mmrType = 24, signal) {
     if (!name?.trim()) {
       throw new Error("Player name is required");
     }
 
     const encodedName = encodeURIComponent(name.trim());
     logger.api("GET", `/player/details/${encodedName}`);
-    const url = `${API_BASE}/player/details/${encodedName}?season=${season}`;
+
+    // Logic: If season >= 2, use game=mkworld{mmrType}p.
+    // If season < 2, force game=mkworld (server default logic might handle it, or we send mkworld)
+    let gameParam = "mkworld";
+    if (Number(season) >= 2) {
+      gameParam = `mkworld${mmrType}p`;
+    }
+
+    const url = `${API_BASE}/player/details/${encodedName}?season=${season}&game=${gameParam}`;
 
     return fetchApi(url, { signal });
   },
@@ -141,9 +151,10 @@ export const loungeApi = {
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
    * @param {number} season - Season number (default: 1)
+   * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
-  async comparePlayers(names, season = 1, signal) {
+  async comparePlayers(names, season = 2, mmrType = 24, signal) {
     if (!Array.isArray(names) || names.length < 2 || names.length > 4) {
       throw new Error("Must provide between 2 and 4 player names");
     }
@@ -153,9 +164,18 @@ export const loungeApi = {
       throw new Error("At least 2 valid player names required");
     }
 
-    logger.api("GET", `/players/compare?names=${validNames.join(",")}&season=${season}`);
+    logger.api(
+      "GET",
+      `/players/compare?names=${validNames.join(",")}&season=${season}`,
+    );
+
+    let gameParam = "mkworld";
+    if (Number(season) >= 2) {
+      gameParam = `mkworld${mmrType}p`;
+    }
+
     const namesParam = validNames.map((n) => encodeURIComponent(n)).join(",");
-    const url = `${API_BASE}/players/compare?names=${namesParam}&season=${season}`;
+    const url = `${API_BASE}/players/compare?names=${namesParam}&season=${season}&game=${gameParam}`;
 
     return fetchApi(url, { signal });
   },
@@ -180,17 +200,22 @@ export const loungeApi = {
       minMmr,
       maxMmr,
       search,
-      season = 1,
+      season = 2,
+      mmrType = 24,
     } = params;
 
     // Convert page to skip for backend
     const skip = (page - 1) * pageSize;
+
+    // Convert to game parameter (e.g. "mkworld12p" or "mkworld24p")
+    const game = `mkworld${mmrType}p`;
 
     const queryParams = new URLSearchParams({
       skip: String(skip),
       pageSize: String(pageSize),
       sortBy,
       season: String(season),
+      game,
     });
 
     if (minMmr !== undefined && minMmr !== null && minMmr !== "") {
@@ -238,11 +263,13 @@ export const loungeApi = {
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
   async getPlayerStats(params = {}, signal) {
-    const { season = 1, game = "mkworld" } = params;
+    const { season = 2, game = "mkworld" } = params;
 
     const seasonNum = Number(season);
     if (!Number.isInteger(seasonNum) || seasonNum <= 0 || seasonNum > 100) {
-      throw new Error("Season must be a positive integer less than or equal to 100");
+      throw new Error(
+        "Season must be a positive integer less than or equal to 100",
+      );
     }
 
     const gameStr = String(game).trim().toLowerCase();

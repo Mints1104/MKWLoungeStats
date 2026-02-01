@@ -13,8 +13,8 @@ app.set("trust proxy", 1);
 // Define allowed origins for production (using Set for O(1) lookup)
 const allowedOrigins = new Set(
   ["https://mkw-lounge-stats.vercel.app", process.env.FRONTEND_URL].filter(
-    Boolean
-  )
+    Boolean,
+  ),
 );
 
 app.use(
@@ -59,7 +59,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     maxAge: 86400, // Cache preflight requests for 24 hours
-  })
+  }),
 );
 
 // Set security headers
@@ -87,7 +87,7 @@ app.use((req, res, next) => {
 const MAX_CACHE_SIZE = 1000;
 const MAX_PLAYER_NAME_LENGTH = 50;
 const MAX_SEARCH_LENGTH = 100;
-const ALLOWED_GAMES = new Set(["mkworld"]);
+const ALLOWED_GAMES = new Set(["mkworld", "mkworld12p", "mkworld24p"]);
 
 // Input validation and sanitization
 const validatePlayerName = (name) => {
@@ -119,7 +119,7 @@ const enforceCacheLimit = () => {
     // Remove oldest entries (simple FIFO)
     const keysToDelete = Array.from(cacheStore.keys()).slice(
       0,
-      cacheStore.size - MAX_CACHE_SIZE
+      cacheStore.size - MAX_CACHE_SIZE,
     );
     keysToDelete.forEach((key) => {
       cacheStore.delete(key);
@@ -344,21 +344,30 @@ app.get("/api/player/details/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "1");
+    const seasonValidation = validateSeason(req.query.season || "2");
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
 
+    const { game = "mkworld" } = req.query;
+    const gameValidation = validateGame(game);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+
     const playerName = validation.sanitized;
     const season = seasonValidation.sanitized;
+    const normalizedGame = gameValidation.sanitized;
+
     const base_url = "https://lounge.mkcentral.com/api/player/details?name=";
     const full_url = `${base_url}${encodeURIComponent(
-      playerName
-    )}&game=mkworld&season=${season}`;
+      playerName,
+    )}&game=${normalizedGame}&season=${season}`;
 
     const cacheKey = getCacheKey("player-details", {
       name: playerName,
       season,
+      game: normalizedGame,
     });
     const cached = getCache(cacheKey);
     if (cached) {
@@ -400,31 +409,38 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "1");
+    const seasonValidation = validateSeason(req.query.season || "2");
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
+
+    const { game = "mkworld" } = req.query;
+    const gameValidation = validateGame(game);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+    const normalizedGame = gameValidation.sanitized;
 
     const playerName = validation.sanitized;
     const season = seasonValidation.sanitized;
     const cacheKey = getCacheKey("player-leaderboard", {
       name: playerName,
       season,
+      game: normalizedGame,
     });
     const cached = getCache(cacheKey);
     if (cached) {
       return res.json(cached);
     }
 
-    const base_url =
-      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=";
+    const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
     const full_url = `${base_url}${season}&search=${encodeURIComponent(
-      playerName
+      playerName,
     )}`;
     const { data } = await axios.get(full_url);
 
     const player = data.data.find(
-      (p) => p.name.toLowerCase() === playerName.toLowerCase()
+      (p) => p.name.toLowerCase() === playerName.toLowerCase(),
     );
 
     if (player) {
@@ -451,10 +467,17 @@ app.get("/api/players/compare", async (req, res) => {
         .json({ error: "Please provide 1-4 player names separated by commas" });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "1");
+    const seasonValidation = validateSeason(req.query.season || "2");
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
+
+    const { game = "mkworld" } = req.query;
+    const gameValidation = validateGame(game);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+    const normalizedGame = gameValidation.sanitized;
 
     // Validate all player names
     const validatedNames = [];
@@ -472,6 +495,7 @@ app.get("/api/players/compare", async (req, res) => {
     const cacheKey = getCacheKey("players-compare", {
       names: validatedNames.sort().join(","),
       season,
+      game: normalizedGame,
     });
     const cached = getCache(cacheKey);
     if (cached) {
@@ -485,7 +509,7 @@ app.get("/api/players/compare", async (req, res) => {
         .get(base_url, {
           params: {
             name: name,
-            game: "mkworld",
+            game: normalizedGame,
             season: season,
           },
         })
@@ -495,7 +519,7 @@ app.get("/api/players/compare", async (req, res) => {
           name: name,
           message:
             err.response?.status === 404 ? "Player not found" : err.message,
-        }))
+        })),
     );
 
     const results = await Promise.all(promises);
@@ -519,16 +543,22 @@ app.get("/api/leaderboard", async (req, res) => {
       search,
       sortBy = "Mmr",
       season,
+      game = "mkworld",
     } = req.query;
 
-    const seasonValidation = validateSeason(season || "1");
+    const seasonValidation = validateSeason(season || "2");
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
 
+    const gameValidation = validateGame(game);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+
     const normalizedSeason = seasonValidation.sanitized;
-    const base_url =
-      "https://lounge.mkcentral.com/api/player/leaderboard?game=mkworld&season=";
+    const normalizedGame = gameValidation.sanitized;
+    const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
 
     const params = {
       skip: parseInt(skip),
@@ -552,6 +582,7 @@ app.get("/api/leaderboard", async (req, res) => {
     const cacheKey = getCacheKey("leaderboard", {
       ...params,
       season: normalizedSeason,
+      game: normalizedGame,
     });
     const cached = getCache(cacheKey);
     if (cached) {

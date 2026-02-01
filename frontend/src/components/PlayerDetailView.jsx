@@ -26,7 +26,7 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 
-function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
+function PlayerDetailView({ playerDetails, season = 2, gradientIdPrefix = "mmrGradient" }) {
     // Restore event limit preference from sessionStorage, default to number mode with 10
     const [eventLimitMode, setEventLimitMode] = useState(() => {
         try {
@@ -127,14 +127,21 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
     let totalFilteredEvents = 0;
     if (sanitizedEvents.length > 0) {
         let filtered;
-        if (eventFilter === "12") {
-            filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 12);
-        } else if (eventFilter === "24") {
-            filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 24);
+        // Only apply 12p/24p filters if season < 2
+        if (season < 2) {
+            if (eventFilter === "12") {
+                filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 12);
+            } else if (eventFilter === "24") {
+                filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 24);
+            } else {
+                // For "all" filter, include everything (tables, penalties, deleted, etc.)
+                filtered = sanitizedEvents;
+            }
         } else {
-            // For "all" filter, include everything (tables, penalties, deleted, etc.)
+            // For season >= 2, we don't filter by 12p/24p locally as the API returns specific game data
             filtered = sanitizedEvents;
         }
+        
         totalFilteredEvents = filtered.length;
         eventsToShow = filtered.slice(0, eventLimit);
     }
@@ -195,8 +202,10 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
 
     // Score distribution data computation
     const scoreDistributionData = useMemo(() => {
-        return calculateScoreDistribution(sanitizedEvents, scoreFilter);
-    }, [sanitizedEvents, scoreFilter]);
+        // If season >= 2, ignore scoreFilter (effectively "all")
+        const filterToUse = season >= 2 ? "all" : scoreFilter;
+        return calculateScoreDistribution(sanitizedEvents, filterToUse);
+    }, [sanitizedEvents, scoreFilter, season]);
 
     // Find highest score and its table (only from table events, not penalties)
     const highestScoreData = useMemo(() => {
@@ -267,36 +276,46 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                     {playerDetails.averageScore != null
                         ? playerDetails.averageScore.toFixed(2)
                         : "N/A"}
-                    {" "}
-                    (
-                    {avg12 != null
-                        ? `${avg12.toFixed(2)} 12p`
-                        : "N/A 12p"}
-                    {" / "}
-                    {avg24 != null
-                        ? `${avg24.toFixed(2)} 24p`
-                        : "N/A 24p"}
-                    )
+                    {season < 2 && (
+                        <>
+                            {" "}
+                            (
+                            {avg12 != null
+                                ? `${avg12.toFixed(2)} 12p`
+                                : "N/A 12p"}
+                            {" / "}
+                            {avg24 != null
+                                ? `${avg24.toFixed(2)} 24p`
+                                : "N/A 24p"}
+                            )
+                        </>
+                    )}
                 </p>
                 <p>
-                    Total Events Played: {playerDetails.eventsPlayed} (
-                    {twelveCount} 12p / {twentyFourCount} 24p)
+                    Total Events Played: {playerDetails.eventsPlayed} 
+                    {season < 2 && (
+                        <> ({twelveCount} 12p / {twentyFourCount} 24p)</>
+                    )}
                 </p>
                 <p
                     className={`player-winrate ${playerDetails.winRate >= 0.5 ? "positive" : "negative"
                         }`}
                 >
                     Win Rate: {(playerDetails.winRate * 100).toFixed(2)}%
-                    {" "}
-                    (
-                    {winRate12 != null
-                        ? `${(winRate12 * 100).toFixed(2)}% 12p`
-                        : "N/A 12p"}
-                    {" / "}
-                    {winRate24 != null
-                        ? `${(winRate24 * 100).toFixed(2)}% 24p`
-                        : "N/A 24p"}
-                    )
+                    {season < 2 && (
+                        <>
+                            {" "}
+                            (
+                            {winRate12 != null
+                                ? `${(winRate12 * 100).toFixed(2)}% 12p`
+                                : "N/A 12p"}
+                            {" / "}
+                            {winRate24 != null
+                                ? `${(winRate24 * 100).toFixed(2)}% 24p`
+                                : "N/A 24p"}
+                            )
+                        </>
+                    )}
                 </p>
             </div>
 
@@ -363,15 +382,17 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
             <div className="player-summary">
                 <div className="player-events-header">
                     <h3>Score Distribution</h3>
-                    <FilterToggle
-                        activeFilter={scoreFilter}
-                        onFilterChange={setScoreFilter}
-                        options={[
-                            { value: "all", label: "All" },
-                            { value: "12", label: "12p" },
-                            { value: "24", label: "24p" },
-                        ]}
-                    />
+                    {season < 2 && (
+                        <FilterToggle
+                            activeFilter={scoreFilter}
+                            onFilterChange={setScoreFilter}
+                            options={[
+                                { value: "all", label: "All" },
+                                { value: "12", label: "12p" },
+                                { value: "24", label: "24p" },
+                            ]}
+                        />
+                    )}
                 </div>
                 <div
                     role="img"
@@ -463,15 +484,17 @@ function PlayerDetailView({ playerDetails, gradientIdPrefix = "mmrGradient" }) {
                                 </button>
                             )}
                         </div>
-                        <FilterToggle
-                            activeFilter={eventFilter}
-                            onFilterChange={setEventFilter}
-                            options={[
-                                { value: "all", label: "All" },
-                                { value: "12", label: "12p" },
-                                { value: "24", label: "24p" },
-                            ]}
-                        />
+                        {season < 2 && (
+                            <FilterToggle
+                                activeFilter={eventFilter}
+                                onFilterChange={setEventFilter}
+                                options={[
+                                    { value: "all", label: "All" },
+                                    { value: "12", label: "12p" },
+                                    { value: "24", label: "24p" },
+                                ]}
+                            />
+                        )}
                     </div>
                 </div>
                 {eventsToShow.length > 0 && (

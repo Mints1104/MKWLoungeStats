@@ -4,6 +4,7 @@ import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
+import MMRSelector from "./components/MMRSelector";
 
 function PlayerProfile() {
     const { playerName } = useParams();
@@ -12,19 +13,21 @@ function PlayerProfile() {
 
     // safely get season from URL, handling 0 correctly
     const seasonParam = searchParams.get("season");
-    const season = seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 1;
+    const season = seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
 
     const handleSeasonChange = (newSeason) => {
         setSearchParams({ season: newSeason }, { replace: true });
     };
 
+    const [mmrType, setMmrType] = useState(24);
+
     const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails();
 
     useEffect(() => {
         if (playerName) {
-            fetchPlayerDetails(playerName, season);
+            fetchPlayerDetails(playerName, season, mmrType);
         }
-    }, [playerName, season, fetchPlayerDetails]);
+    }, [playerName, season, mmrType, fetchPlayerDetails]);
 
     const handleBack = () => {
         if (window.history.length <= 1) {
@@ -50,8 +53,14 @@ function PlayerProfile() {
                     </button>
                 </PageHeader>
 
-                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                     <SeasonSelector selectedSeason={season} onSeasonChange={handleSeasonChange} />
+                    {season >= 2 && (
+                        <MMRSelector
+                            selectedMMR={mmrType}
+                            onMMRChange={setMmrType}
+                        />
+                    )}
                 </div>
 
                 {error && (
@@ -71,6 +80,7 @@ function PlayerProfile() {
             {detailedInfo && (
                 <PlayerDetailView
                     playerDetails={detailedInfo}
+                    season={season}
                     gradientIdPrefix="mmrGradient-profile"
                 />
             )}
