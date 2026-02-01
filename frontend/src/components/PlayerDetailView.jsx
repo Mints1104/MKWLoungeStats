@@ -26,7 +26,7 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 
-function PlayerDetailView({ playerDetails, season = 2, gradientIdPrefix = "mmrGradient" }) {
+function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdPrefix = "mmrGradient" }) {
     // Restore event limit preference from sessionStorage, default to number mode with 10
     const [eventLimitMode, setEventLimitMode] = useState(() => {
         try {
@@ -117,10 +117,10 @@ function PlayerDetailView({ playerDetails, season = 2, gradientIdPrefix = "mmrGr
     const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
         return calculateMmrHistoryData(
             sanitizedEvents,
-            getRankForMmrValue,
+            (val) => getRankForMmrValue(val, season, mmrType),
             `${gradientIdPrefix}-${playerDetails?.playerId || 'default'}`
         );
-    }, [sanitizedEvents, playerDetails?.playerId, gradientIdPrefix]);
+    }, [sanitizedEvents, playerDetails?.playerId, gradientIdPrefix, season, mmrType]);
 
     // Events to display based on filter and limit
     let eventsToShow = [];
@@ -249,7 +249,7 @@ function PlayerDetailView({ playerDetails, season = 2, gradientIdPrefix = "mmrGr
                 <p>Player ID: {playerDetails.playerId}</p>
                 <p>Overall Rank: #{playerDetails.overallRank}</p>
                 <p>Current Rank: {playerDetails.rank}</p>
-                <p>{getNextRank(playerDetails.mmr)}</p>
+                <p>{getNextRank(playerDetails.mmr, season, mmrType)}</p>
                 <p>Current MMR: {playerDetails.mmr}</p>
                 <p>Highest MMR: {playerDetails.maxMmr}</p>
                 <p>

@@ -17,19 +17,15 @@ export function formatTimeAgo(dateInput) {
   return `${days}d ago`;
 }
 
-export function getNextRank(mmr) {
-  const ranks = [
-    { name: "Iron", min: 0, max: 1999 },
-    { name: "Bronze", min: 2000, max: 3499 },
-    { name: "Silver", min: 3500, max: 4999 },
-    { name: "Gold", min: 5000, max: 6499 },
-    { name: "Platinum", min: 6500, max: 7999 },
-    { name: "Sapphire", min: 8000, max: 9499 },
-    { name: "Ruby", min: 9500, max: 10999 },
-    { name: "Diamond", min: 11000, max: 12499 },
-    { name: "Master", min: 12500, max: 13499 },
-    { name: "Grandmaster", min: 13500, max: Infinity },
-  ];
+export function getThresholds(season, mmrType) {
+  if (Number(season) < 2) {
+    return RANK_THRESHOLDS;
+  }
+  return Number(mmrType) === 12 ? RANK_THRESHOLDS_12 : RANK_THRESHOLDS_24P;
+}
+
+export function getNextRank(mmr, season, mmrType) {
+  const ranks = getThresholds(season, mmrType);
 
   for (let i = 0; i < ranks.length; i++) {
     const rank = ranks[i];
@@ -78,6 +74,19 @@ export function getRankColor(rank) {
 
 export const RANK_THRESHOLDS = [
   { name: "Iron", min: 0, max: 1999 },
+  { name: "Bronze", min: 2000, max: 3499 },
+  { name: "Silver", min: 3500, max: 4999 },
+  { name: "Gold", min: 5000, max: 6499 },
+  { name: "Platinum", min: 6500, max: 7999 },
+  { name: "Sapphire", min: 8000, max: 9499 },
+  { name: "Ruby", min: 9500, max: 10999 },
+  { name: "Diamond", min: 11000, max: 12499 },
+  { name: "Master", min: 12500, max: 13499 },
+  { name: "Grandmaster", min: 13500, max: Infinity },
+];
+
+export const RANK_THRESHOLDS_12 = [
+  { name: "Iron", min: 0, max: 1999 },
   { name: "Bronze", min: 2000, max: 3999 },
   { name: "Silver", min: 4000, max: 5999 },
   { name: "Gold", min: 6000, max: 7499 },
@@ -102,13 +111,14 @@ export const RANK_THRESHOLDS_24P = [
   { name: "Grandmaster", min: 15500, max: Infinity },
 ];
 
-export function getRankForMmrValue(mmr) {
+export function getRankForMmrValue(mmr, season, mmrType) {
   if (mmr == null || Number.isNaN(Number(mmr))) {
     return { name: null, color: "#38bdf8" };
   }
 
   const numericMmr = Number(mmr);
-  const threshold = RANK_THRESHOLDS.find(
+  const thresholds = getThresholds(season, mmrType);
+  const threshold = thresholds.find(
     (rank) => numericMmr >= rank.min && numericMmr <= rank.max,
   );
 

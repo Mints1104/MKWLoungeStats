@@ -207,7 +207,7 @@ function PlayerComparison() {
                                 </h2>
                                 <p>Overall Rank: #{player.overallRank}</p>
                                 <p>Current Rank: {player.rank}</p>
-                                <p>{getNextRank(player.mmr)}</p>
+                                <p>{getNextRank(player.mmr, season, mmrType)}</p>
                                 <p>Current MMR: {player.mmr}</p>
                                 <p>Highest MMR: {player.maxMmr}</p>
                                 <p>

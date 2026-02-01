@@ -176,6 +176,7 @@ function PlayerInfo() {
                 <PlayerDetailView
                     playerDetails={detailedInfo}
                     season={season}
+                    mmrType={mmrType}
                     gradientIdPrefix="mmrGradient-info"
                 />
             )}
