@@ -123,7 +123,7 @@ export const loungeApi = {
   /**
    * Fetch detailed player information including MMR history
    * @param {string} name - Player name
-   * @param {number} season - Season number (default: 1)
+   * @param {number} season - Season number (default: 2)
    * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
@@ -135,8 +135,6 @@ export const loungeApi = {
     const encodedName = encodeURIComponent(name.trim());
     logger.api("GET", `/player/details/${encodedName}`);
 
-    // Logic: If season >= 2, use game=mkworld{mmrType}p.
-    // If season < 2, force game=mkworld (server default logic might handle it, or we send mkworld)
     let gameParam = "mkworld";
     if (Number(season) >= 2) {
       gameParam = `mkworld${mmrType}p`;
@@ -150,7 +148,7 @@ export const loungeApi = {
   /**
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
-   * @param {number} season - Season number (default: 1)
+   * @param {number} season - Season number (default: 2)
    * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
@@ -189,7 +187,7 @@ export const loungeApi = {
    * @param {number} params.minMmr - Minimum MMR filter
    * @param {number} params.maxMmr - Maximum MMR filter
    * @param {string} params.search - Player name search query
-   * @param {number} params.season - Season number (default: 1)
+   * @param {number} params.season - Season number (default: 2)
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
   async getLeaderboard(params = {}, signal) {
@@ -258,7 +256,7 @@ export const loungeApi = {
   /**
    * Fetch global player statistics (players per rank, activity, etc.)
    * @param {Object} params - Query parameters
-   * @param {number} params.season - Season number (default: 1)
+   * @param {number} params.season - Season number (default: 2)
    * @param {string} params.game - Game identifier (default: "mkworld")
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */

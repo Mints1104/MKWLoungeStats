@@ -594,7 +594,6 @@ app.get("/api/leaderboard", async (req, res) => {
 
     const data = axiosResponse.data;
 
-    // The API returns totalPlayers, but we'll normalize it to totalCount for consistency
     const response = {
       data: data.data || [],
       totalCount: data.totalPlayers || 0,

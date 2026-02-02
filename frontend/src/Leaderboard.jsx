@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Flag from "react-world-flags";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
@@ -10,24 +10,55 @@ import MMRSelector from "./components/MMRSelector";
 
 function Leaderboard() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [season, setSeason] = useState(2);
-    const [mmrType, setMmrType] = useState(24);
+
+    // Initialize state from URL params
+    const [season, setSeason] = useState(() => {
+        const param = searchParams.get("season");
+        return param ? Number(param) : 2;
+    });
+    const [mmrType, setMmrType] = useState(() => {
+        const param = searchParams.get("mmrType");
+        return param ? Number(param) : 24;
+    });
 
     // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(50);
+    const [currentPage, setCurrentPage] = useState(() => {
+        const param = searchParams.get("page");
+        return param ? Number(param) : 1;
+    });
+    const [pageSize, setPageSize] = useState(() => {
+        const param = searchParams.get("pageSize");
+        return param ? Number(param) : 50;
+    });
     const [totalCount, setTotalCount] = useState(0);
 
     // Filters
-    const [minMmr, setMinMmr] = useState("");
-    const [maxMmr, setMaxMmr] = useState("");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [sortBy, setSortBy] = useState("mmr");
+    const [minMmr, setMinMmr] = useState(searchParams.get("minMmr") || "");
+    const [maxMmr, setMaxMmr] = useState(searchParams.get("maxMmr") || "");
+    const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+    const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
+    const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "mmr");
     const [filtersVisible, setFiltersVisible] = useState(true);
+
+    // Sync state to URL
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (season !== 2) params.set("season", season);
+        if (mmrType !== 24) params.set("mmrType", mmrType);
+        if (currentPage !== 1) params.set("page", currentPage);
+        if (pageSize !== 50) params.set("pageSize", pageSize);
+        if (sortBy !== "mmr") params.set("sortBy", sortBy);
+        if (minMmr) params.set("minMmr", minMmr);
+        if (maxMmr) params.set("maxMmr", maxMmr);
+        if (debouncedSearch) params.set("search", debouncedSearch);
+
+        setSearchParams(params, { replace: true });
+    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, setSearchParams]);
     const requestRef = useRef(null);
 
     // Debounced search handler to prevent searching on every keystroke
@@ -103,7 +134,7 @@ function Leaderboard() {
     };
 
     const takeToProfile = (playerName) => {
-        navigate(`/player/${encodeURIComponent(playerName)}?season=${season}`);
+        navigate(`/player/${encodeURIComponent(playerName)}?season=${season}&mmrType=${mmrType}`);
     };
 
     const handleRowKeyPress = (e, playerName) => {

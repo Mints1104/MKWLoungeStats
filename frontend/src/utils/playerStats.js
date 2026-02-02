@@ -19,21 +19,25 @@ export const calculateEventStats = (mmrChanges = []) => {
   const twelveCount = twelves.length;
   const twentyFourCount = twentyFours.length;
 
-  const avg12 = twelveCount
-    ? twelves.reduce((acc, event) => acc + (event.score ?? 0), 0) / twelveCount
+  const avg12 =
+    twelveCount ?
+      twelves.reduce((acc, event) => acc + (event.score ?? 0), 0) / twelveCount
     : null;
 
-  const avg24 = twentyFourCount
-    ? twentyFours.reduce((acc, event) => acc + (event.score ?? 0), 0) /
+  const avg24 =
+    twentyFourCount ?
+      twentyFours.reduce((acc, event) => acc + (event.score ?? 0), 0) /
       twentyFourCount
     : null;
 
-  const winRate12 = twelveCount
-    ? twelves.filter((event) => (event.mmrDelta ?? 0) > 0).length / twelveCount
+  const winRate12 =
+    twelveCount ?
+      twelves.filter((event) => (event.mmrDelta ?? 0) > 0).length / twelveCount
     : null;
 
-  const winRate24 = twentyFourCount
-    ? twentyFours.filter((event) => (event.mmrDelta ?? 0) > 0).length /
+  const winRate24 =
+    twentyFourCount ?
+      twentyFours.filter((event) => (event.mmrDelta ?? 0) > 0).length /
       twentyFourCount
     : null;
 

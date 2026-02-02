@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
@@ -13,13 +13,21 @@ function PlayerProfile() {
 
     // safely get season from URL, handling 0 correctly
     const seasonParam = searchParams.get("season");
+    const mmrTypeParam = searchParams.get("mmrType");
     const season = seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
+    const mmrType = mmrTypeParam !== null && !isNaN(mmrTypeParam) ? Number(mmrTypeParam) : 24;
 
     const handleSeasonChange = (newSeason) => {
-        setSearchParams({ season: newSeason }, { replace: true });
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("season", newSeason);
+        setSearchParams(newParams, { replace: true });
     };
 
-    const [mmrType, setMmrType] = useState(24);
+    const handleMmrTypeChange = (newMmrType) => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("mmrType", newMmrType);
+        setSearchParams(newParams, { replace: true });
+    };
 
     const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails();
 
@@ -58,7 +66,7 @@ function PlayerProfile() {
                     {season >= 2 && (
                         <MMRSelector
                             selectedMMR={mmrType}
-                            onMMRChange={setMmrType}
+                            onMMRChange={handleMmrTypeChange}
                         />
                     )}
                 </div>
