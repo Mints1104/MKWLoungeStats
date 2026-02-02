@@ -1,3 +1,8 @@
+/**
+ * Formats a timestamp into a relative "time ago" string.
+ * @param {number|string|Date} dateInput - Timestamp, date string, or Date object.
+ * @returns {string} Relative time string (e.g., "5m ago").
+ */
 export function formatTimeAgo(dateInput) {
   const ms =
     typeof dateInput === "number" ?
@@ -17,6 +22,12 @@ export function formatTimeAgo(dateInput) {
   return `${days}d ago`;
 }
 
+/**
+ * Retrieves the rank thresholds for a specific season and MMR type.
+ * @param {number} season - Season number.
+ * @param {number} mmrType - MMR type (12 or 24).
+ * @returns {Array} Array of rank threshold objects.
+ */
 export function getThresholds(season, mmrType) {
   if (Number(season) < 2) {
     return RANK_THRESHOLDS;
@@ -24,6 +35,13 @@ export function getThresholds(season, mmrType) {
   return Number(mmrType) === 12 ? RANK_THRESHOLDS_12 : RANK_THRESHOLDS_24P;
 }
 
+/**
+ * Calculates the MMR required to reach the next rank.
+ * @param {number} mmr - Current MMR.
+ * @param {number} season - Season number.
+ * @param {number} mmrType - MMR type.
+ * @returns {string} Message indicating MMR needed for next rank.
+ */
 export function getNextRank(mmr, season, mmrType) {
   const ranks = getThresholds(season, mmrType);
 
@@ -42,6 +60,11 @@ export function getNextRank(mmr, season, mmrType) {
   return "";
 }
 
+/**
+ * Returns the color code associated with a specific rank.
+ * @param {string} rank - Rank name.
+ * @returns {string} Hex color code.
+ */
 export function getRankColor(rank) {
   if (!rank) return "#e5e7eb";
 
@@ -111,6 +134,13 @@ export const RANK_THRESHOLDS_24P = [
   { name: "Grandmaster", min: 15500, max: Infinity },
 ];
 
+/**
+ * Determines the rank name and color for a given MMR value.
+ * @param {number} mmr - MMR value.
+ * @param {number} season - Season number.
+ * @param {number} mmrType - MMR type.
+ * @returns {Object} Object containing rank name and color.
+ */
 export function getRankForMmrValue(mmr, season, mmrType) {
   if (mmr == null || Number.isNaN(Number(mmr))) {
     return { name: null, color: "#38bdf8" };
@@ -132,6 +162,12 @@ export function getRankForMmrValue(mmr, season, mmrType) {
   };
 }
 
+/**
+ * Returns a string representation of the event format.
+ * @param {number} numPlayers - Number of players.
+ * @param {number} numTeams - Number of teams.
+ * @returns {string} Format string (e.g., "FFA", "2v2").
+ */
 export function getEventFormat(numPlayers, numTeams) {
   if (!numPlayers || !numTeams) return "";
   if (numPlayers === numTeams) return "FFA";

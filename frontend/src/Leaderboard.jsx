@@ -16,7 +16,7 @@ function Leaderboard() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Initialize state from URL params
+
     const [season, setSeason] = useState(() => {
         const param = searchParams.get("season");
         return param ? Number(param) : 2;
@@ -45,7 +45,7 @@ function Leaderboard() {
     const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "mmr");
     const [filtersVisible, setFiltersVisible] = useState(true);
 
-    // Sync state to URL
+    // Sync URL params
     useEffect(() => {
         const params = new URLSearchParams();
         if (season !== 2) params.set("season", season);
@@ -61,7 +61,7 @@ function Leaderboard() {
     }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, setSearchParams]);
     const requestRef = useRef(null);
 
-    // Debounced search handler to prevent searching on every keystroke
+
     const debouncedSetSearch = useMemo(
         () => debounce((value) => {
             setDebouncedSearch(value);

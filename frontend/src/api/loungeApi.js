@@ -1,14 +1,10 @@
 /**
- * Centralized API service for Mario Kart Lounge endpoints
- * Handles all HTTP requests with consistent error handling and response parsing
+ * API service for Mario Kart Lounge endpoints.
  */
 import logger from "../utils/logger.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
-/**
- * Combine multiple abort signals
- */
 function combineAbortSignals(signals) {
   const controller = new AbortController();
   for (const signal of signals) {
@@ -21,9 +17,6 @@ function combineAbortSignals(signals) {
   return controller.signal;
 }
 
-/**
- * Base fetch wrapper with error handling, retry logic, and timeout
- */
 async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
   let lastError;
 
@@ -116,9 +109,6 @@ async function fetchApi(url, options = {}, retries = 2, timeout = 30000) {
   throw new Error(lastError?.message || "Network request failed");
 }
 
-/**
- * Lounge API methods
- */
 export const loungeApi = {
   /**
    * Fetch detailed player information including MMR history

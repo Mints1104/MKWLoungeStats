@@ -79,7 +79,8 @@ function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdP
         }
     }, [eventLimitMode, eventLimitPreference]);
 
-    // Sanitize and deduplicate events to prevent mutation bugs and recursive duplication
+    // Create a unique set of events, prioritizing changeId to avoid duplicates
+    // from API responses or state updates.
     const sanitizedEvents = useMemo(() => {
         if (!playerDetails || !Array.isArray(playerDetails.mmrChanges)) return [];
 

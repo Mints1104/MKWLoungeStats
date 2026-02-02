@@ -10,7 +10,7 @@ export const calculateEventStats = (mmrChanges = []) => {
     };
   }
 
-  // Only include table events (exclude penalties)
+  // Exclude penalties
   const tableEvents = mmrChanges.filter((event) => event.reason === "Table");
 
   const twelves = tableEvents.filter((event) => event.numPlayers === 12);

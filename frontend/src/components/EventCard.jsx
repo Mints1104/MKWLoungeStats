@@ -10,7 +10,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
     const isBonus = event.reason === "Bonus";
     const isPlacement = event.reason === "Placement"
 
-    // Determine which average to use based on event type, falling back to overall average if specific average is null
+    // Select average based on event format
     const relevantAverage = event.numPlayers === 12
         ? (avg12 != null ? avg12 : averageScore)
         : event.numPlayers === 24
@@ -18,7 +18,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
             : averageScore;
 
 
-    //Helper function to show the correct message regarding the player's event based on the API's event "reason".
+
     const getEventMessage = () => {
         if (isPenalty) {
             return (
@@ -51,7 +51,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
         if (isBonus) return "Bonus";
         if (isTableDeleted) return "Table Deleted";
 
-        // 4. Fallback if no conditions are met
+
         return "Unknown";
     };
 

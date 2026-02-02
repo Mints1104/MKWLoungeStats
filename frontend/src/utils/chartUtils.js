@@ -9,7 +9,7 @@ export function calculateScoreDistribution(events, filter = "all") {
 
   // Only include table events (exclude penalties)
   const tableEvents = events.filter((e) => e.reason === "Table");
-  
+
   let filteredEvents = tableEvents;
   if (filter === "12") {
     filteredEvents = tableEvents.filter((e) => e.numPlayers === 12);
@@ -44,7 +44,7 @@ export function calculateScoreDistribution(events, filter = "all") {
 export function calculateMmrHistoryData(
   mmrChanges,
   getRankForMmrValue,
-  playerId = "default"
+  playerId = "default",
 ) {
   if (!mmrChanges || !Array.isArray(mmrChanges) || mmrChanges.length === 0) {
     return {
@@ -81,6 +81,7 @@ export function calculateMmrHistoryData(
     const position =
       history.length > 1 ? (index / (history.length - 1)) * 100 : 0;
 
+    // Create sharp color transitions between rank changes
     if (point.rankColor !== lastColor && index > 0) {
       // Add transition: previous color just before change
       stops.push({
@@ -122,7 +123,7 @@ export function calculateComparisonMmrData(playersData) {
   if (!playersData || playersData.length === 0) return [];
 
   const maxEvents = Math.max(
-    ...playersData.map((p) => p.mmrChanges?.length || 0)
+    ...playersData.map((p) => p.mmrChanges?.length || 0),
   );
   const data = [];
 
