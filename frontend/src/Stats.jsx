@@ -3,6 +3,7 @@ import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
+import MMRSelector from "./components/MMRSelector";
 import { getRankColor } from "./utils/playerUtils";
 import {
   ResponsiveContainer,
@@ -39,6 +40,7 @@ function Stats() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [season, setSeason] = useState(2);
+  const [mmrType, setMmrType] = useState(24);
   const requestRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -52,8 +54,9 @@ function Stats() {
         setError("");
         setStats(null);
 
+        const game = season >= 2 ? `mkworld${mmrType}p` : "mkworld";
         const data = await loungeApi.getPlayerStats(
-          { season, game: "mkworld" },
+          { season, game },
           controller.signal
         );
         setStats(data || null);
@@ -73,7 +76,7 @@ function Stats() {
       controller.abort();
       requestRef.current = null;
     };
-  }, [season]);
+  }, [season, mmrType]);
 
   useEffect(() => {
     function handleResize() {
@@ -157,7 +160,15 @@ function Stats() {
             title="Lounge Overview"
             subtitle="Global player statistics for Mario Kart World Lounge."
           />
-          <SeasonSelector selectedSeason={season} onSeasonChange={setSeason} />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <SeasonSelector selectedSeason={season} onSeasonChange={setSeason} />
+            {season >= 2 && (
+              <MMRSelector
+                selectedMMR={mmrType}
+                onMMRChange={setMmrType}
+              />
+            )}
+          </div>
         </div>
 
         {error && (
