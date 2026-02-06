@@ -7,6 +7,7 @@ import { calculateMmrHistoryData, calculateScoreDistribution } from "../utils/ch
 import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
 import EventCard from "./EventCard";
+import Selector from "./Selector";
 
 // Lazy load chart components
 const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
@@ -63,6 +64,7 @@ function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdP
     const [eventInputValue, setEventInputValue] = useState(() => String(eventLimit));
     const [eventFilter, setEventFilter] = useState("all");
     const [scoreFilter, setScoreFilter] = useState("all");
+    const [sortMethod, setSortMethod] = useState("recent");
 
     // Persist preference (mode + last chosen value) to sessionStorage
     useEffect(() => {
@@ -144,7 +146,24 @@ function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdP
         }
         
         totalFilteredEvents = filtered.length;
-        eventsToShow = filtered.slice(0, eventLimit);
+
+        // First limit to the most recent X events
+        const recentEvents = filtered.slice(0, eventLimit);
+
+        // Then sort those specific events based on selected method
+        let sortedEvents = [...recentEvents];
+        if (sortMethod === "gain") {
+            sortedEvents.sort((a, b) => (b.mmrDelta || 0) - (a.mmrDelta || 0));
+        } else if (sortMethod === "loss") {
+            sortedEvents.sort((a, b) => (a.mmrDelta || 0) - (b.mmrDelta || 0));
+        } else if (sortMethod === "score_asc") {
+            sortedEvents.sort((a, b) => (a.score || 0) - (b.score || 0));
+        } else if (sortMethod === "score_desc") {
+            sortedEvents.sort((a, b) => (b.score || 0) - (a.score || 0));
+        }
+        // "recent" is default, preserve original order (which is by time/id)
+
+        eventsToShow = sortedEvents; // No need to slice again
     }
 
     // Sync effective limit when player/filter changes, honoring "show all"
@@ -435,6 +454,20 @@ function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdP
                 <div className="player-events-header">
                     <h3>Recent Events</h3>
                     <div className="events-controls">
+                        <Selector
+                             options={[
+                                { value: "recent", label: "Most Recent" },
+                                { value: "gain", label: "Biggest Gains" },
+                                { value: "loss", label: "Biggest Losses" },
+                                { value: "score_asc", label: "Scores (Asc)" },
+                                { value: "score_desc", label: "Scores (Desc)" },
+                            ]}
+                            value={sortMethod}
+                            onChange={setSortMethod}
+                            className="sort-selector"
+                            id="event-sort"
+                            label="Sort Events"
+                        />
                         <div className="events-count">
                             <span>Show</span>
                             <input

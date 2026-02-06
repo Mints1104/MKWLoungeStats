@@ -1,4 +1,5 @@
 import React from 'react';
+import Selector from './Selector';
 
 function SeasonSelector({ selectedSeason, onSeasonChange, className = "", id = "season-select" }) {
     // Currently only supporting Season 1 and Season 0 (Preseason)
@@ -10,23 +11,14 @@ function SeasonSelector({ selectedSeason, onSeasonChange, className = "", id = "
     ];
 
     return (
-        <div className={`season-selector ${className}`}>
-            <label htmlFor={id} className="sr-only">Select Season</label>
-            <select
-                id={id}
-                value={selectedSeason}
-                onChange={(e) => onSeasonChange(Number(e.target.value))}
-                className="player-input season-select"
-                aria-label="Select Season"
-                style={{ width: 'auto', minWidth: '120px' }}
-            >
-                {seasons.map((season) => (
-                    <option key={season.value} value={season.value}>
-                        {season.label}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <Selector
+            options={seasons}
+            value={selectedSeason}
+            onChange={(val) => onSeasonChange(Number(val))}
+            className={className}
+            id={id}
+            label="Select Season"
+        />
     );
 }
 

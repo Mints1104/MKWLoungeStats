@@ -1,4 +1,5 @@
 import React from 'react';
+import Selector from './Selector';
 
 function MMRSelector({ selectedMMR, onMMRChange, className = "", id = "mmr-select" }) {
     const seasons = [
@@ -8,23 +9,14 @@ function MMRSelector({ selectedMMR, onMMRChange, className = "", id = "mmr-selec
     ];
 
     return (
-        <div className={`season-selector ${className}`}>
-            <label htmlFor={id} className="sr-only">Select MMR type</label>
-            <select
-                id={id}
-                value={selectedMMR}
-                onChange={(e) => onMMRChange(Number(e.target.value))}
-                className="player-input season-select"
-                aria-label="Select MMR type"
-                style={{ width: 'auto', minWidth: '120px' }}
-            >
-                {seasons.map((mmr) => (
-                    <option key={mmr.value} value={mmr.value}>
-                        {mmr.label}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <Selector
+            options={seasons}
+            value={selectedMMR}
+            onChange={(val) => onMMRChange(Number(val))}
+            className={className}
+            id={id}
+            label="Select MMR type"
+        />
     );
 }
 

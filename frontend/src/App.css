@@ -352,13 +352,22 @@ body {
 }
 
 .events-count-input {
-  width: 3.5rem;
-  padding: 0.2rem 0.4rem;
+  width: 4.5rem; /* Slightly wider */
+  padding: 0.75rem 0.5rem; /* Match vertical padding to .player-input */
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.7);
   background: rgba(15, 23, 42, 0.9);
   color: #e5e7eb;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.events-count-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px #38bdf8;
+  background: rgba(15, 23, 42, 0.98);
+  outline: none;
 }
 
 .show-all-events-btn {
