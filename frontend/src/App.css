@@ -998,6 +998,71 @@ body {
   margin-top: 1.25rem;
 }
 
+.stats-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #e5e7eb;
+}
+
+.stats-activity-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.stats-format-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stats-format-grid,
+.stats-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.6rem;
+}
+
+.stats-format-section .recent-stat {
+  padding: 0.55rem 0.75rem;
+}
+
+.stats-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.stats-scroll-inner {
+  width: 100%;
+}
+
+.stats-country-table .country-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.stats-country-table .country-top-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: #cbd5f5;
+  font-size: 0.9rem;
+}
+
+.country-player-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.country-name-separator {
+  color: #64748b;
+  margin-right: 0.15rem;
+}
+
 @media (max-width: 768px) {
   .comparison-grid {
     grid-template-columns: 1fr;
