@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
@@ -73,25 +73,37 @@ function PlayerInfo() {
     }
   };
 
-  const getPlayerInfo = useCallback(async () => {
-    const trimmed = name.trim();
+  const fetchAndRemember = async (playerName, seasonValue, mmrValue) => {
+    const trimmed = playerName.trim();
     if (!trimmed) {
-      return;
+      return null;
     }
 
-    const data = await fetchPlayerDetails(trimmed, season, mmrType);
+    const data = await fetchPlayerDetails(trimmed, seasonValue, mmrValue);
     if (data) {
       rememberRecent(trimmed);
       rememberLastDetails(trimmed, data);
     }
-  }, [name, season, mmrType, fetchPlayerDetails]);
+    return data;
+  };
 
-  // Auto-fetch when season or mmrType changes, if we have a valid name
-  useEffect(() => {
+  const getPlayerInfo = async () => {
+    return fetchAndRemember(name, season, mmrType);
+  };
+
+  const handleSeasonChange = (nextSeason) => {
+    setSeason(nextSeason);
     if (name.trim()) {
-      getPlayerInfo();
+      fetchAndRemember(name, nextSeason, mmrType);
     }
-  }, [name, season, mmrType, getPlayerInfo]);
+  };
+
+  const handleMmrChange = (nextMmrType) => {
+    setMmrType(nextMmrType);
+    if (name.trim()) {
+      fetchAndRemember(name, season, nextMmrType);
+    }
+  };
 
   return (
     <div className="player-info-page">
@@ -119,10 +131,13 @@ function PlayerInfo() {
           <div className="season-selector-container">
             <SeasonSelector
               selectedSeason={season}
-              onSeasonChange={setSeason}
+              onSeasonChange={handleSeasonChange}
             />
             {season >= 2 && (
-              <MMRSelector selectedMMR={mmrType} onMMRChange={setMmrType} />
+              <MMRSelector
+                selectedMMR={mmrType}
+                onMMRChange={handleMmrChange}
+              />
             )}
           </div>
 
@@ -143,12 +158,7 @@ function PlayerInfo() {
                 className="recent-chip"
                 onClick={() => {
                   setName(r);
-                  fetchPlayerDetails(r, season, mmrType).then((data) => {
-                    if (data) {
-                      rememberRecent(r);
-                      rememberLastDetails(r, data);
-                    }
-                  });
+                  fetchAndRemember(r, season, mmrType);
                 }}
               >
                 {r}
