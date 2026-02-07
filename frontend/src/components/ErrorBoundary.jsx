@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,11 +13,11 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log error details for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
 
     this.setState({
       error: error,
-      errorInfo: errorInfo
+      errorInfo: errorInfo,
     });
 
     // You can also log to an error reporting service here
@@ -29,9 +29,7 @@ class ErrorBoundary extends React.Component {
       // Fallback UI
       return (
         <div className="error-boundary-container">
-          <h2 className="error-boundary-title">
-            Something went wrong
-          </h2>
+          <h2 className="error-boundary-title">Something went wrong</h2>
           <p className="error-boundary-message">
             We encountered an unexpected error. Please try refreshing the page.
           </p>
@@ -42,7 +40,7 @@ class ErrorBoundary extends React.Component {
             Refresh Page
           </button>
 
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {import.meta.env?.DEV && this.state.error && (
             <details className="error-details">
               <summary className="error-summary">
                 Error Details (Development Only)
