@@ -1,25 +1,48 @@
 import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import Flag from "react-world-flags";
-import { getNextRank, getRankForMmrValue, getRankColor } from "../utils/playerUtils";
+import {
+  getNextRank,
+  getRankForMmrValue,
+  getRankColor,
+} from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
-import { calculateMmrHistoryData, calculateScoreDistribution } from "../utils/chartUtils";
+import {
+  calculateMmrHistoryData,
+  calculateScoreDistribution,
+} from "../utils/chartUtils";
 import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
 import EventCard from "./EventCard";
 import Selector from "./Selector";
 
 // Lazy load chart components
-const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
-const BarChart = lazy(() => import('recharts').then(m => ({ default: m.BarChart })));
-const Bar = lazy(() => import('recharts').then(m => ({ default: m.Bar })));
-const Line = lazy(() => import('recharts').then(m => ({ default: m.Line })));
-const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })));
-const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })));
-const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })));
-const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })));
-const Legend = lazy(() => import('recharts').then(m => ({ default: m.Legend })));
-const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
+const LineChart = lazy(() =>
+  import("recharts").then((m) => ({ default: m.LineChart })),
+);
+const BarChart = lazy(() =>
+  import("recharts").then((m) => ({ default: m.BarChart })),
+);
+const Bar = lazy(() => import("recharts").then((m) => ({ default: m.Bar })));
+const Line = lazy(() => import("recharts").then((m) => ({ default: m.Line })));
+const XAxis = lazy(() =>
+  import("recharts").then((m) => ({ default: m.XAxis })),
+);
+const YAxis = lazy(() =>
+  import("recharts").then((m) => ({ default: m.YAxis })),
+);
+const CartesianGrid = lazy(() =>
+  import("recharts").then((m) => ({ default: m.CartesianGrid })),
+);
+const Tooltip = lazy(() =>
+  import("recharts").then((m) => ({ default: m.Tooltip })),
+);
+const Legend = lazy(() =>
+  import("recharts").then((m) => ({ default: m.Legend })),
+);
+const ResponsiveContainer = lazy(() =>
+  import("recharts").then((m) => ({ default: m.ResponsiveContainer })),
+);
 
 /**
  * Shared player detail view component used by both PlayerInfo and PlayerProfile pages
@@ -27,566 +50,700 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 
-function PlayerDetailView({ playerDetails, season = 2, mmrType = 24, gradientIdPrefix = "mmrGradient" }) {
-    // Restore event limit preference from sessionStorage, default to number mode with 10
-    const [eventLimitMode, setEventLimitMode] = useState(() => {
-        try {
-            const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed?.mode === "all" || parsed?.mode === "number") {
-                    return parsed.mode;
-                }
-            }
-        } catch (e) {
-            console.warn("Failed to load event limit mode from sessionStorage", e);
+function PlayerDetailView({
+  playerDetails,
+  season = 2,
+  mmrType = 24,
+  gradientIdPrefix = "mmrGradient",
+}) {
+  // Restore event limit preference from sessionStorage, default to number mode with 10
+  const [eventLimitMode, setEventLimitMode] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.mode === "all" || parsed?.mode === "number") {
+          return parsed.mode;
         }
-        return "number";
+      }
+    } catch (e) {
+      console.warn("Failed to load event limit mode from sessionStorage", e);
+    }
+    return "number";
+  });
+
+  const [eventLimitPreference, setEventLimitPreference] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const val = parseInt(parsed?.value, 10);
+        if (!Number.isNaN(val) && val >= 1) {
+          return val;
+        }
+      }
+    } catch (e) {
+      console.warn(
+        "Failed to load event limit preference from sessionStorage",
+        e,
+      );
+    }
+    return 10;
+  });
+
+  const [eventLimit, setEventLimit] = useState(() =>
+    Math.max(1, eventLimitPreference),
+  );
+  const [eventInputValue, setEventInputValue] = useState(() =>
+    String(eventLimit),
+  );
+  const [eventFilter, setEventFilter] = useState("all");
+  const [scoreFilter, setScoreFilter] = useState("all");
+  const [sortMethod, setSortMethod] = useState("recent");
+
+  // Persist preference (mode + last chosen value) to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        EVENT_LIMIT_STORAGE_KEY,
+        JSON.stringify({
+          mode: eventLimitMode,
+          value: eventLimitPreference,
+        }),
+      );
+    } catch (e) {
+      console.warn(
+        "Failed to save event limit preference to sessionStorage",
+        e,
+      );
+    }
+  }, [eventLimitMode, eventLimitPreference]);
+
+  // Create a unique set of events, prioritizing changeId to avoid duplicates
+  // from API responses or state updates.
+  const sanitizedEvents = useMemo(() => {
+    if (!playerDetails || !Array.isArray(playerDetails.mmrChanges)) return [];
+
+    const unique = new Map();
+    // Traverse original array
+    playerDetails.mmrChanges.forEach((e) => {
+      // Create a unique key. Prefer changeId, fallback to composite key.
+      const key =
+        e.changeId ? `id-${e.changeId}` : `${e.time}-${e.newMmr}-${e.reason}`;
+
+      // Only add if not already present
+      if (!unique.has(key)) {
+        // Store a shallow copy to prevent mutation
+        unique.set(key, { ...e });
+      }
     });
 
-    const [eventLimitPreference, setEventLimitPreference] = useState(() => {
-        try {
-            const saved = sessionStorage.getItem(EVENT_LIMIT_STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                const val = parseInt(parsed?.value, 10);
-                if (!Number.isNaN(val) && val >= 1) {
-                    return val;
-                }
-            }
-        } catch (e) {
-            console.warn("Failed to load event limit preference from sessionStorage", e);
-        }
-        return 10;
-    });
+    // Return values, preserving original order
+    return Array.from(unique.values());
+  }, [playerDetails]);
 
-    const [eventLimit, setEventLimit] = useState(() => Math.max(1, eventLimitPreference));
-    const [eventInputValue, setEventInputValue] = useState(() => String(eventLimit));
-    const [eventFilter, setEventFilter] = useState("all");
-    const [scoreFilter, setScoreFilter] = useState("all");
-    const [sortMethod, setSortMethod] = useState("recent");
+  // Derived stats for 12p / 24p events
+  const navigate = useNavigate();
 
-    // Persist preference (mode + last chosen value) to sessionStorage
-    useEffect(() => {
-        try {
-            sessionStorage.setItem(
-                EVENT_LIMIT_STORAGE_KEY,
-                JSON.stringify({
-                    mode: eventLimitMode,
-                    value: eventLimitPreference,
-                })
-            );
-        } catch (e) {
-            console.warn("Failed to save event limit preference to sessionStorage", e);
-        }
-    }, [eventLimitMode, eventLimitPreference]);
+  const { twelveCount, twentyFourCount, avg12, avg24, winRate12, winRate24 } =
+    calculateEventStats(sanitizedEvents);
 
-    // Create a unique set of events, prioritizing changeId to avoid duplicates
-    // from API responses or state updates.
-    const sanitizedEvents = useMemo(() => {
-        if (!playerDetails || !Array.isArray(playerDetails.mmrChanges)) return [];
-
-        const unique = new Map();
-        // Traverse original array
-        playerDetails.mmrChanges.forEach((e) => {
-            // Create a unique key. Prefer changeId, fallback to composite key.
-            const key = e.changeId
-                ? `id-${e.changeId}`
-                : `${e.time}-${e.newMmr}-${e.reason}`;
-
-            // Only add if not already present
-            if (!unique.has(key)) {
-                // Store a shallow copy to prevent mutation
-                unique.set(key, { ...e });
-            }
-        });
-
-        // Return values, preserving original order
-        return Array.from(unique.values());
-    }, [playerDetails]);
-
-    // Derived stats for 12p / 24p events
-    const navigate = useNavigate();
-
-    const {
-        twelveCount,
-        twentyFourCount,
-        avg12,
-        avg24,
-        winRate12,
-        winRate24,
-    } = calculateEventStats(sanitizedEvents);
-
-    const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
-        return calculateMmrHistoryData(
-            sanitizedEvents,
-            (val) => getRankForMmrValue(val, season, mmrType),
-            `${gradientIdPrefix}-${playerDetails?.playerId || 'default'}`
-        );
-    }, [sanitizedEvents, playerDetails?.playerId, gradientIdPrefix, season, mmrType]);
-
-    // Events to display based on filter and limit
-    let eventsToShow = [];
-    let totalFilteredEvents = 0;
-    if (sanitizedEvents.length > 0) {
-        let filtered;
-        // Only apply 12p/24p filters if season < 2
-        if (season < 2) {
-            if (eventFilter === "12") {
-                filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 12);
-            } else if (eventFilter === "24") {
-                filtered = sanitizedEvents.filter((e) => e.reason === "Table" && e.numPlayers === 24);
-            } else {
-                // For "all" filter, include everything (tables, penalties, deleted, etc.)
-                filtered = sanitizedEvents;
-            }
-        } else {
-            // For season >= 2, we don't filter by 12p/24p locally as the API returns specific game data
-            filtered = sanitizedEvents;
-        }
-        
-        totalFilteredEvents = filtered.length;
-
-        // First limit to the most recent X events
-        const recentEvents = filtered.slice(0, eventLimit);
-
-        // Then sort those specific events based on selected method
-        let sortedEvents = [...recentEvents];
-        if (sortMethod === "gain") {
-            sortedEvents.sort((a, b) => (b.mmrDelta || 0) - (a.mmrDelta || 0));
-        } else if (sortMethod === "loss") {
-            sortedEvents.sort((a, b) => (a.mmrDelta || 0) - (b.mmrDelta || 0));
-        } else if (sortMethod === "score_asc") {
-            sortedEvents.sort((a, b) => (a.score || 0) - (b.score || 0));
-        } else if (sortMethod === "score_desc") {
-            sortedEvents.sort((a, b) => (b.score || 0) - (a.score || 0));
-        }
-        // "recent" is default, preserve original order (which is by time/id)
-
-        eventsToShow = sortedEvents; // No need to slice again
-    }
-
-    // Sync effective limit when player/filter changes, honoring "show all"
-    useEffect(() => {
-        if (!playerDetails) return;
-        const total = totalFilteredEvents;
-
-        if (eventLimitMode === "all") {
-            const newLimit = Math.max(0, total);
-            if (newLimit !== eventLimit) {
-                setEventLimit(newLimit);
-                setEventInputValue(String(newLimit));
-            }
-        } else {
-            const desired = Math.max(1, eventLimitPreference);
-            const newLimit = Math.max(1, Math.min(desired, total || desired));
-            if (newLimit !== eventLimit) {
-                setEventLimit(newLimit);
-                setEventInputValue(String(newLimit));
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [playerDetails, eventFilter, totalFilteredEvents, eventLimitMode, eventLimitPreference]);
-
-    // Stats for the currently displayed events
-    let recentAvgScore = null;
-    let recentBestScore = null;
-    let recentWinRate = null;
-    let largestGain = null;
-    let largestLoss = null;
-
-    if (eventsToShow.length) {
-        // Only calculate score stats for table events (exclude penalties)
-        const tableEvents = eventsToShow.filter((e) => e.reason === "Table");
-        const withScores = tableEvents.filter(
-            (e) => typeof e.score === "number" && !Number.isNaN(e.score),
-        );
-        if (withScores.length) {
-            const sum = withScores.reduce((acc, e) => acc + e.score, 0);
-            recentAvgScore = sum / withScores.length;
-            recentBestScore = withScores.reduce(
-                (max, e) => (e.score > max ? e.score : max),
-                withScores[0].score,
-            );
-        }
-
-        // Win rate only counts table events where MMR increased
-        const tableWins = tableEvents.filter((e) => (e.mmrDelta ?? 0) > 0).length;
-        recentWinRate = tableEvents.length > 0 ? tableWins / tableEvents.length : null;
-
-        // Calculate largest gain and loss (include all events including penalties)
-        const deltas = eventsToShow.map(e => e.mmrDelta ?? 0);
-        largestGain = Math.max(...deltas);
-        largestLoss = Math.min(...deltas);
-    }
-
-    // Score distribution data computation
-    const scoreDistributionData = useMemo(() => {
-        // If season >= 2, ignore scoreFilter (effectively "all")
-        const filterToUse = season >= 2 ? "all" : scoreFilter;
-        return calculateScoreDistribution(sanitizedEvents, filterToUse);
-    }, [sanitizedEvents, scoreFilter, season]);
-
-    // Find highest score and its table (only from table events, not penalties)
-    const highestScoreData = useMemo(() => {
-        if (!sanitizedEvents.length) return null;
-
-        // Only consider table events (exclude penalties)
-        const tableEvents = sanitizedEvents.filter(
-            (e) => e.reason === "Table" && typeof e.score === "number" && !Number.isNaN(e.score)
-        );
-
-        if (!tableEvents.length) return null;
-
-        const highestEvent = tableEvents.reduce((max, e) =>
-            e.score > max.score ? e : max
-        );
-
-        return {
-            score: highestEvent.score,
-            changeId: highestEvent.changeId,
-        };
-    }, [sanitizedEvents]);
-
-    if (!playerDetails) return null;
-
-    return (
-        <div className="player-results">
-            <div className="player-summary">
-                <h2>
-                    <span>Stats for</span>
-                    {playerDetails.countryCode && (
-                        <Flag
-                            code={playerDetails.countryCode}
-                            className="flag-icon-medium"
-                            aria-label={`Flag of ${playerDetails.countryCode}`}
-                        />
-                    )}
-                    <span style={{ color: getRankColor(playerDetails.rank) }}>
-                        {playerDetails.name}
-                    </span>
-                </h2>
-                <p>Player ID: {playerDetails.playerId}</p>
-                <p>Overall Rank: #{playerDetails.overallRank}</p>
-                <p>Current Rank: {playerDetails.rank}</p>
-                <p>{getNextRank(playerDetails.mmr, season, mmrType)}</p>
-                <p>Current MMR: {playerDetails.mmr}</p>
-                <p>Highest MMR: {playerDetails.maxMmr}</p>
-                <p>
-                    Highest Score:{" "}
-                    {highestScoreData && highestScoreData.changeId != null ? (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const tableId = String(highestScoreData.changeId).trim();
-                                if (tableId && tableId !== 'undefined' && tableId !== 'null') {
-                                    navigate(`/table/${tableId}`);
-                                }
-                            }}
-                            className="event-link"
-                        >
-                            {highestScoreData.score}
-                        </button>
-                    ) : highestScoreData ? (
-                        highestScoreData.score
-                    ) : "N/A"}
-                </p>
-                <p>
-                    Average Score:{" "}
-                    {playerDetails.averageScore != null
-                        ? playerDetails.averageScore.toFixed(2)
-                        : "N/A"}
-                    {season < 2 && (
-                        <>
-                            {" "}
-                            (
-                            {avg12 != null
-                                ? `${avg12.toFixed(2)} 12p`
-                                : "N/A 12p"}
-                            {" / "}
-                            {avg24 != null
-                                ? `${avg24.toFixed(2)} 24p`
-                                : "N/A 24p"}
-                            )
-                        </>
-                    )}
-                </p>
-                <p>
-                    Total Events Played: {playerDetails.eventsPlayed} 
-                    {season < 2 && (
-                        <> ({twelveCount} 12p / {twentyFourCount} 24p)</>
-                    )}
-                </p>
-                <p
-                    className={`player-winrate ${playerDetails.winRate >= 0.5 ? "positive" : "negative"
-                        }`}
-                >
-                    Win Rate: {(playerDetails.winRate * 100).toFixed(2)}%
-                    {season < 2 && (
-                        <>
-                            {" "}
-                            (
-                            {winRate12 != null
-                                ? `${(winRate12 * 100).toFixed(2)}% 12p`
-                                : "N/A 12p"}
-                            {" / "}
-                            {winRate24 != null
-                                ? `${(winRate24 * 100).toFixed(2)}% 24p`
-                                : "N/A 24p"}
-                            )
-                        </>
-                    )}
-                </p>
-            </div>
-
-            {/* MMR History Chart */}
-            <div className="player-summary">
-                <h3>MMR History</h3>
-                <div
-                    role="img"
-                    aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
-                >
-                    <Suspense fallback={<div className="chart-loader">Loading chart...</div>}>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart
-                                data={mmrHistoryData}
-                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                            >
-                                <defs>
-                                    <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                                        {gradientStops.map((stop, idx) => (
-                                            <stop
-                                                key={idx}
-                                                offset={stop.offset}
-                                                stopColor={stop.color}
-                                            />
-                                        ))}
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    dataKey="event"
-                                    stroke="#9ca3af"
-                                    label={{ value: "Events", position: "insideBottom", offset: -5 }}
-                                />
-                                <YAxis
-                                    stroke="#9ca3af"
-                                    label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                                    domain={["dataMin - 50", "dataMax + 50"]}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "#0f172a",
-                                        border: "1px solid #334155",
-                                        borderRadius: "8px",
-                                    }}
-                                    labelStyle={{ color: "#e5e7eb" }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="mmr"
-                                    stroke={`url(#${gradientId})`}
-                                    strokeWidth={2.5}
-                                    dot={false}
-                                    activeDot={false}
-                                    isAnimationActive={false}
-                                    strokeLinecap="round"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </Suspense>
-                </div>
-            </div>
-
-            {/* Score Distribution Chart */}
-            <div className="player-summary">
-                <div className="player-events-header">
-                    <h3>Score Distribution</h3>
-                    {season < 2 && (
-                        <FilterToggle
-                            activeFilter={scoreFilter}
-                            onFilterChange={setScoreFilter}
-                            options={[
-                                { value: "all", label: "All" },
-                                { value: "12", label: "12p" },
-                                { value: "24", label: "24p" },
-                            ]}
-                        />
-                    )}
-                </div>
-                <div
-                    role="img"
-                    aria-label="Bar chart showing how often different score ranges occur in this player's events. Horizontal axis shows score ranges, vertical axis shows event counts."
-                >
-                    <Suspense fallback={<div className="chart-loader">Loading chart...</div>}>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart
-                                data={scoreDistributionData}
-                                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    dataKey="range"
-                                    stroke="#9ca3af"
-                                    label={{ value: "Score Range", position: "insideBottom", offset: -5 }}
-                                />
-                                <YAxis
-                                    stroke="#9ca3af"
-                                    label={{ value: "Events", angle: -90, position: "insideLeft" }}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "#0f172a",
-                                        border: "1px solid #334155",
-                                        borderRadius: "8px",
-                                    }}
-                                    labelStyle={{ color: "#e5e7eb" }}
-                                />
-                                <Legend />
-                                <Bar dataKey="count" fill="#22c55e" name="Events" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Suspense>
-                </div>
-            </div>
-
-            <div className="player-events-card">
-                <div className="player-events-header">
-                    <h3>Recent Events</h3>
-                    <div className="events-controls">
-                        <Selector
-                             options={[
-                                { value: "recent", label: "Most Recent" },
-                                { value: "gain", label: "Biggest Gains" },
-                                { value: "loss", label: "Biggest Losses" },
-                                { value: "score_asc", label: "Scores (Asc)" },
-                                { value: "score_desc", label: "Scores (Desc)" },
-                            ]}
-                            value={sortMethod}
-                            onChange={setSortMethod}
-                            className="sort-selector"
-                            id="event-sort"
-                            label="Sort Events"
-                        />
-                        <div className="events-count">
-                            <span>Show</span>
-                            <input
-                                className="events-count-input"
-                                type="number"
-                                min={1}
-                                value={eventInputValue}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    setEventInputValue(value);
-
-                                    // Only update the actual limit if valid
-                                    const numValue = Number(value);
-                                    if (!Number.isNaN(numValue) && numValue >= 1) {
-                                        setEventLimitMode("number");
-                                        setEventLimitPreference(numValue);
-                                        setEventLimit(numValue);
-                                    }
-                                }}
-                                onBlur={(e) => {
-                                    const value = e.target.value;
-                                    // If empty or invalid on blur, reset to current limit
-                                    if (value === '' || Number(value) < 1) {
-                                        setEventInputValue(String(eventLimit));
-                                    } else {
-                                        const numValue = Math.max(Number(value), 1);
-                                        setEventLimitMode("number");
-                                        setEventLimitPreference(numValue);
-                                        setEventLimit(numValue);
-                                        setEventInputValue(String(numValue));
-                                    }
-                                }}
-                            />
-                            <span>events</span>
-                            {totalFilteredEvents > eventLimit && (
-                                <button
-                                    type="button"
-                                    className="show-all-events-btn"
-                                    onClick={() => {
-                                        setEventLimitMode("all");
-                                        setEventLimitPreference(totalFilteredEvents);
-                                        setEventLimit(totalFilteredEvents);
-                                        setEventInputValue(String(totalFilteredEvents));
-                                    }}
-                                    aria-label={`Show all ${totalFilteredEvents} events`}
-                                >
-                                    Show All ({totalFilteredEvents})
-                                </button>
-                            )}
-                        </div>
-                        {season < 2 && (
-                            <FilterToggle
-                                activeFilter={eventFilter}
-                                onFilterChange={setEventFilter}
-                                options={[
-                                    { value: "all", label: "All" },
-                                    { value: "12", label: "12p" },
-                                    { value: "24", label: "24p" },
-                                ]}
-                            />
-                        )}
-                    </div>
-                </div>
-                {eventsToShow.length > 0 && (
-                    <div className="recent-stats-row">
-                        <StatCard
-                            label="Avg score"
-                            value={recentAvgScore != null ? recentAvgScore.toFixed(2) : "N/A"}
-                        />
-                        <StatCard
-                            label="Best score"
-                            value={recentBestScore != null ? recentBestScore : "N/A"}
-                        />
-                        <StatCard
-                            label="Win rate"
-                            value={recentWinRate != null ? `${(recentWinRate * 100).toFixed(1)}%` : "N/A"}
-                            valueClassName={recentWinRate >= 0.5 ? "positive" : "negative"}
-                        />
-                        <StatCard
-                            label="MMR delta"
-                            value={eventsToShow.length > 0 ? (() => {
-                                const delta = eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0);
-                                return delta > 0 ? `+${delta}` : delta;
-                            })() : "N/A"}
-                            valueClassName={eventsToShow.length > 0 && eventsToShow.reduce((sum, event) => sum + (event.mmrDelta ?? 0), 0) > 0 ? "positive" : "negative"}
-                        />
-                        <StatCard
-                            label="Largest gain"
-                            value={largestGain != null ? (largestGain > 0 ? `+${largestGain}` : largestGain) : "N/A"}
-                            valueClassName="positive"
-                        />
-                        <StatCard
-                            label="Largest loss"
-                            value={largestLoss != null ? largestLoss : "N/A"}
-                            valueClassName="negative"
-                        />
-                    </div>
-                )}
-            </div>
-
-            {eventsToShow.length === 0 ? (
-                <p className="no-events-message" aria-live="polite">
-                    No events match these filters yet.
-                </p>
-            ) : (
-                <div className="events-grid">
-                    {eventsToShow.map((event) => (
-                        <EventCard
-                            key={event.changeId || `${event.time}-${event.newMmr}`}
-                            event={event}
-                            averageScore={playerDetails.averageScore}
-                            avg12={avg12}
-                            avg24={avg24}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
+  const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
+    return calculateMmrHistoryData(
+      sanitizedEvents,
+      (val) => getRankForMmrValue(val, season, mmrType),
+      `${gradientIdPrefix}-${playerDetails?.playerId || "default"}`,
     );
+  }, [
+    sanitizedEvents,
+    playerDetails?.playerId,
+    gradientIdPrefix,
+    season,
+    mmrType,
+  ]);
+
+  // Events to display based on filter and limit
+  let eventsToShow = [];
+  let totalFilteredEvents = 0;
+  if (sanitizedEvents.length > 0) {
+    let filtered;
+    // Only apply 12p/24p filters if season < 2
+    if (season < 2) {
+      if (eventFilter === "12") {
+        filtered = sanitizedEvents.filter(
+          (e) => e.reason === "Table" && e.numPlayers === 12,
+        );
+      } else if (eventFilter === "24") {
+        filtered = sanitizedEvents.filter(
+          (e) => e.reason === "Table" && e.numPlayers === 24,
+        );
+      } else {
+        // For "all" filter, include everything (tables, penalties, deleted, etc.)
+        filtered = sanitizedEvents;
+      }
+    } else {
+      // For season >= 2, we don't filter by 12p/24p locally as the API returns specific game data
+      filtered = sanitizedEvents;
+    }
+
+    totalFilteredEvents = filtered.length;
+
+    // First limit to the most recent X events
+    const recentEvents = filtered.slice(0, eventLimit);
+
+    // Then sort those specific events based on selected method
+    let sortedEvents = [...recentEvents];
+    if (sortMethod === "gain") {
+      sortedEvents.sort((a, b) => (b.mmrDelta || 0) - (a.mmrDelta || 0));
+    } else if (sortMethod === "loss") {
+      sortedEvents.sort((a, b) => (a.mmrDelta || 0) - (b.mmrDelta || 0));
+    } else if (sortMethod === "score_asc") {
+      sortedEvents.sort((a, b) => (a.score || 0) - (b.score || 0));
+    } else if (sortMethod === "score_desc") {
+      sortedEvents.sort((a, b) => (b.score || 0) - (a.score || 0));
+    }
+    // "recent" is default, preserve original order (which is by time/id)
+
+    eventsToShow = sortedEvents; // No need to slice again
+  }
+
+  // Sync effective limit when player/filter changes, honoring "show all"
+  useEffect(() => {
+    if (!playerDetails) return;
+    const total = totalFilteredEvents;
+
+    if (eventLimitMode === "all") {
+      const newLimit = Math.max(0, total);
+      if (newLimit !== eventLimit) {
+        setEventLimit(newLimit);
+        setEventInputValue(String(newLimit));
+      }
+    } else {
+      const desired = Math.max(1, eventLimitPreference);
+      const newLimit = Math.max(1, Math.min(desired, total || desired));
+      if (newLimit !== eventLimit) {
+        setEventLimit(newLimit);
+        setEventInputValue(String(newLimit));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    playerDetails,
+    eventFilter,
+    totalFilteredEvents,
+    eventLimitMode,
+    eventLimitPreference,
+  ]);
+
+  // Stats for the currently displayed events
+  let recentAvgScore = null;
+  let recentBestScore = null;
+  let recentWinRate = null;
+  let largestGain = null;
+  let largestLoss = null;
+  let avgPlacementAll = null;
+  let avgPlacement12 = null;
+  let avgPlacement24 = null;
+
+  if (eventsToShow.length) {
+    // Only calculate score stats for table events (exclude penalties)
+    const tableEvents = eventsToShow.filter((e) => e.reason === "Table");
+    const tableEventsWithRank = tableEvents.filter((e) =>
+      Number.isFinite(e.rank),
+    );
+    const withScores = tableEvents.filter(
+      (e) => typeof e.score === "number" && !Number.isNaN(e.score),
+    );
+    if (withScores.length) {
+      const sum = withScores.reduce((acc, e) => acc + e.score, 0);
+      recentAvgScore = sum / withScores.length;
+      recentBestScore = withScores.reduce(
+        (max, e) => (e.score > max ? e.score : max),
+        withScores[0].score,
+      );
+    }
+
+    // Win rate only counts table events where MMR increased
+    const tableWins = tableEvents.filter((e) => (e.mmrDelta ?? 0) > 0).length;
+    recentWinRate =
+      tableEvents.length > 0 ? tableWins / tableEvents.length : null;
+
+    // Calculate largest gain and loss (include all events including penalties)
+    const deltas = eventsToShow.map((e) => e.mmrDelta ?? 0);
+    largestGain = Math.max(...deltas);
+    largestLoss = Math.min(...deltas);
+
+    const getAveragePlacement = (items) => {
+      if (!items.length) return null;
+      const sum = items.reduce((acc, e) => acc + e.rank, 0);
+      return sum / items.length;
+    };
+
+    avgPlacementAll = getAveragePlacement(tableEventsWithRank);
+    avgPlacement12 = getAveragePlacement(
+      tableEventsWithRank.filter((e) => e.numPlayers === 12),
+    );
+    avgPlacement24 = getAveragePlacement(
+      tableEventsWithRank.filter((e) => e.numPlayers === 24),
+    );
+  }
+
+  // Score distribution data computation
+  const scoreDistributionData = useMemo(() => {
+    // If season >= 2, ignore scoreFilter (effectively "all")
+    const filterToUse = season >= 2 ? "all" : scoreFilter;
+    return calculateScoreDistribution(sanitizedEvents, filterToUse);
+  }, [sanitizedEvents, scoreFilter, season]);
+
+  // Find highest score and its table (only from table events, not penalties)
+  const highestScoreData = useMemo(() => {
+    if (!sanitizedEvents.length) return null;
+
+    // Only consider table events (exclude penalties)
+    const tableEvents = sanitizedEvents.filter(
+      (e) =>
+        e.reason === "Table" &&
+        typeof e.score === "number" &&
+        !Number.isNaN(e.score),
+    );
+
+    if (!tableEvents.length) return null;
+
+    const highestEvent = tableEvents.reduce((max, e) =>
+      e.score > max.score ? e : max,
+    );
+
+    return {
+      score: highestEvent.score,
+      changeId: highestEvent.changeId,
+    };
+  }, [sanitizedEvents]);
+
+  if (!playerDetails) return null;
+
+  return (
+    <div className="player-results">
+      <div className="player-summary">
+        <h2>
+          <span>Stats for</span>
+          {playerDetails.countryCode && (
+            <Flag
+              code={playerDetails.countryCode}
+              className="flag-icon-medium"
+              aria-label={`Flag of ${playerDetails.countryCode}`}
+            />
+          )}
+          <span style={{ color: getRankColor(playerDetails.rank) }}>
+            {playerDetails.name}
+          </span>
+        </h2>
+        <p>Player ID: {playerDetails.playerId}</p>
+        <p>Overall Rank: #{playerDetails.overallRank}</p>
+        <p>Current Rank: {playerDetails.rank}</p>
+        <p>{getNextRank(playerDetails.mmr, season, mmrType)}</p>
+        <p>Current MMR: {playerDetails.mmr}</p>
+        <p>Highest MMR: {playerDetails.maxMmr}</p>
+        <p>
+          Highest Score:{" "}
+          {highestScoreData && highestScoreData.changeId != null ?
+            <button
+              type="button"
+              onClick={() => {
+                const tableId = String(highestScoreData.changeId).trim();
+                if (tableId && tableId !== "undefined" && tableId !== "null") {
+                  navigate(`/table/${tableId}`);
+                }
+              }}
+              className="event-link"
+            >
+              {highestScoreData.score}
+            </button>
+          : highestScoreData ?
+            highestScoreData.score
+          : "N/A"}
+        </p>
+        <p>
+          Average Score:{" "}
+          {playerDetails.averageScore != null ?
+            playerDetails.averageScore.toFixed(2)
+          : "N/A"}
+          {season < 2 && (
+            <>
+              {" "}
+              ({avg12 != null ? `${avg12.toFixed(2)} 12p` : "N/A 12p"}
+              {" / "}
+              {avg24 != null ? `${avg24.toFixed(2)} 24p` : "N/A 24p"})
+            </>
+          )}
+        </p>
+        <p>
+          Total Events Played: {playerDetails.eventsPlayed}
+          {season < 2 && (
+            <>
+              {" "}
+              ({twelveCount} 12p / {twentyFourCount} 24p)
+            </>
+          )}
+        </p>
+        <p
+          className={`player-winrate ${
+            playerDetails.winRate >= 0.5 ? "positive" : "negative"
+          }`}
+        >
+          Win Rate: {(playerDetails.winRate * 100).toFixed(2)}%
+          {season < 2 && (
+            <>
+              {" "}
+              (
+              {winRate12 != null ?
+                `${(winRate12 * 100).toFixed(2)}% 12p`
+              : "N/A 12p"}
+              {" / "}
+              {winRate24 != null ?
+                `${(winRate24 * 100).toFixed(2)}% 24p`
+              : "N/A 24p"}
+              )
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* MMR History Chart */}
+      <div className="player-summary">
+        <h3>MMR History</h3>
+        <div
+          role="img"
+          aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
+        >
+          <Suspense
+            fallback={<div className="chart-loader">Loading chart...</div>}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={mmrHistoryData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
+                <defs>
+                  <linearGradient
+                    id={gradientId}
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    {gradientStops.map((stop, idx) => (
+                      <stop
+                        key={idx}
+                        offset={stop.offset}
+                        stopColor={stop.color}
+                      />
+                    ))}
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="event"
+                  stroke="#9ca3af"
+                  label={{
+                    value: "Events",
+                    position: "insideBottom",
+                    offset: -5,
+                  }}
+                />
+                <YAxis
+                  stroke="#9ca3af"
+                  label={{ value: "MMR", angle: -90, position: "insideLeft" }}
+                  domain={["dataMin - 50", "dataMax + 50"]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#e5e7eb" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="mmr"
+                  stroke={`url(#${gradientId})`}
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={false}
+                  isAnimationActive={false}
+                  strokeLinecap="round"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Suspense>
+        </div>
+      </div>
+
+      {/* Score Distribution Chart */}
+      <div className="player-summary">
+        <div className="player-events-header">
+          <h3>Score Distribution</h3>
+          {season < 2 && (
+            <FilterToggle
+              activeFilter={scoreFilter}
+              onFilterChange={setScoreFilter}
+              options={[
+                { value: "all", label: "All" },
+                { value: "12", label: "12p" },
+                { value: "24", label: "24p" },
+              ]}
+            />
+          )}
+        </div>
+        <div
+          role="img"
+          aria-label="Bar chart showing how often different score ranges occur in this player's events. Horizontal axis shows score ranges, vertical axis shows event counts."
+        >
+          <Suspense
+            fallback={<div className="chart-loader">Loading chart...</div>}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={scoreDistributionData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="range"
+                  stroke="#9ca3af"
+                  label={{
+                    value: "Score Range",
+                    position: "insideBottom",
+                    offset: -5,
+                  }}
+                />
+                <YAxis
+                  stroke="#9ca3af"
+                  label={{
+                    value: "Events",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#e5e7eb" }}
+                />
+                <Legend />
+                <Bar dataKey="count" fill="#22c55e" name="Events" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Suspense>
+        </div>
+      </div>
+
+      <div className="player-events-card">
+        <div className="player-events-header">
+          <h3>Recent Events</h3>
+          <div className="events-controls">
+            <Selector
+              options={[
+                { value: "recent", label: "Most Recent" },
+                { value: "gain", label: "Biggest Gains" },
+                { value: "loss", label: "Biggest Losses" },
+                { value: "score_asc", label: "Scores (Asc)" },
+                { value: "score_desc", label: "Scores (Desc)" },
+              ]}
+              value={sortMethod}
+              onChange={setSortMethod}
+              className="sort-selector"
+              id="event-sort"
+              label="Sort Events"
+            />
+            <div className="events-count">
+              <span>Show</span>
+              <input
+                className="events-count-input"
+                type="number"
+                min={1}
+                value={eventInputValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEventInputValue(value);
+
+                  // Only update the actual limit if valid
+                  const numValue = Number(value);
+                  if (!Number.isNaN(numValue) && numValue >= 1) {
+                    setEventLimitMode("number");
+                    setEventLimitPreference(numValue);
+                    setEventLimit(numValue);
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  // If empty or invalid on blur, reset to current limit
+                  if (value === "" || Number(value) < 1) {
+                    setEventInputValue(String(eventLimit));
+                  } else {
+                    const numValue = Math.max(Number(value), 1);
+                    setEventLimitMode("number");
+                    setEventLimitPreference(numValue);
+                    setEventLimit(numValue);
+                    setEventInputValue(String(numValue));
+                  }
+                }}
+              />
+              <span>events</span>
+              {totalFilteredEvents > eventLimit && (
+                <button
+                  type="button"
+                  className="show-all-events-btn"
+                  onClick={() => {
+                    setEventLimitMode("all");
+                    setEventLimitPreference(totalFilteredEvents);
+                    setEventLimit(totalFilteredEvents);
+                    setEventInputValue(String(totalFilteredEvents));
+                  }}
+                  aria-label={`Show all ${totalFilteredEvents} events`}
+                >
+                  Show All ({totalFilteredEvents})
+                </button>
+              )}
+            </div>
+            {season < 2 && (
+              <FilterToggle
+                activeFilter={eventFilter}
+                onFilterChange={setEventFilter}
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "12", label: "12p" },
+                  { value: "24", label: "24p" },
+                ]}
+              />
+            )}
+          </div>
+        </div>
+        {eventsToShow.length > 0 && (
+          <div className="recent-stats-row">
+            {season >= 2 && (
+              <StatCard
+                label="Avg placement"
+                value={
+                  avgPlacementAll != null ? avgPlacementAll.toFixed(2) : "N/A"
+                }
+              />
+            )}
+            {season < 2 && eventFilter === "all" && (
+              <>
+                <StatCard
+                  label="Avg 12p placement"
+                  value={
+                    avgPlacement12 != null ? avgPlacement12.toFixed(2) : "N/A"
+                  }
+                />
+                <StatCard
+                  label="Avg 24p placement"
+                  value={
+                    avgPlacement24 != null ? avgPlacement24.toFixed(2) : "N/A"
+                  }
+                />
+              </>
+            )}
+            {season < 2 && eventFilter === "12" && (
+              <StatCard
+                label="Avg placement (12p)"
+                value={
+                  avgPlacement12 != null ? avgPlacement12.toFixed(2) : "N/A"
+                }
+              />
+            )}
+            {season < 2 && eventFilter === "24" && (
+              <StatCard
+                label="Avg placement (24p)"
+                value={
+                  avgPlacement24 != null ? avgPlacement24.toFixed(2) : "N/A"
+                }
+              />
+            )}
+            <StatCard
+              label="Avg score"
+              value={recentAvgScore != null ? recentAvgScore.toFixed(2) : "N/A"}
+            />
+            <StatCard
+              label="Best score"
+              value={recentBestScore != null ? recentBestScore : "N/A"}
+            />
+            <StatCard
+              label="Win rate"
+              value={
+                recentWinRate != null ?
+                  `${(recentWinRate * 100).toFixed(1)}%`
+                : "N/A"
+              }
+              valueClassName={recentWinRate >= 0.5 ? "positive" : "negative"}
+            />
+            <StatCard
+              label="MMR delta"
+              value={
+                eventsToShow.length > 0 ?
+                  (() => {
+                    const delta = eventsToShow.reduce(
+                      (sum, event) => sum + (event.mmrDelta ?? 0),
+                      0,
+                    );
+                    return delta > 0 ? `+${delta}` : delta;
+                  })()
+                : "N/A"
+              }
+              valueClassName={
+                (
+                  eventsToShow.length > 0 &&
+                  eventsToShow.reduce(
+                    (sum, event) => sum + (event.mmrDelta ?? 0),
+                    0,
+                  ) > 0
+                ) ?
+                  "positive"
+                : "negative"
+              }
+            />
+            <StatCard
+              label="Largest gain"
+              value={
+                largestGain != null ?
+                  largestGain > 0 ?
+                    `+${largestGain}`
+                  : largestGain
+                : "N/A"
+              }
+              valueClassName="positive"
+            />
+            <StatCard
+              label="Largest loss"
+              value={largestLoss != null ? largestLoss : "N/A"}
+              valueClassName="negative"
+            />
+          </div>
+        )}
+      </div>
+
+      {eventsToShow.length === 0 ?
+        <p className="no-events-message" aria-live="polite">
+          No events match these filters yet.
+        </p>
+      : <div className="events-grid">
+          {eventsToShow.map((event) => (
+            <EventCard
+              key={event.changeId || `${event.time}-${event.newMmr}`}
+              event={event}
+              averageScore={playerDetails.averageScore}
+              avg12={avg12}
+              avg24={avg24}
+            />
+          ))}
+        </div>
+      }
+    </div>
+  );
 }
 
 export default PlayerDetailView;
