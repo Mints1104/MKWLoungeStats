@@ -67,7 +67,7 @@ function Stats() {
         const game = season >= 2 ? `mkworld${mmrType}p` : "mkworld";
         const data = await loungeApi.getPlayerStats(
           { season, game },
-          controller.signal
+          controller.signal,
         );
         setStats(data || null);
       } catch (err) {
@@ -114,11 +114,12 @@ function Stats() {
       undefined;
 
     const byTier = new Map(
-      stats.divisionData.map((d) => [d.tier, d.count ?? 0])
+      stats.divisionData.map((d) => [d.tier, d.count ?? 0]),
     );
 
-    const orderedTiers = Array.isArray(order)
-      ? order.filter((tier) => byTier.has(tier) && tier !== "Placement")
+    const orderedTiers =
+      Array.isArray(order) ?
+        order.filter((tier) => byTier.has(tier) && tier !== "Placement")
       : stats.divisionData
           .map((d) => d.tier)
           .filter((tier) => tier && tier !== "Placement");
@@ -159,7 +160,7 @@ function Stats() {
         count: row.count,
         color: row.color,
       })),
-    [divisionTable]
+    [divisionTable],
   );
 
   const formatEntries = useMemo(() => {
@@ -206,8 +207,12 @@ function Stats() {
     return Object.entries(daily)
       .map(([date, values]) => {
         const total = values?.Total;
-        const fallbackTotal = values
-          ? Object.values(values).reduce((sum, value) => sum + (Number(value) || 0), 0)
+        const fallbackTotal =
+          values ?
+            Object.values(values).reduce(
+              (sum, value) => sum + (Number(value) || 0),
+              0,
+            )
           : 0;
         return {
           date,
@@ -221,8 +226,9 @@ function Stats() {
     const countryData = stats?.countryData || {};
     return Object.entries(countryData)
       .map(([code, data]) => {
-        const topPlayers = Array.isArray(data?.topSixPlayers)
-          ? data.topSixPlayers.slice(0, 3).map((p) => p.name)
+        const topPlayers =
+          Array.isArray(data?.topSixPlayers) ?
+            data.topSixPlayers.slice(0, 3).map((p) => p.name)
           : [];
         return {
           code,
@@ -246,18 +252,26 @@ function Stats() {
   return (
     <div className="player-info-page">
       <div className="player-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "1rem",
+          }}
+        >
           <PageHeader
             title="Lounge Overview"
             subtitle="Global player statistics for Mario Kart World Lounge."
           />
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <SeasonSelector selectedSeason={season} onSeasonChange={setSeason} />
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <SeasonSelector
+              selectedSeason={season}
+              onSeasonChange={setSeason}
+            />
             {season >= 2 && (
-              <MMRSelector
-                selectedMMR={mmrType}
-                onMMRChange={setMmrType}
-              />
+              <MMRSelector selectedMMR={mmrType} onMMRChange={setMmrType} />
             )}
           </div>
         </div>
@@ -289,14 +303,8 @@ function Stats() {
               label="Total Mogis"
               value={formatNumber(stats.totalMogis)}
             />
-            <StatCard
-              label="Average MMR"
-              value={formatMmr(stats.averageMmr)}
-            />
-            <StatCard
-              label="Median MMR"
-              value={formatMmr(stats.medianMmr)}
-            />
+            <StatCard label="Average MMR" value={formatMmr(stats.averageMmr)} />
+            <StatCard label="Median MMR" value={formatMmr(stats.medianMmr)} />
           </div>
         )}
       </div>
@@ -392,9 +400,9 @@ function Stats() {
                       <td>{formatNumber(row.count)}</td>
                       <td>{formatPercent(row.percentOfPlayers)}</td>
                       <td>
-                        {row.percentile != null
-                          ? `Top ${row.percentile.toFixed(1)}%`
-                          : "N/A"}
+                        {row.percentile != null ?
+                          `Top ${row.percentile.toFixed(1)}%`
+                        : "N/A"}
                       </td>
                     </tr>
                   ))}
@@ -413,7 +421,7 @@ function Stats() {
           <div className="stats-activity-layout">
             <div className="stats-chart">
               <h3 className="stats-section-title">Day of Week</h3>
-              {dayOfWeekData.length > 0 ? (
+              {dayOfWeekData.length > 0 ?
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart
                     data={dayOfWeekData}
@@ -456,14 +464,12 @@ function Stats() {
                     <Bar dataKey="count" fill="#38bdf8" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <p className="player-subtitle">No activity data available.</p>
-              )}
+              : <p className="player-subtitle">No activity data available.</p>}
             </div>
 
             <div className="stats-format-section">
               <h3 className="stats-section-title">Format Breakdown</h3>
-              {formatEntries.length > 0 ? (
+              {formatEntries.length > 0 ?
                 <div className="stats-format-grid">
                   {formatEntries.map((item) => (
                     <StatCard
@@ -473,9 +479,7 @@ function Stats() {
                     />
                   ))}
                 </div>
-              ) : (
-                <p className="player-subtitle">No format data available.</p>
-              )}
+              : <p className="player-subtitle">No format data available.</p>}
 
               {tierEntries.length > 0 && (
                 <>
@@ -521,7 +525,10 @@ function Stats() {
                     tick={{ fontSize: 10, fill: "#e5e7eb" }}
                     axisLine={{ stroke: "rgba(148,163,184,0.6)" }}
                     tickLine={false}
-                    interval={Math.max(0, Math.floor(dailyActivityData.length / 14))}
+                    interval={Math.max(
+                      0,
+                      Math.floor(dailyActivityData.length / 14),
+                    )}
                     tickFormatter={formatDateShort}
                   />
                   <YAxis
@@ -585,10 +592,16 @@ function Stats() {
                       </div>
                     </td>
                     <td>{formatNumber(row.playerTotal)}</td>
-                    <td>{row.averageMmr != null ? formatMmr(row.averageMmr) : "N/A"}</td>
-                    <td>{row.topSixMmr != null ? formatMmr(row.topSixMmr) : "N/A"}</td>
+                    <td>
+                      {row.averageMmr != null ?
+                        formatMmr(row.averageMmr)
+                      : "N/A"}
+                    </td>
+                    <td>
+                      {row.topSixMmr != null ? formatMmr(row.topSixMmr) : "N/A"}
+                    </td>
                     <td className="country-top-players">
-                      {row.topPlayers.length > 0 ? (
+                      {row.topPlayers.length > 0 ?
                         row.topPlayers.map((name, index) => (
                           <span key={name} className="country-player-name">
                             <button
@@ -609,9 +622,7 @@ function Stats() {
                             )}
                           </span>
                         ))
-                      ) : (
-                        "N/A"
-                      )}
+                      : "N/A"}
                     </td>
                   </tr>
                 ))}
@@ -661,5 +672,3 @@ function Stats() {
 }
 
 export default Stats;
-
-
