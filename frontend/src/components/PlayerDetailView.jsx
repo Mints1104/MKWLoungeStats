@@ -271,7 +271,7 @@ function PlayerDetailView({
     // Calculate largest gain and loss (include all events including penalties)
     const deltas = eventsToShow.map((e) => e.mmrDelta ?? 0);
     largestGain = Math.max(...deltas);
-    largestLoss = Math.min(...deltas);
+    largestLoss = Math.min(...deltas, 0);
 
     const getAveragePlacement = (items) => {
       if (!items.length) return null;
