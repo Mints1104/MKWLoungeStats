@@ -314,7 +314,7 @@ function Leaderboard() {
                                         tabIndex={0}
                                         onKeyDown={(e) => handleRowKeyPress(e, player.name)}
                                     >
-                                        <td className="rank-cell">#{player.overallRank || "N/A"}</td>
+                                        <td className="rank-cell">{player.overallRank || "N/A"}</td>
                                         <td className="player-name-cell">
                                             <div className="player-name-container">
                                                 {player.countryCode && (
