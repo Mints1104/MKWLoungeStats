@@ -182,8 +182,9 @@ function TableInfo() {
                   <tbody>
                     {result.teams.map((team, teamIndex) =>
                       (team.scores || []).map((score, scoreIndex) => {
-                        const prevRank = getRankForMmrValue(score.prevMmr);
-                        const newRank = getRankForMmrValue(score.newMmr);
+                        const mmrType = result.numPlayers === 12 ? 12 : 24;
+                        const prevRank = getRankForMmrValue(score.prevMmr, result.season, mmrType);
+                        const newRank = getRankForMmrValue(score.newMmr, result.season, mmrType);
 
                         return (
                           <tr
