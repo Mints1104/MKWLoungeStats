@@ -855,6 +855,14 @@ body {
   color: #e5e7eb;
 }
 
+.leaderboard-table td.positive {
+  color: #4ade80;
+}
+
+.leaderboard-table td.negative {
+  color: #f97373;
+}
+
 .leaderboard-table tbody tr:hover {
   background: rgba(56, 189, 248, 0.05);
 }

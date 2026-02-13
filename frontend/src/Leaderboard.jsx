@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Flag from "react-world-flags";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
+import { COUNTRY_MAPPING } from "./utils/countryMapping";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
 import PageHeader from "./components/PageHeader";
@@ -42,6 +43,7 @@ function Leaderboard() {
     const [maxMmr, setMaxMmr] = useState(searchParams.get("maxMmr") || "");
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
     const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
+    const [country, setCountry] = useState(searchParams.get("country") || "");
     const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "mmr");
     const [filtersVisible, setFiltersVisible] = useState(true);
 
@@ -56,9 +58,10 @@ function Leaderboard() {
         if (minMmr) params.set("minMmr", minMmr);
         if (maxMmr) params.set("maxMmr", maxMmr);
         if (debouncedSearch) params.set("search", debouncedSearch);
+        if (country) params.set("country", country);
 
         setSearchParams(params, { replace: true });
-    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, setSearchParams]);
+    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, country, setSearchParams]);
     const requestRef = useRef(null);
 
 
@@ -97,7 +100,8 @@ function Leaderboard() {
                     maxMmr,
                     search: debouncedSearch,
                     season,
-                    mmrType 
+                    mmrType,
+                    country 
                 },
                 controller.signal
             );
@@ -113,7 +117,7 @@ function Leaderboard() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season, mmrType]);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season, mmrType, country]);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -214,6 +218,25 @@ function Leaderboard() {
                         </div>
 
                         <div className="filter-group">
+                            <label htmlFor="country">Country</label>
+                            <select
+                                id="country"
+                                className="player-input"
+                                value={country}
+                                onChange={(e) => {
+                                    setCountry(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                {COUNTRY_MAPPING.map((c) => (
+                                    <option key={c.code || "all"} value={c.code}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="filter-group">
                             <label htmlFor="sortBy">Sort By</label>
                             <select
                                 id="sortBy"
@@ -223,7 +246,8 @@ function Leaderboard() {
                             >
                                 <option value="mmr">MMR</option>
                                 <option value="eventsPlayed">Events Played</option>
-                                <option value="maxMmr">Max MMR</option>
+                                <option value="maxMmr">Peak MMR</option>
+                                <option value="lastWeekRankChange">Last Week</option>
                             </select>
                         </div>
 
@@ -277,7 +301,8 @@ function Leaderboard() {
                                     <th>Rank</th>
                                     <th>Player</th>
                                     <th>MMR</th>
-                                    <th>Max MMR</th>
+                                    <th>Peak MMR</th>
+                                    <th>Last Week</th>
                                     <th>Win Rate</th>
                                     <th>Events</th>
                                 </tr>
@@ -311,6 +336,10 @@ function Leaderboard() {
                                         </td>
                                         <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank.name) }}>{player.mmr}</td>
                                         <td style={{ color: getRankColor(player.maxMmrRank.name) }}>{player.maxMmr}</td>
+                                        <td className={player.lastWeekRankChange < 0 ? "positive" : player.lastWeekRankChange > 0 ? "negative" : ""}>
+                                            {player.lastWeekRankChange < 0 ? "▲ " : player.lastWeekRankChange > 0 ? "▼ " : ""}
+                                            {player.lastWeekRankChange !== 0 && player.lastWeekRankChange != null ? Math.abs(player.lastWeekRankChange) : "—"}
+                                        </td>
                                         <td
                                             className={
                                                 player.winRate >= 0.5 ? "positive" : "negative"

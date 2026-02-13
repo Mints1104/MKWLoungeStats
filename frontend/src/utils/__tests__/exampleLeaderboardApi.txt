@@ -1,0 +1,1245 @@
+{
+  "totalPlayers": 22082,
+  "game": "mkworld24p",
+  "season": 2,
+  "data": [
+    {
+      "id": 14358,
+      "overallRank": 1,
+      "countryCode": "JP",
+      "name": "u 1st",
+      "mmr": 14594,
+      "maxMmr": 14594,
+      "winRate": 0.805555555555556,
+      "winsLastTen": 9,
+      "lossesLastTen": 1,
+      "gainLossLastTen": 586,
+      "lastWeekRankChange": -2,
+      "eventsPlayed": 36,
+      "largestGain": 169,
+      "mmrRank": {
+        "division": "Master",
+        "name": "Master"
+      },
+      "maxMmrRank": {
+        "division": "Master",
+        "name": "Master"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:59:57.8264809Z",
+      "averageScore24P": 91.2608695652174
+    },
+    {
+      "id": 26176,
+      "overallRank": 2,
+      "countryCode": "JP",
+      "name": "Li4z",
+      "mmr": 13667,
+      "maxMmr": 14339,
+      "winRate": 0.682926829268293,
+      "winsLastTen": 4,
+      "lossesLastTen": 6,
+      "gainLossLastTen": -627,
+      "lastWeekRankChange": 1,
+      "eventsPlayed": 41,
+      "largestGain": 196,
+      "mmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2022-03-23T12:22:19.5005875Z",
+      "averageScore24P": 84.6571428571429
+    },
+    {
+      "id": 12194,
+      "overallRank": 3,
+      "countryCode": "JP",
+      "name": "koukou",
+      "mmr": 13463,
+      "maxMmr": 13778,
+      "winRate": 0.727272727272727,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": -255,
+      "lastWeekRankChange": 1,
+      "eventsPlayed": 33,
+      "largestGain": 147,
+      "mmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:57:13.120421Z",
+      "averageScore24P": 87.6538461538462
+    },
+    {
+      "id": 58009,
+      "overallRank": 4,
+      "countryCode": "JP",
+      "name": "rq",
+      "mmr": 13326,
+      "maxMmr": 13326,
+      "winRate": 0.823529411764706,
+      "winsLastTen": 8,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 653,
+      "lastWeekRankChange": -4,
+      "eventsPlayed": 17,
+      "largestGain": 124,
+      "mmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2024-09-08T22:22:35.103707Z",
+      "averageScore24P": 91.6428571428571
+    },
+    {
+      "id": 75412,
+      "overallRank": 5,
+      "countryCode": "JP",
+      "name": "nerune",
+      "mmr": 13084,
+      "maxMmr": 13109,
+      "winRate": 0.68421052631579,
+      "winsLastTen": 8,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 556,
+      "lastWeekRankChange": -7,
+      "eventsPlayed": 19,
+      "largestGain": 182,
+      "mmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2025-09-05T03:03:53.7208867Z",
+      "averageScore24P": 86.4
+    },
+    {
+      "id": 56683,
+      "overallRank": 6,
+      "countryCode": "JP",
+      "name": "Dianb",
+      "mmr": 12894,
+      "maxMmr": 12894,
+      "winRate": 1,
+      "winsLastTen": 5,
+      "lossesLastTen": 0,
+      "gainLossLastTen": 394,
+      "lastWeekRankChange": 0,
+      "eventsPlayed": 5,
+      "largestGain": 125,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2024-07-31T19:57:40.6739942Z",
+      "averageScore24P": 90.25
+    },
+    {
+      "id": 31249,
+      "overallRank": 7,
+      "countryCode": "JP",
+      "name": "karinto",
+      "mmr": 12836,
+      "winRate": 1,
+      "winsLastTen": 3,
+      "lossesLastTen": 0,
+      "gainLossLastTen": 336,
+      "lastWeekRankChange": -3,
+      "eventsPlayed": 3,
+      "largestGain": 171,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Placement",
+        "name": "Placement"
+      },
+      "accountCreationDateUtc": "2022-08-11T13:41:56.5493897Z",
+      "averageScore24P": 83.5
+    },
+    {
+      "id": 8750,
+      "overallRank": 8,
+      "countryCode": "JP",
+      "name": "Akagane",
+      "mmr": 12798,
+      "maxMmr": 12798,
+      "winRate": 0.578947368421053,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 275,
+      "lastWeekRankChange": -7,
+      "eventsPlayed": 19,
+      "largestGain": 239,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:53:09.3533727Z",
+      "averageScore24P": 82.2307692307692
+    },
+    {
+      "id": 12278,
+      "overallRank": 9,
+      "countryCode": "JP",
+      "name": "Kusaan",
+      "mmr": 12762,
+      "maxMmr": 13204,
+      "winRate": 0.638888888888889,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -107,
+      "lastWeekRankChange": 4,
+      "eventsPlayed": 36,
+      "largestGain": 168,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:57:18.0996016Z",
+      "averageScore24P": 80.3030303030303
+    },
+    {
+      "id": 50778,
+      "overallRank": 10,
+      "countryCode": "JP",
+      "name": "Kirina",
+      "mmr": 12703,
+      "maxMmr": 12703,
+      "winRate": 0.621621621621622,
+      "winsLastTen": 8,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 577,
+      "lastWeekRankChange": -14,
+      "eventsPlayed": 37,
+      "largestGain": 199,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-12-26T09:27:48.6369751Z",
+      "averageScore24P": 81.28
+    },
+    {
+      "id": 54791,
+      "overallRank": 11,
+      "countryCode": "DE",
+      "name": "Jojo",
+      "mmr": 12697,
+      "maxMmr": 13206,
+      "winRate": 0.5,
+      "winsLastTen": 4,
+      "lossesLastTen": 6,
+      "gainLossLastTen": -141,
+      "lastWeekRankChange": 4,
+      "eventsPlayed": 14,
+      "largestGain": 196,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2024-05-12T13:35:35.2098962Z",
+      "averageScore24P": 88
+    },
+    {
+      "id": 28055,
+      "overallRank": 12,
+      "countryCode": "FR",
+      "name": "Masterint",
+      "mmr": 12687,
+      "maxMmr": 12687,
+      "winRate": 0.558139534883721,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 646,
+      "lastWeekRankChange": -6,
+      "eventsPlayed": 43,
+      "largestGain": 204,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2022-05-09T19:02:29.6813745Z",
+      "averageScore24P": 83.6756756756757
+    },
+    {
+      "id": 12052,
+      "overallRank": 13,
+      "countryCode": "JP",
+      "name": "Yumia",
+      "mmr": 12634,
+      "maxMmr": 12904,
+      "winRate": 0.761904761904762,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 256,
+      "lastWeekRankChange": -26,
+      "eventsPlayed": 21,
+      "largestGain": 199,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:57:04.7586821Z",
+      "averageScore24P": 86.7142857142857
+    },
+    {
+      "id": 12324,
+      "overallRank": 14,
+      "countryCode": "GB",
+      "name": "Toad Circuit",
+      "mmr": 12570,
+      "maxMmr": 13309,
+      "winRate": 0.555555555555556,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": -203,
+      "lastWeekRankChange": 10,
+      "eventsPlayed": 27,
+      "largestGain": 147,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Diamond",
+        "name": "Diamond"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:57:21.0763642Z",
+      "averageScore24P": 79.8
+    },
+    {
+      "id": 41771,
+      "overallRank": 15,
+      "countryCode": "JP",
+      "name": "okashi",
+      "mmr": 12548,
+      "maxMmr": 12810,
+      "winRate": 0.566666666666667,
+      "winsLastTen": 7,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 109,
+      "lastWeekRankChange": -4,
+      "eventsPlayed": 30,
+      "largestGain": 195,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-04-22T16:33:02.9965273Z",
+      "averageScore24P": 81.4583333333333
+    },
+    {
+      "id": 24081,
+      "overallRank": 16,
+      "countryCode": "JP",
+      "name": "Mus",
+      "mmr": 12487,
+      "maxMmr": 12680,
+      "winRate": 0.578947368421053,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 311,
+      "lastWeekRankChange": 5,
+      "eventsPlayed": 38,
+      "largestGain": 185,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2022-01-21T17:14:40.1689254Z",
+      "averageScore24P": 79.030303030303
+    },
+    {
+      "id": 35586,
+      "overallRank": 17,
+      "countryCode": "JP",
+      "name": "aviva",
+      "mmr": 12486,
+      "maxMmr": 12871,
+      "winRate": 0.636363636363636,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -212,
+      "lastWeekRankChange": 8,
+      "eventsPlayed": 11,
+      "largestGain": 198,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-01-15T03:27:49.2800524Z",
+      "averageScore24P": 77.375
+    },
+    {
+      "id": 32338,
+      "overallRank": 18,
+      "countryCode": "FR",
+      "name": "LOLmdr",
+      "mmr": 12394,
+      "winRate": 0.5,
+      "winsLastTen": 2,
+      "lossesLastTen": 2,
+      "gainLossLastTen": -106,
+      "lastWeekRankChange": 1,
+      "eventsPlayed": 4,
+      "largestGain": 115,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Placement",
+        "name": "Placement"
+      },
+      "accountCreationDateUtc": "2022-09-11T08:45:02.0448893Z",
+      "averageScore24P": 70
+    },
+    {
+      "id": 13177,
+      "overallRank": 19,
+      "countryCode": "JP",
+      "name": "moa",
+      "mmr": 12347,
+      "maxMmr": 12697,
+      "winRate": 0.585365853658537,
+      "winsLastTen": 7,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 180,
+      "lastWeekRankChange": 5,
+      "eventsPlayed": 41,
+      "largestGain": 186,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:58:49.3067085Z",
+      "averageScore24P": 78.7272727272727
+    },
+    {
+      "id": 74768,
+      "overallRank": 20,
+      "countryCode": "JP",
+      "name": "captaro",
+      "mmr": 12180,
+      "maxMmr": 12574,
+      "winRate": 0.555555555555556,
+      "winsLastTen": 7,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 106,
+      "lastWeekRankChange": -3,
+      "eventsPlayed": 36,
+      "largestGain": 206,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2025-08-20T15:41:15.6252469Z",
+      "averageScore24P": 76
+    },
+    {
+      "id": 21138,
+      "overallRank": 21,
+      "countryCode": "JP",
+      "name": "kurtn",
+      "mmr": 12163,
+      "maxMmr": 12465,
+      "winRate": 0.647058823529412,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -262,
+      "lastWeekRankChange": -1,
+      "eventsPlayed": 17,
+      "largestGain": 167,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-08-22T07:42:09.6718639Z",
+      "averageScore24P": 73.4
+    },
+    {
+      "id": 44575,
+      "overallRank": 22,
+      "countryCode": "ES",
+      "name": "Ayrton Senna",
+      "mmr": 12160,
+      "maxMmr": 12383,
+      "winRate": 0.571428571428571,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 383,
+      "lastWeekRankChange": 6,
+      "eventsPlayed": 21,
+      "largestGain": 258,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-07-05T02:29:21.0778924Z",
+      "averageScore24P": 76.25
+    },
+    {
+      "id": 43914,
+      "overallRank": 23,
+      "countryCode": "JP",
+      "name": "Bakuten",
+      "mmr": 12096,
+      "maxMmr": 12502,
+      "winRate": 0.619047619047619,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -174,
+      "lastWeekRankChange": 3,
+      "eventsPlayed": 21,
+      "largestGain": 196,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-06-13T17:39:21.3573318Z",
+      "averageScore24P": 79.0588235294118
+    },
+    {
+      "id": 24233,
+      "overallRank": 24,
+      "countryCode": "JP",
+      "name": "NEW GAME",
+      "mmr": 12029,
+      "maxMmr": 12371,
+      "winRate": 0.428571428571429,
+      "winsLastTen": 3,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -471,
+      "lastWeekRankChange": 11,
+      "eventsPlayed": 7,
+      "largestGain": 311,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2022-07-13T07:56:28.788073Z"
+    },
+    {
+      "id": 18937,
+      "overallRank": 25,
+      "countryCode": "JP",
+      "name": "4I7",
+      "mmr": 11918,
+      "maxMmr": 12301,
+      "winRate": 0.580645161290323,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": -53,
+      "lastWeekRankChange": -6,
+      "eventsPlayed": 31,
+      "largestGain": 238,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-05-11T09:44:37.8017935Z",
+      "averageScore24P": 79.1923076923077
+    },
+    {
+      "id": 28852,
+      "overallRank": 26,
+      "countryCode": "JP",
+      "name": "PARADIGM SHIFT",
+      "mmr": 11899,
+      "maxMmr": 11899,
+      "winRate": 0.6,
+      "winsLastTen": 3,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 348,
+      "lastWeekRankChange": -7,
+      "eventsPlayed": 5,
+      "largestGain": 189,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2022-06-08T10:57:18.1975005Z",
+      "averageScore24P": 84.25
+    },
+    {
+      "id": 29730,
+      "overallRank": 27,
+      "countryCode": "JP",
+      "name": "ChillTimeDEBU",
+      "mmr": 11886,
+      "maxMmr": 11886,
+      "winRate": 0.5,
+      "winsLastTen": 4,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 252,
+      "lastWeekRankChange": -2,
+      "eventsPlayed": 8,
+      "largestGain": 171,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2022-07-06T06:53:27.7919018Z",
+      "averageScore24P": 73
+    },
+    {
+      "id": 23495,
+      "overallRank": 28,
+      "countryCode": "JP",
+      "name": "Mda",
+      "mmr": 11809,
+      "maxMmr": 12597,
+      "winRate": 0.45,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": -208,
+      "lastWeekRankChange": 3,
+      "eventsPlayed": 20,
+      "largestGain": 209,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-12-24T10:03:17.6487524Z",
+      "averageScore24P": 75.45
+    },
+    {
+      "id": 41610,
+      "overallRank": 29,
+      "countryCode": "JP",
+      "name": "TACOWASA_893",
+      "mmr": 11798,
+      "winRate": 0.5,
+      "winsLastTen": 1,
+      "lossesLastTen": 1,
+      "gainLossLastTen": -171,
+      "lastWeekRankChange": 2,
+      "eventsPlayed": 2,
+      "largestGain": 71,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Placement",
+        "name": "Placement"
+      },
+      "accountCreationDateUtc": "2023-04-20T14:35:35.89234Z",
+      "averageScore24P": 88
+    },
+    {
+      "id": 11648,
+      "overallRank": 30,
+      "countryCode": "CA",
+      "name": "JPGiviner",
+      "mmr": 11769,
+      "maxMmr": 11992,
+      "winRate": 0.636363636363636,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -179,
+      "lastWeekRankChange": 2,
+      "eventsPlayed": 44,
+      "largestGain": 149,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:56:40.4476693Z",
+      "averageScore24P": 92.6904761904762
+    },
+    {
+      "id": 12510,
+      "overallRank": 31,
+      "countryCode": "JP",
+      "name": "Loberia",
+      "mmr": 11735,
+      "maxMmr": 11735,
+      "winRate": 0.5,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": 197,
+      "lastWeekRankChange": -1,
+      "eventsPlayed": 10,
+      "largestGain": 213,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:57:32.4030212Z",
+      "averageScore24P": 75.6666666666667
+    },
+    {
+      "id": 59964,
+      "overallRank": 32,
+      "countryCode": "JP",
+      "name": "AK2KI",
+      "mmr": 11713,
+      "maxMmr": 12006,
+      "winRate": 0.48,
+      "winsLastTen": 7,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 529,
+      "lastWeekRankChange": -4,
+      "eventsPlayed": 25,
+      "largestGain": 171,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2024-11-30T13:28:44.1628168Z",
+      "averageScore24P": 72
+    },
+    {
+      "id": 74053,
+      "overallRank": 33,
+      "countryCode": "JP",
+      "name": "Asaoki",
+      "mmr": 11664,
+      "maxMmr": 11664,
+      "winRate": 0.633333333333333,
+      "winsLastTen": 9,
+      "lossesLastTen": 1,
+      "gainLossLastTen": 1029,
+      "lastWeekRankChange": -33,
+      "eventsPlayed": 30,
+      "largestGain": 234,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2025-08-04T17:55:45.9983279Z",
+      "averageScore24P": 75.8666666666667
+    },
+    {
+      "id": 38652,
+      "overallRank": 34,
+      "countryCode": "JP",
+      "name": "shichimi",
+      "mmr": 11662,
+      "maxMmr": 12102,
+      "winRate": 0.333333333333333,
+      "winsLastTen": 3,
+      "lossesLastTen": 6,
+      "gainLossLastTen": -213,
+      "lastWeekRankChange": 8,
+      "eventsPlayed": 9,
+      "largestGain": 187,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-03-08T00:55:52.9149912Z",
+      "averageScore24P": 76.75
+    },
+    {
+      "id": 16799,
+      "overallRank": 35,
+      "countryCode": "US",
+      "name": "yoshira",
+      "mmr": 11628,
+      "maxMmr": 11628,
+      "winRate": 0.5,
+      "winsLastTen": 3,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 155,
+      "lastWeekRankChange": 0,
+      "eventsPlayed": 6,
+      "largestGain": 176,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T22:02:19.7539934Z",
+      "averageScore24P": 83
+    },
+    {
+      "id": 16367,
+      "overallRank": 36,
+      "countryCode": "FR",
+      "name": "Valer",
+      "mmr": 11587,
+      "maxMmr": 11925,
+      "winRate": 0.523809523809524,
+      "winsLastTen": 5,
+      "lossesLastTen": 5,
+      "gainLossLastTen": 230,
+      "lastWeekRankChange": 2,
+      "eventsPlayed": 21,
+      "largestGain": 223,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T22:01:55.1963489Z",
+      "averageScore24P": 77.2941176470588
+    },
+    {
+      "id": 77391,
+      "overallRank": 37,
+      "countryCode": "JP",
+      "name": "Raying",
+      "mmr": 11583,
+      "maxMmr": 11583,
+      "winRate": 0.777777777777778,
+      "winsLastTen": 10,
+      "lossesLastTen": 0,
+      "gainLossLastTen": 1059,
+      "lastWeekRankChange": -4,
+      "eventsPlayed": 18,
+      "largestGain": 221,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2025-11-04T14:43:08.8143246Z",
+      "averageScore24P": 81.1875
+    },
+    {
+      "id": 9443,
+      "overallRank": 38,
+      "countryCode": "JP",
+      "name": "Shimarin",
+      "mmr": 11526,
+      "maxMmr": 11809,
+      "winRate": 0.68,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 8,
+      "lastWeekRankChange": -11,
+      "eventsPlayed": 50,
+      "largestGain": 250,
+      "mmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:53:48.2211524Z",
+      "averageScore24P": 85.8958333333333
+    },
+    {
+      "id": 36031,
+      "overallRank": 39,
+      "countryCode": "JP",
+      "name": "Garnet green",
+      "mmr": 11499,
+      "maxMmr": 12492,
+      "winRate": 0.545454545454545,
+      "winsLastTen": 4,
+      "lossesLastTen": 6,
+      "gainLossLastTen": -511,
+      "lastWeekRankChange": 18,
+      "eventsPlayed": 33,
+      "largestGain": 203,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2023-01-22T12:04:18.1095307Z",
+      "averageScore24P": 74.1071428571429
+    },
+    {
+      "id": 14886,
+      "overallRank": 40,
+      "countryCode": "JP",
+      "name": "CQCQ",
+      "mmr": 11459,
+      "winRate": 1,
+      "winsLastTen": 1,
+      "lossesLastTen": 0,
+      "gainLossLastTen": 174,
+      "eventsPlayed": 1,
+      "largestGain": 174,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Placement",
+        "name": "Placement"
+      },
+      "accountCreationDateUtc": "2021-03-12T22:00:29.9064099Z"
+    },
+    {
+      "id": 18960,
+      "overallRank": 41,
+      "countryCode": "JP",
+      "name": "dasu",
+      "mmr": 11442,
+      "maxMmr": 11599,
+      "winRate": 0.702702702702703,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": 41,
+      "lastWeekRankChange": -3,
+      "eventsPlayed": 37,
+      "largestGain": 157,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-10-12T13:22:42.1674044Z",
+      "averageScore24P": 79.9393939393939
+    },
+    {
+      "id": 71027,
+      "overallRank": 42,
+      "countryCode": "JP",
+      "name": "Carbuncle24",
+      "mmr": 11425,
+      "maxMmr": 11500,
+      "winRate": 0.639344262295082,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -45,
+      "lastWeekRankChange": -7,
+      "eventsPlayed": 61,
+      "largestGain": 257,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2025-07-04T15:29:17.5320092Z",
+      "averageScore24P": 79.2608695652174
+    },
+    {
+      "id": 14820,
+      "overallRank": 43,
+      "countryCode": "JP",
+      "name": "KALLEN",
+      "mmr": 11350,
+      "maxMmr": 11752,
+      "winRate": 0.416666666666667,
+      "winsLastTen": 3,
+      "lossesLastTen": 7,
+      "gainLossLastTen": -594,
+      "lastWeekRankChange": 12,
+      "eventsPlayed": 12,
+      "largestGain": 187,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Ruby",
+        "name": "Ruby"
+      },
+      "accountCreationDateUtc": "2021-03-12T22:00:25.7022781Z",
+      "averageScore24P": 76
+    },
+    {
+      "id": 9304,
+      "overallRank": 44,
+      "countryCode": "JP",
+      "name": "Dream Land",
+      "mmr": 11291,
+      "maxMmr": 11291,
+      "winRate": 0.586206896551724,
+      "winsLastTen": 8,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 794,
+      "lastWeekRankChange": -12,
+      "eventsPlayed": 29,
+      "largestGain": 179,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:53:40.3890292Z",
+      "averageScore24P": 80.7692307692308
+    },
+    {
+      "id": 17706,
+      "overallRank": 45,
+      "countryCode": "DE",
+      "name": "Purple",
+      "mmr": 11138,
+      "maxMmr": 11138,
+      "winRate": 0.625,
+      "winsLastTen": 8,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 264,
+      "lastWeekRankChange": 4,
+      "eventsPlayed": 24,
+      "largestGain": 193,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2021-03-25T10:18:56.7018826Z",
+      "averageScore24P": 76.3636363636364
+    },
+    {
+      "id": 9063,
+      "overallRank": 46,
+      "countryCode": "CA",
+      "name": "Arti",
+      "mmr": 11133,
+      "maxMmr": 11213,
+      "winRate": 0.571428571428571,
+      "winsLastTen": 4,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 80,
+      "lastWeekRankChange": 8,
+      "eventsPlayed": 7,
+      "largestGain": 101,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:53:26.8007777Z",
+      "averageScore24P": 78.3333333333333
+    },
+    {
+      "id": 19494,
+      "overallRank": 47,
+      "countryCode": "JP",
+      "name": "MSR Shion",
+      "mmr": 11101,
+      "maxMmr": 11101,
+      "winRate": 0.666666666666667,
+      "winsLastTen": 6,
+      "lossesLastTen": 4,
+      "gainLossLastTen": -30,
+      "lastWeekRankChange": 8,
+      "eventsPlayed": 12,
+      "largestGain": 221,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2021-06-07T06:57:19.111616Z",
+      "averageScore24P": 75.75
+    },
+    {
+      "id": 9244,
+      "overallRank": 48,
+      "countryCode": "JP",
+      "name": "B!KZO",
+      "mmr": 11039,
+      "maxMmr": 11136,
+      "winRate": 0.488372093023256,
+      "winsLastTen": 7,
+      "lossesLastTen": 3,
+      "gainLossLastTen": 476,
+      "lastWeekRankChange": -4,
+      "eventsPlayed": 43,
+      "largestGain": 185,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2021-03-12T21:53:37.061064Z",
+      "averageScore24P": 72.8205128205128
+    },
+    {
+      "id": 47682,
+      "overallRank": 49,
+      "countryCode": "CA",
+      "name": "thunda in paris",
+      "mmr": 10964,
+      "winRate": 0,
+      "winsLastTen": 0,
+      "lossesLastTen": 1,
+      "gainLossLastTen": -119,
+      "eventsPlayed": 1,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Placement",
+        "name": "Placement"
+      },
+      "accountCreationDateUtc": "2023-09-08T02:36:09.8361174Z"
+    },
+    {
+      "id": 48447,
+      "overallRank": 50,
+      "countryCode": "AU",
+      "name": "lil tecca",
+      "mmr": 10926,
+      "maxMmr": 11133,
+      "winRate": 0.666666666666667,
+      "winsLastTen": 4,
+      "lossesLastTen": 2,
+      "gainLossLastTen": 138,
+      "eventsPlayed": 6,
+      "largestGain": 149,
+      "mmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "maxMmrRank": {
+        "division": "Sapphire",
+        "name": "Sapphire"
+      },
+      "accountCreationDateUtc": "2023-09-27T09:21:27.8666906Z",
+      "averageScore24P": 86.8
+    }
+  ]
+}

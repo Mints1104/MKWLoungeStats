@@ -544,6 +544,7 @@ app.get("/api/leaderboard", async (req, res) => {
       sortBy = "Mmr",
       season,
       game = "mkworld",
+      country,
     } = req.query;
 
     const seasonValidation = validateSeason(season || "2");
@@ -568,6 +569,7 @@ app.get("/api/leaderboard", async (req, res) => {
 
     if (minMmr) params.minMmr = parseInt(minMmr);
     if (maxMmr) params.maxMmr = parseInt(maxMmr);
+    if (country) params.country = country;
     if (search) {
       // Sanitize search parameter
       const sanitized = search

@@ -190,6 +190,7 @@ export const loungeApi = {
       search,
       season = 2,
       mmrType = 24,
+      country,
     } = params;
 
     // Convert page to skip for backend
@@ -214,6 +215,9 @@ export const loungeApi = {
     }
     if (search?.trim()) {
       queryParams.set("search", search.trim());
+    }
+    if (country?.trim()) {
+      queryParams.set("country", country.trim());
     }
 
     logger.api("GET", `/leaderboard?${queryParams}`);
