@@ -24,6 +24,8 @@ export function calculateScoreDistribution(events, filter = "all") {
     { range: "61-80", min: 61, max: 80, count: 0 },
     { range: "81-100", min: 81, max: 100, count: 0 },
     { range: "101-120", min: 101, max: 120, count: 0 },
+    { range: "121-140", min: 121, max: 140, count: 0 },
+    { range: "140+", min: 141, max: Infinity, count: 0 },
   ];
 
   filteredEvents.forEach((event) => {
