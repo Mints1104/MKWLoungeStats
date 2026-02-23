@@ -511,10 +511,13 @@ function PlayerDetailView({
                 <XAxis
                   dataKey="range"
                   stroke="#9ca3af"
+                  interval={0}
+                  tick={{ angle: -35, textAnchor: "end", dy: 4 }}
+                  height={60}
                   label={{
                     value: "Score Range",
                     position: "insideBottom",
-                    offset: -5,
+                    offset: 0,
                   }}
                 />
                 <YAxis
