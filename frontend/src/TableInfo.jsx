@@ -56,6 +56,14 @@ function TableInfo() {
     };
   }, [fetchTable]);
 
+  const season = result?.season;
+  const mmrType = result?.game === "mkworld12p" ? 12 : 24;
+
+  const takeToProfile = (playerName) => {
+    navigate(`/player/${encodeURIComponent(playerName)}?season=${season}&mmrType=${mmrType}`);
+  };
+
+
   const formatIso = (value) => {
     if (!value) return "N/A";
     const date = new Date(value);
@@ -196,11 +204,8 @@ function TableInfo() {
                                 type="button"
                                 className="leaderboard-name"
                                 onClick={() =>
-                                  navigate(
-                                    `/player/${encodeURIComponent(
-                                      score.playerName
-                                    )}`
-                                  )
+                                  takeToProfile(score.playerName)
+                                  
                                 }
                                 aria-label={`View profile for ${score.playerName}`}
                               >

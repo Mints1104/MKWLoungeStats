@@ -17,7 +17,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
             ? (avg24 != null ? avg24 : averageScore)
             : averageScore;
 
-
+        
 
     const getEventMessage = () => {
         if (isPenalty) {
