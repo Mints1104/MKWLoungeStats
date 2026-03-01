@@ -187,6 +187,8 @@ export const loungeApi = {
       sortBy = "mmr",
       minMmr,
       maxMmr,
+      minEventsPlayed,
+      maxEventsPlayed,
       search,
       season = 2,
       mmrType = 24,
@@ -212,6 +214,20 @@ export const loungeApi = {
     }
     if (maxMmr !== undefined && maxMmr !== null && maxMmr !== "") {
       queryParams.set("maxMmr", String(maxMmr));
+    }
+    if (
+      minEventsPlayed !== undefined &&
+      minEventsPlayed !== null &&
+      minEventsPlayed !== ""
+    ) {
+      queryParams.set("minEventsPlayed", String(minEventsPlayed));
+    }
+    if (
+      maxEventsPlayed !== undefined &&
+      maxEventsPlayed !== null &&
+      maxEventsPlayed !== ""
+    ) {
+      queryParams.set("maxEventsPlayed", String(maxEventsPlayed));
     }
     if (search?.trim()) {
       queryParams.set("search", search.trim());

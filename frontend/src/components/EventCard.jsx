@@ -42,7 +42,7 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
                         Placed: #{event.rank}
                     </div>
                     <div>
-                        Format: {event.numPlayers}p {getEventFormat(event.numPlayers, event.numTeams)} {event.tier}
+                        Format: {event.numPlayers}p {getEventFormat(event.numPlayers, event.numTeams)} Tier {event.tier}
                     </div>
                 </>
             );

@@ -540,6 +540,8 @@ app.get("/api/leaderboard", async (req, res) => {
       pageSize = 50,
       minMmr,
       maxMmr,
+      minEventsPlayed,
+      maxEventsPlayed,
       search,
       sortBy = "Mmr",
       season,
@@ -569,6 +571,8 @@ app.get("/api/leaderboard", async (req, res) => {
 
     if (minMmr) params.minMmr = parseInt(minMmr);
     if (maxMmr) params.maxMmr = parseInt(maxMmr);
+    if (minEventsPlayed) params.minEventsPlayed = parseInt(minEventsPlayed);
+    if (maxEventsPlayed) params.maxEventsPlayed = parseInt(maxEventsPlayed);
     if (country) params.country = country;
     if (search) {
       // Sanitize search parameter

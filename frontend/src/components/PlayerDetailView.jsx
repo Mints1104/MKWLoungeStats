@@ -377,6 +377,12 @@ function PlayerDetailView({
           )}
         </p>
         <p>
+         Partner Average Score:{" "}
+          {playerDetails.partnerAverage != null ?
+            playerDetails.partnerAverage.toFixed(2)
+          : "N/A"}
+        </p>
+        <p>
           Total Events Played: {playerDetails.eventsPlayed}
           {season < 2 && (
             <>

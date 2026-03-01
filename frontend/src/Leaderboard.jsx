@@ -41,6 +41,8 @@ function Leaderboard() {
     // Filters
     const [minMmr, setMinMmr] = useState(searchParams.get("minMmr") || "");
     const [maxMmr, setMaxMmr] = useState(searchParams.get("maxMmr") || "");
+    const [minEventsPlayed, setMinEventsPlayed] = useState(searchParams.get("minEventsPlayed") || "");
+    const [maxEventsPlayed, setMaxEventsPlayed] = useState(searchParams.get("maxEventsPlayed") || "");
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
     const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
     const [country, setCountry] = useState(searchParams.get("country") || "");
@@ -57,11 +59,13 @@ function Leaderboard() {
         if (sortBy !== "mmr") params.set("sortBy", sortBy);
         if (minMmr) params.set("minMmr", minMmr);
         if (maxMmr) params.set("maxMmr", maxMmr);
+        if (minEventsPlayed) params.set("minEventsPlayed", minEventsPlayed);
+        if (maxEventsPlayed) params.set("maxEventsPlayed", maxEventsPlayed);
         if (debouncedSearch) params.set("search", debouncedSearch);
         if (country) params.set("country", country);
 
         setSearchParams(params, { replace: true });
-    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, country, setSearchParams]);
+    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, setSearchParams]);
     const requestRef = useRef(null);
 
 
@@ -98,6 +102,8 @@ function Leaderboard() {
                     sortBy,
                     minMmr,
                     maxMmr,
+                    minEventsPlayed,
+                    maxEventsPlayed,
                     search: debouncedSearch,
                     season,
                     mmrType,
@@ -117,7 +123,7 @@ function Leaderboard() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, debouncedSearch, season, mmrType, country]);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, season, mmrType, country]);
 
     useEffect(() => {
         fetchLeaderboard();
@@ -249,6 +255,30 @@ function Leaderboard() {
                                 <option value="maxMmr">Peak MMR</option>
                                 <option value="lastWeekRankChange">Last Week</option>
                             </select>
+                        </div>
+
+                        <div className="filter-group">
+                            <label htmlFor="minEvents">Min Events</label>
+                            <input
+                                id="minEvents"
+                                type="number"
+                                className="player-input"
+                                placeholder="e.g., 10"
+                                value={minEventsPlayed}
+                                onChange={(e) => setMinEventsPlayed(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="filter-group">
+                            <label htmlFor="maxEvents">Max Events</label>
+                            <input
+                                id="maxEvents"
+                                type="number"
+                                className="player-input"
+                                placeholder="e.g., 10"
+                                value={maxEventsPlayed}
+                                onChange={(e) => setMaxEventsPlayed(e.target.value)}
+                            />
                         </div>
 
                         <div className="filter-group">
