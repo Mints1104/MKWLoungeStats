@@ -788,6 +788,11 @@ body {
   gap: 0.3rem;
 }
 
+.filter-group .player-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .filter-group label {
   font-size: 0.85rem;
   color: #9ca3af;
