@@ -697,47 +697,55 @@ function PlayerDetailView({
                 ]}
               />
             )}
-            {availableGameModes.length > 1 && (
-              <div className="game-mode-filter" ref={gameModeMenuRef}>
-                <button
-                  type="button"
-                  className={`game-mode-trigger${
-                    disabledModes.size > 0 ? " game-mode-trigger-active" : ""
-                  }`}
-                  onClick={() => setGameModeOpen((o) => !o)}
-                  aria-expanded={gameModeOpen}
-                >
-                  Mode
-                  {disabledModes.size > 0 &&
-                    ` (${availableGameModes.length - disabledModes.size}/${availableGameModes.length})`}
-                  {" "}▾
-                </button>
-                {gameModeOpen && (
-                  <div className="game-mode-dropdown">
-                    {availableGameModes.map((mode) => (
-                      <label key={mode} className="game-mode-checkbox-label">
-                        <input
-                          type="checkbox"
-                          className="game-mode-checkbox"
-                          checked={!disabledModes.has(mode)}
-                          onChange={() => toggleMode(mode)}
-                        />
-                        {mode}
-                      </label>
-                    ))}
-                    {disabledModes.size > 0 && (
-                      <button
-                        type="button"
-                        className="game-mode-reset"
-                        onClick={() => setDisabledModes(new Set())}
-                      >
-                        Show all
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {availableGameModes.length > 1 && (() => {
+              // Count how many of THIS player's modes are currently enabled.
+              // Using raw disabledModes.size would break with stale cached modes from other players.
+              const activeModeCount = availableGameModes.filter(
+                (m) => !disabledModes.has(m),
+              ).length;
+              const hasActiveFilter = activeModeCount < availableGameModes.length;
+              return (
+                <div className="game-mode-filter" ref={gameModeMenuRef}>
+                  <button
+                    type="button"
+                    className={`game-mode-trigger${
+                      hasActiveFilter ? " game-mode-trigger-active" : ""
+                    }`}
+                    onClick={() => setGameModeOpen((o) => !o)}
+                    aria-expanded={gameModeOpen}
+                  >
+                    Mode
+                    {hasActiveFilter &&
+                      ` (${activeModeCount}/${availableGameModes.length})`}
+                    {" "}▾
+                  </button>
+                  {gameModeOpen && (
+                    <div className="game-mode-dropdown">
+                      {availableGameModes.map((mode) => (
+                        <label key={mode} className="game-mode-checkbox-label">
+                          <input
+                            type="checkbox"
+                            className="game-mode-checkbox"
+                            checked={!disabledModes.has(mode)}
+                            onChange={() => toggleMode(mode)}
+                          />
+                          {mode}
+                        </label>
+                      ))}
+                      {hasActiveFilter && (
+                        <button
+                          type="button"
+                          className="game-mode-reset"
+                          onClick={() => setDisabledModes(new Set())}
+                        >
+                          Show all
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
         {eventsToShow.length > 0 && (
