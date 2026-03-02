@@ -137,9 +137,8 @@ body {
 
 .season-selector-container {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 1rem;
 }
 
 .recent-searches {
@@ -421,6 +420,88 @@ body {
 .filter-button-active {
   background: linear-gradient(135deg, #22c55e, #16a3d6);
   color: #020617;
+}
+
+/* Game mode dropdown filter */
+.game-mode-filter {
+  position: relative;
+}
+
+.game-mode-trigger {
+  padding: 0.25rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.game-mode-trigger:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.game-mode-trigger-active {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.game-mode-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 20;
+  min-width: 9rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+}
+
+.game-mode-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.83rem;
+  color: #e5e7eb;
+  cursor: pointer;
+  user-select: none;
+}
+
+.game-mode-checkbox-label:hover {
+  color: #38bdf8;
+}
+
+.game-mode-checkbox {
+  width: 0.9rem;
+  height: 0.9rem;
+  accent-color: #22c55e;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.game-mode-reset {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #38bdf8;
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.game-mode-reset:hover {
+  color: #7dd3fc;
 }
 
 @media (max-width: 640px) {

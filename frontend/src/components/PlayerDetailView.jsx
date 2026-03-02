@@ -1,10 +1,11 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import Flag from "react-world-flags";
 import {
   getNextRank,
   getRankForMmrValue,
   getRankColor,
+  getEventFormat,
 } from "../utils/playerUtils";
 import { calculateEventStats } from "../utils/playerStats";
 import {
@@ -49,6 +50,7 @@ const ResponsiveContainer = lazy(() =>
  * Displays player stats, MMR history chart, score distribution, and recent events
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
+const GAME_MODE_FILTER_KEY = "playerGameModeFilterPref";
 
 function PlayerDetailView({
   playerDetails,
@@ -100,6 +102,18 @@ function PlayerDetailView({
   const [eventFilter, setEventFilter] = useState("all");
   const [scoreFilter, setScoreFilter] = useState("all");
   const [sortMethod, setSortMethod] = useState("recent");
+  // Set of game mode labels (e.g. "FFA", "2v2") that are currently hidden
+  const [disabledModes, setDisabledModes] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(GAME_MODE_FILTER_KEY);
+      if (saved) return new Set(JSON.parse(saved));
+    } catch {
+      // ignore
+    }
+    return new Set();
+  });
+  const [gameModeOpen, setGameModeOpen] = useState(false);
+  const gameModeMenuRef = useRef(null);
 
   // Persist preference (mode + last chosen value) to sessionStorage
   useEffect(() => {
@@ -118,6 +132,27 @@ function PlayerDetailView({
       );
     }
   }, [eventLimitMode, eventLimitPreference]);
+
+  // Persist disabled game modes to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(GAME_MODE_FILTER_KEY, JSON.stringify([...disabledModes]));
+    } catch {
+      // ignore
+    }
+  }, [disabledModes]);
+
+  // Close the game mode dropdown when clicking outside
+  useEffect(() => {
+    if (!gameModeOpen) return;
+    const handler = (e) => {
+      if (gameModeMenuRef.current && !gameModeMenuRef.current.contains(e.target)) {
+        setGameModeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [gameModeOpen]);
 
   // Create a unique set of events, prioritizing changeId to avoid duplicates
   // from API responses or state updates.
@@ -141,6 +176,29 @@ function PlayerDetailView({
     // Return values, preserving original order
     return Array.from(unique.values());
   }, [playerDetails]);
+
+  // Unique game modes played, derived from table events (e.g. ["FFA", "2v2", "3v3"])
+  const availableGameModes = useMemo(() => {
+    const modes = new Set();
+    sanitizedEvents.forEach((e) => {
+      if (e.reason !== "Table") return;
+      const fmt = getEventFormat(e.numPlayers, e.numTeams);
+      if (fmt) modes.add(fmt);
+    });
+    return Array.from(modes).sort();
+  }, [sanitizedEvents]);
+
+  const toggleMode = (mode) => {
+    setDisabledModes((prev) => {
+      const next = new Set(prev);
+      if (next.has(mode)) {
+        next.delete(mode);
+      } else {
+        next.add(mode);
+      }
+      return next;
+    });
+  };
 
   // Derived stats for 12p / 24p events
   const navigate = useNavigate();
@@ -184,6 +242,16 @@ function PlayerDetailView({
     } else {
       // For season >= 2, we don't filter by 12p/24p locally as the API returns specific game data
       filtered = sanitizedEvents;
+    }
+
+    // Apply game mode filter: hide table events whose format is in disabledModes.
+    // Non-table events (penalties, bonuses, etc.) are always included.
+    if (disabledModes.size > 0) {
+      filtered = filtered.filter((e) => {
+        if (e.reason !== "Table") return true;
+        const fmt = getEventFormat(e.numPlayers, e.numTeams);
+        return !disabledModes.has(fmt);
+      });
     }
 
     totalFilteredEvents = filtered.length;
@@ -628,6 +696,47 @@ function PlayerDetailView({
                   { value: "24", label: "24p" },
                 ]}
               />
+            )}
+            {availableGameModes.length > 1 && (
+              <div className="game-mode-filter" ref={gameModeMenuRef}>
+                <button
+                  type="button"
+                  className={`game-mode-trigger${
+                    disabledModes.size > 0 ? " game-mode-trigger-active" : ""
+                  }`}
+                  onClick={() => setGameModeOpen((o) => !o)}
+                  aria-expanded={gameModeOpen}
+                >
+                  Mode
+                  {disabledModes.size > 0 &&
+                    ` (${availableGameModes.length - disabledModes.size}/${availableGameModes.length})`}
+                  {" "}▾
+                </button>
+                {gameModeOpen && (
+                  <div className="game-mode-dropdown">
+                    {availableGameModes.map((mode) => (
+                      <label key={mode} className="game-mode-checkbox-label">
+                        <input
+                          type="checkbox"
+                          className="game-mode-checkbox"
+                          checked={!disabledModes.has(mode)}
+                          onChange={() => toggleMode(mode)}
+                        />
+                        {mode}
+                      </label>
+                    ))}
+                    {disabledModes.size > 0 && (
+                      <button
+                        type="button"
+                        className="game-mode-reset"
+                        onClick={() => setDisabledModes(new Set())}
+                      >
+                        Show all
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
