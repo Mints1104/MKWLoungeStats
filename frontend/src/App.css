@@ -82,9 +82,8 @@ body {
   justify-content: flex-start;
   align-items: stretch;
   padding: 1.5rem 1rem 3rem;
-  max-width: 760px;
-  margin: 0 auto;
   max-width: 100%;
+  margin: 0 auto;
   overflow-x: hidden;
 }
 
@@ -349,9 +348,10 @@ body {
 .events-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   font-size: 0.85rem;
   color: #e5e7eb;
+  flex-wrap: nowrap;
 }
 
 .events-count {
