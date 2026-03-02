@@ -167,7 +167,7 @@ function Leaderboard() {
             <div className="player-card">
                 <PageHeader
                     title="Leaderboard"
-                    subtitle="Browse top players by MMR, max MMR, events played, and win rate. Use filters to narrow down specific ranges or search by name."
+                    subtitle="Browse players by MMR, max MMR, events played, country and win rate. Use filters to narrow down specific ranges or search by name."
                 >
                 </PageHeader>
 
