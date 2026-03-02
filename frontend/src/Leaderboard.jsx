@@ -47,7 +47,9 @@ function Leaderboard() {
     const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
     const [country, setCountry] = useState(searchParams.get("country") || "");
     const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "mmr");
-    const [filtersVisible, setFiltersVisible] = useState(true);
+    const [filtersVisible, setFiltersVisible] = useState(() =>
+        typeof window !== "undefined" ? window.innerWidth >= 640 : true
+    );
 
     // Sync URL params
     useEffect(() => {

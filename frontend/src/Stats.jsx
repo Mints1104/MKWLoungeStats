@@ -25,13 +25,6 @@ function formatNumber(value) {
   });
 }
 
-function formatMmr(value) {
-  if (value == null || Number.isNaN(Number(value))) return "N/A";
-  return Number(value).toLocaleString(undefined, {
-    maximumFractionDigits: 0,
-  });
-}
-
 function formatPercent(value) {
   if (value == null || Number.isNaN(Number(value))) return "N/A";
   return `${value.toFixed(1)}%`;
@@ -108,10 +101,9 @@ function Stats() {
     const totalPlayers = stats.totalPlayers || 0;
     if (!totalPlayers) return [];
 
-    const order =
-      stats.divisionsToTier?.Q ||
-      stats.divisionsToTier?.Q?.slice() ||
-      undefined;
+    const order = Array.isArray(stats.divisionsToTier?.Q)
+      ? [...stats.divisionsToTier.Q]
+      : undefined;
 
     const byTier = new Map(
       stats.divisionData.map((d) => [d.tier, d.count ?? 0]),
@@ -303,8 +295,8 @@ function Stats() {
               label="Total Mogis"
               value={formatNumber(stats.totalMogis)}
             />
-            <StatCard label="Average MMR" value={formatMmr(stats.averageMmr)} />
-            <StatCard label="Median MMR" value={formatMmr(stats.medianMmr)} />
+            <StatCard label="Average MMR" value={formatNumber(stats.averageMmr)} />
+            <StatCard label="Median MMR" value={formatNumber(stats.medianMmr)} />
           </div>
         )}
       </div>
@@ -594,11 +586,11 @@ function Stats() {
                     <td>{formatNumber(row.playerTotal)}</td>
                     <td>
                       {row.averageMmr != null ?
-                        formatMmr(row.averageMmr)
+                        formatNumber(row.averageMmr)
                       : "N/A"}
                     </td>
                     <td>
-                      {row.topSixMmr != null ? formatMmr(row.topSixMmr) : "N/A"}
+                      {row.topSixMmr != null ? formatNumber(row.topSixMmr) : "N/A"}
                     </td>
                     <td className="country-top-players">
                       {row.topPlayers.length > 0 ?

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
@@ -36,8 +36,18 @@ function PlayerInfo() {
   });
 
   const [name, setName] = useState(initialState.name);
-  const [season, setSeason] = useState(2);
-  const [mmrType, setMmrType] = useState(24);
+  const [season, setSeason] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("playerInfoSeason");
+      return saved !== null ? Number(saved) : 2;
+    } catch { return 2; }
+  });
+  const [mmrType, setMmrType] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("playerInfoMmrType");
+      return saved !== null ? Number(saved) : 24;
+    } catch { return 24; }
+  });
 
   // 3. Pass initialDetails to the hook
   const {
@@ -46,6 +56,14 @@ function PlayerInfo() {
     error,
     fetchPlayerDetails,
   } = usePlayerDetails(initialState.details);
+
+  // Persist season + mmrType across page reloads
+  useEffect(() => {
+    try { sessionStorage.setItem("playerInfoSeason", season); } catch { /* ignore */ }
+  }, [season]);
+  useEffect(() => {
+    try { sessionStorage.setItem("playerInfoMmrType", mmrType); } catch { /* ignore */ }
+  }, [mmrType]);
   const rememberRecent = (value) => {
     const clean = value.trim();
     if (!clean) return;

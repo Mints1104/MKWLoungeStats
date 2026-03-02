@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { getRankColor, getNextRank } from "./utils/playerUtils";
 
 // Lazy load chart components
@@ -27,6 +27,7 @@ function PlayerComparison() {
     const [error, setError] = useState("");
     const [season, setSeason] = useState(2);
     const [mmrType, setMmrType] = useState(24);
+    const abortRef = useRef(null);
 
     const handlePlayerNameChange = (index, value) => {
         const newNames = [...playerNames];
@@ -47,6 +48,13 @@ function PlayerComparison() {
     };
 
     const comparePlayers = async () => {
+        // Cancel any in-flight comparison request
+        if (abortRef.current) {
+            abortRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         try {
             setError("");
             setPlayersData([]);
@@ -58,7 +66,7 @@ function PlayerComparison() {
             }
 
             setLoading(true);
-            const data = await loungeApi.comparePlayers(validNames, season, mmrType);
+            const data = await loungeApi.comparePlayers(validNames, season, mmrType, controller.signal);
             const validPlayers = data.filter((p) => !p.error);
 
             if (validPlayers.length < 2) {
@@ -68,11 +76,22 @@ function PlayerComparison() {
 
             setPlayersData(validPlayers);
         } catch (err) {
+            if (err.name === "AbortError") return;
             setError(err.message || "Failed to compare players");
         } finally {
-            setLoading(false);
+            if (abortRef.current === controller) {
+                setLoading(false);
+                abortRef.current = null;
+            }
         }
     };
+
+    // Cancel request on unmount
+    useEffect(() => {
+        return () => {
+            if (abortRef.current) abortRef.current.abort();
+        };
+    }, []);
 
     // Auto-fetch when season or mmrType changes
     useEffect(() => {

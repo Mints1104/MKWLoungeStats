@@ -84,20 +84,16 @@ function TableInfo() {
           title={result ? `Table #${result.id}` : "Event Table"}
           subtitle="Viewing standings and MMR changes for this lounge event."
         >
-          <button
-            className="player-button"
-            type="button"
-            onClick={() => {
-              if (window.history.length <= 1) {
-                navigate(-1);
-              } else {
-                navigate(-1);
-              }
-            }}
-            style={{ marginBottom: "1rem", width: "auto" }}
-          >
-            ← Back
-          </button>
+          {window.history.length > 1 && (
+            <button
+              className="player-button"
+              type="button"
+              onClick={() => navigate(-1)}
+              style={{ marginBottom: "1rem", width: "auto" }}
+            >
+              ← Back
+            </button>
+          )}
         </PageHeader>
 
         {error && (

@@ -75,18 +75,19 @@ const EventCard = memo(function EventCard({ event, averageScore, avg12, avg24 })
                 {isPenalty ? "Penalty applied" : "Played"} {formatTimeAgo(event.time)}
             </p>
             {isTable && event.changeId != null && (
-                <button
-                    type="button"
+                <a
+                    href={`/table/${String(event.changeId).trim()}`}
                     className="event-link"
-                    onClick={() => {
+                    onClick={(e) => {
                         const tableId = String(event.changeId).trim();
                         if (tableId && tableId !== 'undefined' && tableId !== 'null') {
+                            e.preventDefault();
                             navigate(`/table/${tableId}`);
                         }
                     }}
                 >
                     View Table
-                </button>
+                </a>
             )}
         </article>
     );
