@@ -109,7 +109,7 @@ function PlayerInfo() {
     <div className="player-info-page">
       <div className="player-card">
         <PageHeader
-          title="Mario Kart Lounge Stats"
+          title="Mario Kart World Lounge Stats"
           subtitle="Look up a player by name and see their stats."
         ></PageHeader>
 

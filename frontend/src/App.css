@@ -437,6 +437,8 @@ body {
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
   white-space: nowrap;
+  min-width: 6rem;
+  text-align: center;
 }
 
 .game-mode-trigger:hover {
