@@ -20,10 +20,6 @@ export default defineConfig({
             return "router";
           }
 
-          if (id.includes("react-world-flags")) {
-            return "flags";
-          }
-
           if (id.includes("react") || id.includes("scheduler")) {
             return "react-vendor";
           }
