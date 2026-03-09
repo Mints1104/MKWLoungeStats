@@ -5,10 +5,11 @@ describe("playerStats", () => {
   describe("calculateEventStats", () => {
     it("should calculate stats correctly for mixed events", () => {
       const events = [
-        { numPlayers: 12, score: 80, mmrDelta: 10 },
-        { numPlayers: 12, score: 70, mmrDelta: -5 },
-        { numPlayers: 24, score: 100, mmrDelta: 15 },
-        { numPlayers: 24, score: 90, mmrDelta: 8 },
+        { reason: "Table", numPlayers: 12, score: 80, mmrDelta: 10 },
+        { reason: "Table", numPlayers: 12, score: 70, mmrDelta: -5 },
+        { reason: "Table", numPlayers: 24, score: 100, mmrDelta: 15 },
+        { reason: "Table", numPlayers: 24, score: 90, mmrDelta: 8 },
+        { reason: "Penalty", numPlayers: 24, score: 999, mmrDelta: 999 },
       ];
 
       const result = calculateEventStats(events);
@@ -43,8 +44,8 @@ describe("playerStats", () => {
 
     it("should handle events with missing scores", () => {
       const events = [
-        { numPlayers: 12, mmrDelta: 10 },
-        { numPlayers: 12, score: 80, mmrDelta: 5 },
+        { reason: "Table", numPlayers: 12, mmrDelta: 10 },
+        { reason: "Table", numPlayers: 12, score: 80, mmrDelta: 5 },
       ];
 
       const result = calculateEventStats(events);
@@ -57,10 +58,10 @@ describe("playerStats", () => {
 
     it("should calculate win rates correctly", () => {
       const events = [
-        { numPlayers: 12, score: 80, mmrDelta: 10 },
-        { numPlayers: 12, score: 60, mmrDelta: -10 },
-        { numPlayers: 12, score: 70, mmrDelta: 0 }, // Zero delta = loss
-        { numPlayers: 12, score: 85, mmrDelta: 5 },
+        { reason: "Table", numPlayers: 12, score: 80, mmrDelta: 10 },
+        { reason: "Table", numPlayers: 12, score: 60, mmrDelta: -10 },
+        { reason: "Table", numPlayers: 12, score: 70, mmrDelta: 0 }, // Zero delta = loss
+        { reason: "Table", numPlayers: 12, score: 85, mmrDelta: 5 },
       ];
 
       const result = calculateEventStats(events);

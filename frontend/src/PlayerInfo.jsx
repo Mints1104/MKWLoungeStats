@@ -38,15 +38,21 @@ function PlayerInfo() {
   const [name, setName] = useState(initialState.name);
   const [season, setSeason] = useState(() => {
     try {
+      // try get last season, otherwise default to 2
       const saved = sessionStorage.getItem("playerInfoSeason");
       return saved !== null ? Number(saved) : 2;
-    } catch { return 2; }
+    } catch {
+      return 2;
+    }
   });
   const [mmrType, setMmrType] = useState(() => {
     try {
+      // try to get last selected mmr type, otherwise default to 24p
       const saved = sessionStorage.getItem("playerInfoMmrType");
       return saved !== null ? Number(saved) : 24;
-    } catch { return 24; }
+    } catch {
+      return 24;
+    }
   });
 
   // 3. Pass initialDetails to the hook
@@ -59,10 +65,18 @@ function PlayerInfo() {
 
   // Persist season + mmrType across page reloads
   useEffect(() => {
-    try { sessionStorage.setItem("playerInfoSeason", season); } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem("playerInfoSeason", season);
+    } catch {
+      /* ignore */
+    }
   }, [season]);
   useEffect(() => {
-    try { sessionStorage.setItem("playerInfoMmrType", mmrType); } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem("playerInfoMmrType", mmrType);
+    } catch {
+      /* ignore */
+    }
   }, [mmrType]);
   const rememberRecent = (value) => {
     const clean = value.trim();

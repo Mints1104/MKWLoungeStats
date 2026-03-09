@@ -5,29 +5,30 @@ describe("chartUtils", () => {
   describe("calculateScoreDistribution", () => {
     it("should create correct score distribution for all events", () => {
       const events = [
-        { score: 10, numPlayers: 12 },
-        { score: 30, numPlayers: 12 },
-        { score: 55, numPlayers: 12 },
-        { score: 85, numPlayers: 12 },
-        { score: 115, numPlayers: 12 },
+        { reason: "Table", score: 10, numPlayers: 12 },
+        { reason: "Table", score: 30, numPlayers: 12 },
+        { reason: "Table", score: 55, numPlayers: 12 },
+        { reason: "Table", score: 85, numPlayers: 12 },
+        { reason: "Table", score: 115, numPlayers: 12 },
+        { reason: "Penalty", score: 999, numPlayers: 12 },
       ];
 
       const result = calculateScoreDistribution(events, "all");
 
       expect(result).toHaveLength(6); // 6 bins defined in chartUtils
-      expect(result[0].count).toBe(1); // 0-20
-      expect(result[1].count).toBe(1); // 21-40
-      expect(result[2].count).toBe(1); // 41-60
-      expect(result[3].count).toBe(0); // 61-80
-      expect(result[4].count).toBe(1); // 81-100
-      expect(result[5].count).toBe(1); // 101-120
+      expect(result[0].count).toBe(2); // 0-40
+      expect(result[1].count).toBe(1); // 41-60
+      expect(result[2].count).toBe(0); // 61-80
+      expect(result[3].count).toBe(1); // 81-100
+      expect(result[4].count).toBe(1); // 101-120
+      expect(result[5].count).toBe(0); // 121+
     });
 
     it("should filter by player count", () => {
       const events = [
-        { score: 55, numPlayers: 12 },
-        { score: 65, numPlayers: 24 },
-        { score: 75, numPlayers: 12 },
+        { reason: "Table", score: 55, numPlayers: 12 },
+        { reason: "Table", score: 65, numPlayers: 24 },
+        { reason: "Table", score: 75, numPlayers: 12 },
       ];
 
       const result12p = calculateScoreDistribution(events, "12");
@@ -46,12 +47,12 @@ describe("chartUtils", () => {
       const result2 = calculateScoreDistribution([], "all");
 
       const zeroBins = [
-        { range: "0-20", min: 0, max: 20, count: 0 },
-        { range: "21-40", min: 21, max: 40, count: 0 },
+        { range: "0-40", min: 0, max: 40, count: 0 },
         { range: "41-60", min: 41, max: 60, count: 0 },
         { range: "61-80", min: 61, max: 80, count: 0 },
         { range: "81-100", min: 81, max: 100, count: 0 },
         { range: "101-120", min: 101, max: 120, count: 0 },
+        { range: "121+", min: 121, max: Infinity, count: 0 },
       ];
 
       expect(result1).toEqual([]);
@@ -60,16 +61,17 @@ describe("chartUtils", () => {
 
     it("should ignore events without valid scores", () => {
       const events = [
-        { score: 55, numPlayers: 12 },
-        { numPlayers: 12 }, // Missing score
-        { score: null, numPlayers: 12 },
-        { score: NaN, numPlayers: 12 },
+        { reason: "Table", score: 55, numPlayers: 12 },
+        { reason: "Table", numPlayers: 12 }, // Missing score
+        { reason: "Table", score: null, numPlayers: 12 },
+        { reason: "Table", score: NaN, numPlayers: 12 },
       ];
 
       const result = calculateScoreDistribution(events, "all");
       const totalCount = result.reduce((sum, bin) => sum + bin.count, 0);
 
-      // Current implementation counts null as 0, so two events are counted (55 and null)
+      // Current implementation only counts numeric scores that fit a defined range.
+      // `null` is coerced to 0, while `undefined` and `NaN` are ignored.
       expect(totalCount).toBe(2);
     });
   });

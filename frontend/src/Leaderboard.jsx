@@ -139,6 +139,12 @@ function Leaderboard() {
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
+    useEffect(() => {
+        if (currentPage > 1 && totalPages > 0 && currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
     const goToNextPage = () => {
         if (currentPage < totalPages) {
             setCurrentPage(currentPage + 1);
@@ -206,7 +212,10 @@ function Leaderboard() {
                                 type="number"
                                 className="player-input"
                                 value={minMmr}
-                                onChange={(e) => setMinMmr(e.target.value)}
+                                onChange={(e) => {
+                                    setMinMmr(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 placeholder="e.g., 8000"
                             />
                         </div>
@@ -220,7 +229,10 @@ function Leaderboard() {
                                 type="number"
                                 className="player-input"
                                 value={maxMmr}
-                                onChange={(e) => setMaxMmr(e.target.value)}
+                                onChange={(e) => {
+                                    setMaxMmr(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 placeholder="e.g., 8000"
                             />
                         </div>
@@ -250,7 +262,10 @@ function Leaderboard() {
                                 id="sortBy"
                                 className="player-input"
                                 value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
+                                onChange={(e) => {
+                                    setSortBy(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             >
                                 <option value="mmr">MMR</option>
                                 <option value="eventsPlayed">Events Played</option>
@@ -267,7 +282,10 @@ function Leaderboard() {
                                 className="player-input"
                                 placeholder="e.g., 10"
                                 value={minEventsPlayed}
-                                onChange={(e) => setMinEventsPlayed(e.target.value)}
+                                onChange={(e) => {
+                                    setMinEventsPlayed(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             />
                         </div>
 
@@ -279,7 +297,10 @@ function Leaderboard() {
                                 className="player-input"
                                 placeholder="e.g., 10"
                                 value={maxEventsPlayed}
-                                onChange={(e) => setMaxEventsPlayed(e.target.value)}
+                                onChange={(e) => {
+                                    setMaxEventsPlayed(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             />
                         </div>
 
@@ -287,7 +308,10 @@ function Leaderboard() {
                             <label htmlFor="season-select-filter">Season</label>
                             <SeasonSelector
                                 selectedSeason={season}
-                                onSeasonChange={setSeason}
+                                onSeasonChange={(value) => {
+                                    setSeason(value);
+                                    setCurrentPage(1);
+                                }}
                                 id="season-select-filter"
                             />
                         </div>
@@ -297,7 +321,10 @@ function Leaderboard() {
                                 <label htmlFor="mmr-select-filter">MMR Type</label>
                                 <MMRSelector
                                     selectedMMR={mmrType}
-                                    onMMRChange={setMmrType}
+                                    onMMRChange={(value) => {
+                                        setMmrType(value);
+                                        setCurrentPage(1);
+                                    }}
                                     id="mmr-select-filter"
                                 />
                             </div>
