@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+function isReactCoreModule(id) {
+  return /node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id);
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -20,7 +24,7 @@ export default defineConfig({
             return "router";
           }
 
-          if (id.includes("react") || id.includes("scheduler")) {
+          if (isReactCoreModule(id)) {
             return "react-vendor";
           }
 
