@@ -618,8 +618,8 @@ app.get("/api/leaderboard", async (req, res) => {
 // Export app for Vercel serverless function
 module.exports = app;
 
-// Start local server if not in production (Vercel)
-if (process.env.NODE_ENV !== "production") {
+// Start local server only for local development
+if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     logger.info(`Server running on http://localhost:${PORT}`);

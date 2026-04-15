@@ -7,94 +7,117 @@ import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 
 function PlayerProfile() {
-    const { playerName } = useParams();
-    const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+  const { playerName } = useParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-    // safely get season from URL, handling 0 correctly
-    const seasonParam = searchParams.get("season");
-    const mmrTypeParam = searchParams.get("mmrType");
-    const season = seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
-    const mmrType = mmrTypeParam !== null && !isNaN(mmrTypeParam) ? Number(mmrTypeParam) : 24;
+  console.log("Player Name:", playerName);
 
-    const handleSeasonChange = (newSeason) => {
-        const newParams = new URLSearchParams(searchParams);
-        newParams.set("season", newSeason);
-        setSearchParams(newParams, { replace: true });
-    };
+  // safely get season from URL, handling 0 correctly
+  const seasonParam = searchParams.get("season");
+  const mmrTypeParam = searchParams.get("mmrType");
+  const season =
+    seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
+  const mmrType =
+    mmrTypeParam !== null && !isNaN(mmrTypeParam) ? Number(mmrTypeParam) : 24;
 
-    const handleMmrTypeChange = (newMmrType) => {
-        const newParams = new URLSearchParams(searchParams);
-        newParams.set("mmrType", newMmrType);
-        setSearchParams(newParams, { replace: true });
-    };
+  const handleSeasonChange = (newSeason) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("season", newSeason);
+    setSearchParams(newParams, { replace: true });
+  };
 
-    const { playerDetails: detailedInfo, loading, error, fetchPlayerDetails } = usePlayerDetails();
+  const handleMmrTypeChange = (newMmrType) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("mmrType", newMmrType);
+    setSearchParams(newParams, { replace: true });
+  };
 
-    useEffect(() => {
-        if (playerName) {
-            fetchPlayerDetails(playerName, season, mmrType);
-        }
-    }, [playerName, season, mmrType, fetchPlayerDetails]);
+  const {
+    playerDetails: detailedInfo,
+    loading,
+    error,
+    fetchPlayerDetails,
+  } = usePlayerDetails();
 
-    const handleBack = () => {
-        if (window.history.length <= 1) {
-            navigate("/leaderboard");
-            return;
-        }
-        navigate(-1);
-    };
+  useEffect(() => {
+    if (playerName) {
+      fetchPlayerDetails(playerName, season, mmrType);
+    }
+  }, [playerName, season, mmrType, fetchPlayerDetails]);
 
-    return (
-        <div className="player-info-page">
-            <div className="player-card">
-                <PageHeader
-                    title="Player Profile"
-                    subtitle={`Viewing stats for ${detailedInfo?.name || playerName}`}
-                >
-                    <button
-                        className="player-button"
-                        onClick={handleBack}
-                        style={{ marginBottom: '0', width: 'auto' }}
-                    >
-                        ← Back
-                    </button>
-                </PageHeader>
+  const handleBack = () => {
+    if (window.history.length <= 1) {
+      navigate("/leaderboard");
+      return;
+    }
+    navigate(-1);
+  };
 
-                <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <SeasonSelector selectedSeason={season} onSeasonChange={handleSeasonChange} />
-                    {season >= 2 && (
-                        <MMRSelector
-                            selectedMMR={mmrType}
-                            onMMRChange={handleMmrTypeChange}
-                        />
-                    )}
-                </div>
+  return (
+    <div className="player-info-page">
+      <div className="player-card">
+        <PageHeader
+          title="Player Profile"
+          subtitle={`Viewing stats for ${detailedInfo?.name || playerName}`}
+        >
+          <button
+            className="player-button"
+            onClick={handleBack}
+            style={{ marginBottom: "0", width: "auto" }}
+          >
+            ← Back
+          </button>
+        </PageHeader>
 
-                {error && (
-                    <p className="player-error" role="alert" aria-live="assertive">
-                        {error}
-                    </p>
-                )}
-                {loading && (
-                    <div className="loading-skeleton" aria-live="polite" aria-label="Loading player data">
-                        <div className="skeleton-row"></div>
-                        <div className="skeleton-row"></div>
-                        <div className="skeleton-row"></div>
-                    </div>
-                )}
-            </div>
-
-            {detailedInfo && (
-                <PlayerDetailView
-                    playerDetails={detailedInfo}
-                    season={season}
-                    mmrType={mmrType}
-                    gradientIdPrefix="mmrGradient-profile"
-                />
-            )}
+        <div
+          style={{
+            marginBottom: "1rem",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "0.5rem",
+          }}
+        >
+          <SeasonSelector
+            selectedSeason={season}
+            onSeasonChange={handleSeasonChange}
+          />
+          {season >= 2 && (
+            <MMRSelector
+              selectedMMR={mmrType}
+              onMMRChange={handleMmrTypeChange}
+            />
+          )}
         </div>
-    );
+
+        {error && (
+          <p className="player-error" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        )}
+        {loading && (
+          <div
+            className="loading-skeleton"
+            aria-live="polite"
+            aria-label="Loading player data"
+          >
+            <div className="skeleton-row"></div>
+            <div className="skeleton-row"></div>
+            <div className="skeleton-row"></div>
+          </div>
+        )}
+      </div>
+
+      {detailedInfo && (
+        <PlayerDetailView
+          playerDetails={detailedInfo}
+          season={season}
+          mmrType={mmrType}
+          gradientIdPrefix="mmrGradient-profile"
+        />
+      )}
+    </div>
+  );
 }
 
 export default PlayerProfile;

@@ -168,6 +168,35 @@ The application is configured for deployment on Vercel:
 
 Vercel automatically detects the configuration from `vercel.json` and handles both the API routes and frontend static files.
 
+## CI/CD
+
+This repository uses GitHub Actions for Continuous Integration (CI) and Vercel for Continuous Deployment (CD).
+
+### CI workflow
+
+Workflow file: `.github/workflows/ci.yml`
+
+The CI workflow runs on:
+
+- Every pull request
+- Pushes to `main`
+
+It performs the following checks in order:
+
+1. Installs backend dependencies with `npm ci`
+2. Installs frontend dependencies with `npm ci` in `frontend/`
+3. Validates backend JavaScript syntax for `server.js` and `api/index.js`
+4. Runs backend API validation tests (`npm test`)
+5. Runs frontend linting (`npm run lint`)
+6. Runs frontend tests (`npm run test`)
+7. Builds frontend production assets (`npm run build`)
+
+If any step fails, the workflow fails and prevents unnoticed regressions from being merged.
+
+### CD workflow
+
+Vercel handles deployment based on the repository connection and the `vercel.json` configuration.
+
 ## Caching Strategy
 
 The application implements an in-memory cache with the following characteristics:
