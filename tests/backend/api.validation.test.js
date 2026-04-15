@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const request = require("supertest");
+const axios = require("axios");
 
 process.env.NODE_ENV = "test";
 
@@ -38,4 +39,12 @@ test("GET /api/players/compare requires between 1 and 4 names", async () => {
     response.body.error,
     "Please provide 1-4 player names separated by commas",
   );
+});
+
+test("GET /api/table:tableid returns table data on valid id", async (t) => {
+  const fakeTable = { tableid: "12345" };
+  t.mock.method(axios, "get", async () => ({ data: fakeTable }));
+  const response = await request(app).get("/api/table/123345");
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, fakeTable);
 });
