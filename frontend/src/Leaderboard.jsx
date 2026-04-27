@@ -8,10 +8,12 @@ import { debounce } from "./utils/debounce";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import { useSettings } from "./context/settingsContext";
 
 function Leaderboard() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { defaultGameMode } = useSettings();
 
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -22,10 +24,11 @@ function Leaderboard() {
         const param = searchParams.get("season");
         return param ? Number(param) : 2;
     });
-    const [mmrType, setMmrType] = useState(() => {
+    const [selectedMmrType, setSelectedMmrType] = useState(() => {
         const param = searchParams.get("mmrType");
-        return param ? Number(param) : 24;
+        return param ? Number(param) : null;
     });
+    const mmrType = selectedMmrType ?? defaultGameMode;
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(() => {
@@ -55,7 +58,7 @@ function Leaderboard() {
     useEffect(() => {
         const params = new URLSearchParams();
         if (season !== 2) params.set("season", season);
-        if (mmrType !== 24) params.set("mmrType", mmrType);
+        if (mmrType !== defaultGameMode) params.set("mmrType", mmrType);
         if (currentPage !== 1) params.set("page", currentPage);
         if (pageSize !== 50) params.set("pageSize", pageSize);
         if (sortBy !== "mmr") params.set("sortBy", sortBy);
@@ -67,9 +70,8 @@ function Leaderboard() {
         if (country) params.set("country", country);
 
         setSearchParams(params, { replace: true });
-    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, setSearchParams]);
+    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, defaultGameMode, setSearchParams]);
     const requestRef = useRef(null);
-
 
     const debouncedSetSearch = useMemo(
         () => debounce((value) => {
@@ -322,7 +324,7 @@ function Leaderboard() {
                                 <MMRSelector
                                     selectedMMR={mmrType}
                                     onMMRChange={(value) => {
-                                        setMmrType(value);
+                                        setSelectedMmrType(value);
                                         setCurrentPage(1);
                                     }}
                                     id="mmr-select-filter"

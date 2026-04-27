@@ -16,18 +16,25 @@ import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import { useSettings } from "./context/settingsContext";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
 
 function PlayerComparison() {
+    const { defaultGameMode } = useSettings();
     const [playerNames, setPlayerNames] = useState(["", ""]);
     const [playersData, setPlayersData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [season, setSeason] = useState(2);
-    const [mmrType, setMmrType] = useState(24);
+    const [selectedMmrType, setSelectedMmrType] = useState(null);
+    const mmrType = selectedMmrType ?? defaultGameMode;
     const abortRef = useRef(null);
+
+    const handleMmrTypeChange = (nextMmrType) => {
+        setSelectedMmrType(nextMmrType);
+    };
 
     const handlePlayerNameChange = (index, value) => {
         const newNames = [...playerNames];
@@ -191,7 +198,7 @@ function PlayerComparison() {
                             {season >= 2 && (
                                 <MMRSelector
                                     selectedMMR={mmrType}
-                                    onMMRChange={setMmrType}
+                                    onMMRChange={handleMmrTypeChange}
                                 />
                             )}
                         </div>

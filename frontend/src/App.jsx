@@ -8,6 +8,7 @@ import Leaderboard from './Leaderboard'
 import PlayerProfile from './PlayerProfile'
 import TableInfo from './TableInfo'
 import Stats from './Stats'
+import { SettingsProvider } from './context/SettingsContext.jsx'
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -60,43 +61,45 @@ function MissingRouteParamPage({
 
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollRestorationManager />
-      <ScrollToTop />
-      <Navigation />
-      <Routes>
-        <Route path="/" element={<PlayerInfo />} />
-        <Route
-          path="/player"
-          element={
-            <MissingRouteParamPage
-              title="Player Not Specified"
-              description="This route needs a username after /player."
-              example="/player/Player123"
-              linkTo="/"
-              linkLabel="Go To Player Search"
-            />
-          }
-        />
-        <Route path="/compare" element={<PlayerComparison />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/stats" element={<Stats />} />
-        <Route
-          path="/table"
-          element={
-            <MissingRouteParamPage
-              title="Table Not Specified"
-              description="This route needs a table ID after /table."
-              example="/table/123456"
-              linkTo="/leaderboard"
-              linkLabel="Go To Leaderboard"
-            />
-          }
-        />
-        <Route path="/table/:tableId" element={<TableInfo />} />
-        <Route path="/player/:playerName" element={<PlayerProfile />} />
-      </Routes>
-    </BrowserRouter>
+    <SettingsProvider>
+      <BrowserRouter>
+        <ScrollRestorationManager />
+        <ScrollToTop />
+        <Navigation />
+        <Routes>
+          <Route path="/" element={<PlayerInfo />} />
+          <Route
+            path="/player"
+            element={
+              <MissingRouteParamPage
+                title="Player Not Specified"
+                description="This route needs a username after /player."
+                example="/player/Player123"
+                linkTo="/"
+                linkLabel="Go To Player Search"
+              />
+            }
+          />
+          <Route path="/compare" element={<PlayerComparison />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route
+            path="/table"
+            element={
+              <MissingRouteParamPage
+                title="Table Not Specified"
+                description="This route needs a table ID after /table."
+                example="/table/123456"
+                linkTo="/leaderboard"
+                linkLabel="Go To Leaderboard"
+              />
+            }
+          />
+          <Route path="/table/:tableId" element={<TableInfo />} />
+          <Route path="/player/:playerName" element={<PlayerProfile />} />
+        </Routes>
+      </BrowserRouter>
+    </SettingsProvider>
   )
 }
 

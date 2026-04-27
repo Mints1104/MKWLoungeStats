@@ -7,6 +7,7 @@ import MMRSelector from "./components/MMRSelector";
 import { getRankColor } from "./utils/playerUtils";
 import Flag from "react-world-flags";
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "./context/settingsContext";
 import {
   ResponsiveContainer,
   BarChart,
@@ -38,14 +39,20 @@ function formatDateShort(value) {
 }
 
 function Stats() {
+  const { defaultGameMode } = useSettings();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [season, setSeason] = useState(2);
-  const [mmrType, setMmrType] = useState(24);
+  const [selectedMmrType, setSelectedMmrType] = useState(null);
+  const mmrType = selectedMmrType ?? defaultGameMode;
   const requestRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
+
+  const handleMmrTypeChange = (nextMmrType) => {
+    setSelectedMmrType(nextMmrType);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -263,7 +270,10 @@ function Stats() {
               onSeasonChange={setSeason}
             />
             {season >= 2 && (
-              <MMRSelector selectedMMR={mmrType} onMMRChange={setMmrType} />
+              <MMRSelector
+                selectedMMR={mmrType}
+                onMMRChange={handleMmrTypeChange}
+              />
             )}
           </div>
         </div>

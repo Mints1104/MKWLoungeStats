@@ -4,11 +4,14 @@ import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import { useSettings } from "./context/settingsContext";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
 
 function PlayerInfo() {
+  const { defaultGameMode } = useSettings();
+
   // 1. Initialize 'recent' lazily from localStorage
   const [recent, setRecent] = useState(() => {
     try {
@@ -45,15 +48,8 @@ function PlayerInfo() {
       return 2;
     }
   });
-  const [mmrType, setMmrType] = useState(() => {
-    try {
-      // try to get last selected mmr type, otherwise default to 24p
-      const saved = sessionStorage.getItem("playerInfoMmrType");
-      return saved !== null ? Number(saved) : 24;
-    } catch {
-      return 24;
-    }
-  });
+  const [selectedMmrType, setSelectedMmrType] = useState(null);
+  const mmrType = selectedMmrType ?? defaultGameMode;
 
   // 3. Pass initialDetails to the hook
   const {
@@ -63,7 +59,7 @@ function PlayerInfo() {
     fetchPlayerDetails,
   } = usePlayerDetails(initialState.details);
 
-  // Persist season + mmrType across page reloads
+  // Persist season across page reloads
   useEffect(() => {
     try {
       sessionStorage.setItem("playerInfoSeason", season);
@@ -71,13 +67,7 @@ function PlayerInfo() {
       /* ignore */
     }
   }, [season]);
-  useEffect(() => {
-    try {
-      sessionStorage.setItem("playerInfoMmrType", mmrType);
-    } catch {
-      /* ignore */
-    }
-  }, [mmrType]);
+
   const rememberRecent = (value) => {
     const clean = value.trim();
     if (!clean) return;
@@ -131,7 +121,7 @@ function PlayerInfo() {
   };
 
   const handleMmrChange = (nextMmrType) => {
-    setMmrType(nextMmrType);
+    setSelectedMmrType(nextMmrType);
     if (name.trim()) {
       fetchAndRemember(name, season, nextMmrType);
     }

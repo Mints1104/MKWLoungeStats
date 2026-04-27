@@ -5,11 +5,13 @@ import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import { useSettings } from "./context/settingsContext";
 
 function PlayerProfile() {
   const { playerName } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { defaultGameMode } = useSettings();
 
   console.log("Player Name:", playerName);
 
@@ -19,7 +21,9 @@ function PlayerProfile() {
   const season =
     seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
   const mmrType =
-    mmrTypeParam !== null && !isNaN(mmrTypeParam) ? Number(mmrTypeParam) : 24;
+    mmrTypeParam !== null && !isNaN(mmrTypeParam)
+      ? Number(mmrTypeParam)
+      : defaultGameMode;
 
   const handleSeasonChange = (newSeason) => {
     const newParams = new URLSearchParams(searchParams);
