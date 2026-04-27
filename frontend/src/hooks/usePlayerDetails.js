@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { loungeApi } from "../api/loungeApi";
+import { useAbortableRequest } from "./useAbortableRequest";
 
 /**
  * Shared hook for requesting detailed player information from the backend.
@@ -7,9 +8,7 @@ import { loungeApi } from "../api/loungeApi";
  */
 function usePlayerDetails(initialData = null) {
   const [playerDetails, setPlayerDetails] = useState(initialData);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const inFlightRef = useRef(null);
+  const { loading, error, setError, run } = useAbortableRequest();
 
   const fetchPlayerDetails = useCallback(
     async (playerName, season = 2, mmrType = 24) => {
@@ -19,58 +18,30 @@ function usePlayerDetails(initialData = null) {
         return null;
       }
 
-      if (inFlightRef.current) {
-        inFlightRef.current.abort();
-      }
+      setPlayerDetails(null);
 
-      const controller = new AbortController();
-      inFlightRef.current = controller;
+      const data = await run(
+        (signal) =>
+          loungeApi.getPlayerDetails(playerName, season, mmrType, signal),
+        {
+          mapError: (err) => {
+            let message = err.message || "Failed to fetch player data";
+            if (message.includes("404")) {
+              message = `No lounge records found for "${playerName}"`;
+            }
+            return message;
+          },
+        },
+      );
 
-      try {
-        setError("");
-        setLoading(true);
-        setPlayerDetails(null);
-
-        const data = await loungeApi.getPlayerDetails(
-          playerName,
-          season,
-          mmrType,
-          controller.signal,
-        );
-
+      if (data) {
         setPlayerDetails(data);
-        return data;
-      } catch (err) {
-        if (err.name === "AbortError") {
-          return null;
-        }
-
-        let message = err.message || "Failed to fetch player data";
-        if (message.includes("404")) {
-          message = `No lounge records found for "${playerName}"`;
-        }
-
-        setError(message);
+      } else {
         setPlayerDetails(null);
-        return null;
-      } finally {
-        if (inFlightRef.current === controller) {
-          inFlightRef.current = null;
-        }
-        setLoading(false);
       }
-    },
-    [],
+      return data;
+    }, [run, setError],
   );
-
-  useEffect(() => {
-    return () => {
-      if (inFlightRef.current) {
-        inFlightRef.current.abort();
-        inFlightRef.current = null;
-      }
-    };
-  }, []);
 
   return {
     playerDetails,

@@ -167,13 +167,6 @@ body {
   color: #38bdf8;
 }
 
-@media (min-width: 600px) {
-  .player-form {
-    flex-direction: row;
-    align-items: center;
-  }
-}
-
 .player-input {
   flex: 1;
   padding: 0.75rem 1rem;
@@ -269,16 +262,27 @@ body {
 @media (min-width: 1200px) {
   .player-results {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* Give the MMR chart more space by spanning two columns. */
+    grid-template-columns: 320px 1fr 1fr;
+    grid-template-areas:
+      "stats mmr mmr"
+      "score events events";
     gap: 1.5rem;
   }
 
-  /* keep the list spanning both columns while cards sit side-by-side */
-  .events-grid,
-  .no-events-message {
+  .player-results > .player-summary.stats { grid-area: stats; }
+  .player-results > .player-summary.mmr { grid-area: mmr; }
+  .player-results > .player-summary.score { grid-area: score; }
+  .player-results > .player-events-card { grid-area: events; }
+
+  /* keep the list spanning full width under the events card */
+  .player-results .events-grid,
+  .player-results .no-events-message {
     grid-column: 1 / -1;
   }
 }
+
+/* Remove forced min-widths on cards; rely on grid's minmax instead. */
 
 @media (max-width: 900px) {
   .player-info-page {
@@ -351,7 +355,7 @@ body {
   gap: 0.75rem;
   font-size: 0.85rem;
   color: #e5e7eb;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .events-count {
@@ -435,7 +439,9 @@ body {
   color: #e5e7eb;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
   white-space: nowrap;
   min-width: 6rem;
   text-align: center;
@@ -1337,7 +1343,6 @@ body {
 .leaderboard-name:hover {
   text-decoration: underline;
 }
-
 
 /* Page header component styling */
 .page-header {

@@ -488,7 +488,7 @@ function PlayerDetailView({
 
   return (
     <div className="player-results">
-      <div className="player-summary">
+      <div className="player-summary stats">
         <h2>
           <span>Stats for</span>
           {playerDetails.countryCode && (
@@ -577,10 +577,11 @@ function PlayerDetailView({
             </>
           )}
         </p>
+
       </div>
 
       {/* MMR History Chart */}
-      <div className="player-summary">
+      <div className="player-summary mmr">
         <h3>MMR History</h3>
         <div
           role="img"
@@ -648,10 +649,11 @@ function PlayerDetailView({
             </ResponsiveContainer>
           </Suspense>
         </div>
+
       </div>
 
       {/* Score Distribution Chart */}
-      <div className="player-summary">
+      <div className="player-summary score">
         <div className="player-events-header">
           <h3>Score Distribution</h3>
           {season < 2 && (
@@ -713,6 +715,7 @@ function PlayerDetailView({
             </ResponsiveContainer>
           </Suspense>
         </div>
+
       </div>
 
       <div className="player-events-card">

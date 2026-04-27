@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { getRankColor, getNextRank } from "./utils/playerUtils";
 
 // Lazy load chart components
@@ -17,6 +17,8 @@ import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
+import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { useAbortableRequest } from "./hooks/useAbortableRequest";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
@@ -25,12 +27,13 @@ function PlayerComparison() {
     const { defaultGameMode } = useSettings();
     const [playerNames, setPlayerNames] = useState(["", ""]);
     const [playersData, setPlayersData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [season, setSeason] = useState(2);
-    const [selectedMmrType, setSelectedMmrType] = useState(null);
-    const mmrType = selectedMmrType ?? defaultGameMode;
-    const abortRef = useRef(null);
+    const { loading, error, run, setError } = useAbortableRequest();
+    const { season, setSeason, setSelectedMmrType, mmrType } =
+        useSeasonMmrSelection({
+            initialSeason: 2,
+            initialMmrType: null,
+            defaultMmrType: defaultGameMode,
+        });
 
     const handleMmrTypeChange = (nextMmrType) => {
         setSelectedMmrType(nextMmrType);
@@ -55,50 +58,32 @@ function PlayerComparison() {
     };
 
     const comparePlayers = async () => {
-        // Cancel any in-flight comparison request
-        if (abortRef.current) {
-            abortRef.current.abort();
-        }
-        const controller = new AbortController();
-        abortRef.current = controller;
-
-        try {
-            setError("");
+        const validNames = playerNames.filter((name) => name.trim());
+        if (validNames.length < 2) {
+            setError("Please enter at least 2 player names");
             setPlayersData([]);
-
-            const validNames = playerNames.filter((name) => name.trim());
-            if (validNames.length < 2) {
-                setError("Please enter at least 2 player names");
-                return;
-            }
-
-            setLoading(true);
-            const data = await loungeApi.comparePlayers(validNames, season, mmrType, controller.signal);
-            const validPlayers = data.filter((p) => !p.error);
-
-            if (validPlayers.length < 2) {
-                setError("Could not find enough valid players to compare");
-                return;
-            }
-
-            setPlayersData(validPlayers);
-        } catch (err) {
-            if (err.name === "AbortError") return;
-            setError(err.message || "Failed to compare players");
-        } finally {
-            if (abortRef.current === controller) {
-                setLoading(false);
-                abortRef.current = null;
-            }
+            return;
         }
-    };
 
-    // Cancel request on unmount
-    useEffect(() => {
-        return () => {
-            if (abortRef.current) abortRef.current.abort();
-        };
-    }, []);
+        setPlayersData([]);
+        const data = await run(
+            (signal) => loungeApi.comparePlayers(validNames, season, mmrType, signal),
+            { mapError: (err) => err.message || "Failed to compare players" },
+        );
+
+        if (!data) {
+            return;
+        }
+
+        const validPlayers = data.filter((p) => !p.error);
+
+        if (validPlayers.length < 2) {
+            setError("Could not find enough valid players to compare");
+            return;
+        }
+
+        setPlayersData(validPlayers);
+    };
 
     // Auto-fetch when season or mmrType changes
     useEffect(() => {

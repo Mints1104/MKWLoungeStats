@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Flag from "react-world-flags";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
@@ -9,6 +9,8 @@ import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
+import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { useAbortableRequest } from "./hooks/useAbortableRequest";
 
 function Leaderboard() {
     const navigate = useNavigate();
@@ -16,19 +18,24 @@ function Leaderboard() {
     const { defaultGameMode } = useSettings();
 
     const [leaderboardData, setLeaderboardData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
 
 
-    const [season, setSeason] = useState(() => {
-        const param = searchParams.get("season");
-        return param ? Number(param) : 2;
+    const {
+        season,
+        setSeason,
+        setSelectedMmrType,
+        mmrType,
+    } = useSeasonMmrSelection({
+        initialSeason: () => {
+            const param = searchParams.get("season");
+            return param ? Number(param) : 2;
+        },
+        initialMmrType: () => {
+            const param = searchParams.get("mmrType");
+            return param ? Number(param) : null;
+        },
+        defaultMmrType: defaultGameMode,
     });
-    const [selectedMmrType, setSelectedMmrType] = useState(() => {
-        const param = searchParams.get("mmrType");
-        return param ? Number(param) : null;
-    });
-    const mmrType = selectedMmrType ?? defaultGameMode;
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(() => {
@@ -71,7 +78,7 @@ function Leaderboard() {
 
         setSearchParams(params, { replace: true });
     }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, defaultGameMode, setSearchParams]);
-    const requestRef = useRef(null);
+    const { loading, error, run } = useAbortableRequest();
 
     const debouncedSetSearch = useMemo(
         () => debounce((value) => {
@@ -88,62 +95,54 @@ function Leaderboard() {
     };
 
     const fetchLeaderboard = useCallback(async () => {
-        try {
-            setError("");
-            setLoading(true);
+        const data = await run(
+            (signal) =>
+                loungeApi.getLeaderboard(
+                    {
+                        page: currentPage,
+                        pageSize,
+                        sortBy,
+                        minMmr,
+                        maxMmr,
+                        minEventsPlayed,
+                        maxEventsPlayed,
+                        search: debouncedSearch,
+                        season,
+                        mmrType,
+                        country,
+                    },
+                    signal,
+                ),
+            {
+                mapError: (err) => err.message || "Failed to load leaderboard",
+            },
+        );
 
-            if (requestRef.current) {
-                requestRef.current.abort();
-            }
-
-            const controller = new AbortController();
-            requestRef.current = controller;
-
-            const data = await loungeApi.getLeaderboard(
-                {
-                    page: currentPage,
-                    pageSize,
-                    sortBy,
-                    minMmr,
-                    maxMmr,
-                    minEventsPlayed,
-                    maxEventsPlayed,
-                    search: debouncedSearch,
-                    season,
-                    mmrType,
-                    country 
-                },
-                controller.signal
-            );
-
-            setLeaderboardData(data.data || []);
-            setTotalCount(data.totalCount || 0);
-            requestRef.current = null;
-        } catch (err) {
-            if (err.name === "AbortError") {
-                return;
-            }
-            setError(err.message || "Failed to load leaderboard");
-        } finally {
-            setLoading(false);
+        if (!data) {
+            return;
         }
-    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, season, mmrType, country]);
+
+        setLeaderboardData(data.data || []);
+        setTotalCount(data.totalCount || 0);
+    }, [currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, season, mmrType, country, run]);
 
     useEffect(() => {
-        fetchLeaderboard();
-        return () => {
-            if (requestRef.current) {
-                requestRef.current.abort();
-                requestRef.current = null;
-            }
-        };
+        const timer = setTimeout(() => {
+            void fetchLeaderboard();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [fetchLeaderboard]);
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
     useEffect(() => {
         if (currentPage > 1 && totalPages > 0 && currentPage > totalPages) {
-            setCurrentPage(totalPages);
+            const timer = setTimeout(() => {
+                setCurrentPage(totalPages);
+            }, 0);
+
+            return () => clearTimeout(timer);
         }
     }, [currentPage, totalPages]);
 

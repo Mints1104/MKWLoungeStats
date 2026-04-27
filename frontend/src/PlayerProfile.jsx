@@ -6,6 +6,10 @@ import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
+import {
+  parseNullableMmrType,
+  parseSeasonValue,
+} from "./hooks/useSeasonMmrSelection";
 
 function PlayerProfile() {
   const { playerName } = useParams();
@@ -15,15 +19,8 @@ function PlayerProfile() {
 
   console.log("Player Name:", playerName);
 
-  // safely get season from URL, handling 0 correctly
-  const seasonParam = searchParams.get("season");
-  const mmrTypeParam = searchParams.get("mmrType");
-  const season =
-    seasonParam !== null && !isNaN(seasonParam) ? Number(seasonParam) : 2;
-  const mmrType =
-    mmrTypeParam !== null && !isNaN(mmrTypeParam)
-      ? Number(mmrTypeParam)
-      : defaultGameMode;
+  const season = parseSeasonValue(searchParams.get("season"));
+  const mmrType = parseNullableMmrType(searchParams.get("mmrType")) ?? defaultGameMode;
 
   const handleSeasonChange = (newSeason) => {
     const newParams = new URLSearchParams(searchParams);

@@ -5,6 +5,7 @@ import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
+import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
@@ -39,17 +40,19 @@ function PlayerInfo() {
   });
 
   const [name, setName] = useState(initialState.name);
-  const [season, setSeason] = useState(() => {
-    try {
-      // try get last season, otherwise default to 2
-      const saved = sessionStorage.getItem("playerInfoSeason");
-      return saved !== null ? Number(saved) : 2;
-    } catch {
-      return 2;
-    }
-  });
-  const [selectedMmrType, setSelectedMmrType] = useState(null);
-  const mmrType = selectedMmrType ?? defaultGameMode;
+  const { season, setSeason, setSelectedMmrType, mmrType } =
+    useSeasonMmrSelection({
+      initialSeason: () => {
+        try {
+          const saved = sessionStorage.getItem("playerInfoSeason");
+          return saved !== null ? Number(saved) : 2;
+        } catch {
+          return 2;
+        }
+      },
+      initialMmrType: null,
+      defaultMmrType: defaultGameMode,
+    });
 
   // 3. Pass initialDetails to the hook
   const {

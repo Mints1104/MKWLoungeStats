@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
@@ -8,6 +8,8 @@ import { getRankColor } from "./utils/playerUtils";
 import Flag from "react-world-flags";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "./context/settingsContext";
+import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { useAbortableRequest } from "./hooks/useAbortableRequest";
 import {
   ResponsiveContainer,
   BarChart,
@@ -41,12 +43,13 @@ function formatDateShort(value) {
 function Stats() {
   const { defaultGameMode } = useSettings();
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [season, setSeason] = useState(2);
-  const [selectedMmrType, setSelectedMmrType] = useState(null);
-  const mmrType = selectedMmrType ?? defaultGameMode;
-  const requestRef = useRef(null);
+  const { loading, error, run } = useAbortableRequest();
+  const { season, setSeason, setSelectedMmrType, mmrType } =
+    useSeasonMmrSelection({
+      initialSeason: 2,
+      initialMmrType: null,
+      defaultMmrType: defaultGameMode,
+    });
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
 
@@ -55,38 +58,22 @@ function Stats() {
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    requestRef.current = controller;
-
     async function fetchStats() {
-      try {
-        setLoading(true);
-        setError("");
-        setStats(null);
+      setStats(null);
 
-        const game = season >= 2 ? `mkworld${mmrType}p` : "mkworld";
-        const data = await loungeApi.getPlayerStats(
-          { season, game },
-          controller.signal,
-        );
+      const game = season >= 2 ? `mkworld${mmrType}p` : "mkworld";
+      const data = await run(
+        (signal) => loungeApi.getPlayerStats({ season, game }, signal),
+        { mapError: (err) => err.message || "Failed to load stats" },
+      );
+
+      if (data) {
         setStats(data || null);
-      } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
-        setError(err.message || "Failed to load stats");
-      } finally {
-        setLoading(false);
       }
     }
 
     fetchStats();
-
-    return () => {
-      controller.abort();
-      requestRef.current = null;
-    };
-  }, [season, mmrType]);
+  }, [season, mmrType, run]);
 
   useEffect(() => {
     function handleResize() {

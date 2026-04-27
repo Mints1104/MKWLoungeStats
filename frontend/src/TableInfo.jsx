@@ -1,59 +1,44 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Flag from "react-world-flags";
 import { useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import { getRankForMmrValue } from "./utils/playerUtils";
+import { useAbortableRequest } from "./hooks/useAbortableRequest";
 
 function TableInfo() {
   const { tableId } = useParams();
   const navigate = useNavigate();
   const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const requestRef = useRef(null);
+  const { loading, error, run, setError } = useAbortableRequest();
 
   const fetchTable = useCallback(async () => {
     // Ensure tableId is converted to string and trimmed
     const idStr = tableId != null ? String(tableId).trim() : "";
     if (!idStr || idStr === "undefined" || idStr === "null") {
+      setResult(null);
       setError("No table ID provided in URL");
       return;
     }
 
-    try {
-      setLoading(true);
-      setError("");
-      setResult(null);
+    setResult(null);
 
-      if (requestRef.current) {
-        requestRef.current.abort();
-      }
+    const data = await run(
+      (signal) => loungeApi.getTableById(idStr, signal),
+      { mapError: (err) => err.message || "Failed to fetch table" },
+    );
 
-      const controller = new AbortController();
-      requestRef.current = controller;
-
-      const data = await loungeApi.getTableById(idStr, controller.signal);
+    if (data) {
       setResult(data || null);
-      requestRef.current = null;
-    } catch (err) {
-      if (err.name === "AbortError") {
-        return;
-      }
-      setError(err.message || "Failed to fetch table");
-    } finally {
-      setLoading(false);
     }
-  }, [tableId]);
+  }, [tableId, run, setError]);
 
   useEffect(() => {
-    fetchTable();
-    return () => {
-      if (requestRef.current) {
-        requestRef.current.abort();
-        requestRef.current = null;
-      }
-    };
+    const timer = setTimeout(() => {
+      void fetchTable();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [fetchTable]);
 
   const season = result?.season;
