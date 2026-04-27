@@ -51,6 +51,12 @@ const ResponsiveContainer = lazy(() =>
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 const GAME_MODE_FILTER_KEY = "playerGameModeFilterPref";
+const TIER_FILTER_KEY = "playerTierFilterPref";
+
+function getEventTier(event) {
+  if (typeof event?.tier !== "string") return "";
+  return event.tier.trim();
+}
 
 function PlayerDetailView({
   playerDetails,
@@ -112,8 +118,20 @@ function PlayerDetailView({
     }
     return new Set();
   });
+  // Set of tier labels (e.g. "A", "BC") that are currently hidden
+  const [disabledTiers, setDisabledTiers] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(TIER_FILTER_KEY);
+      if (saved) return new Set(JSON.parse(saved));
+    } catch {
+      // ignore
+    }
+    return new Set();
+  });
   const [gameModeOpen, setGameModeOpen] = useState(false);
+  const [tierOpen, setTierOpen] = useState(false);
   const gameModeMenuRef = useRef(null);
+  const tierMenuRef = useRef(null);
 
   // Persist preference (mode + last chosen value) to sessionStorage
   useEffect(() => {
@@ -145,20 +163,46 @@ function PlayerDetailView({
     }
   }, [disabledModes]);
 
-  // Close the game mode dropdown when clicking outside
+  // Persist disabled tiers to sessionStorage
   useEffect(() => {
-    if (!gameModeOpen) return;
+    try {
+      sessionStorage.setItem(
+        TIER_FILTER_KEY,
+        JSON.stringify([...disabledTiers]),
+      );
+    } catch {
+      // ignore
+    }
+  }, [disabledTiers]);
+
+  // Close open dropdowns when clicking outside
+  useEffect(() => {
+    if (!gameModeOpen && !tierOpen) return;
     const handler = (e) => {
+      const outsideMode =
+        !gameModeMenuRef.current || !gameModeMenuRef.current.contains(e.target);
+      const outsideTier =
+        !tierMenuRef.current || !tierMenuRef.current.contains(e.target);
+
+      if (outsideMode && outsideTier) {
+        setGameModeOpen(false);
+        setTierOpen(false);
+      }
+
       if (
         gameModeMenuRef.current &&
         !gameModeMenuRef.current.contains(e.target)
       ) {
         setGameModeOpen(false);
       }
+
+      if (tierMenuRef.current && !tierMenuRef.current.contains(e.target)) {
+        setTierOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [gameModeOpen]);
+  }, [gameModeOpen, tierOpen]);
 
   // Create a unique set of events, prioritizing changeId to avoid duplicates
   // from API responses or state updates.
@@ -206,6 +250,18 @@ function PlayerDetailView({
     });
   };
 
+  const toggleTier = (tier) => {
+    setDisabledTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(tier)) {
+        next.delete(tier);
+      } else {
+        next.add(tier);
+      }
+      return next;
+    });
+  };
+
   // Derived stats for 12p / 24p events
   const navigate = useNavigate();
 
@@ -226,10 +282,9 @@ function PlayerDetailView({
     mmrType,
   ]);
 
-  // Events to display based on filter and limit
-  let eventsToShow = [];
-  let totalFilteredEvents = 0;
-  if (sanitizedEvents.length > 0) {
+  const baseFilteredEvents = useMemo(() => {
+    if (!sanitizedEvents.length) return [];
+
     let filtered;
     // Only apply 12p/24p filters if season < 2
     if (season < 2) {
@@ -257,6 +312,42 @@ function PlayerDetailView({
         if (e.reason !== "Table") return true;
         const fmt = getEventFormat(e.numPlayers, e.numTeams);
         return !disabledModes.has(fmt);
+      });
+    }
+
+    return filtered;
+  }, [sanitizedEvents, season, eventFilter, disabledModes]);
+
+  // Unique tiers from currently visible recent-event candidates.
+  // This is intentionally data-driven (no hardcoded tier list).
+  const availableTiers = useMemo(() => {
+    const tiers = [];
+    const seen = new Set();
+
+    baseFilteredEvents.forEach((e) => {
+      if (e.reason !== "Table") return;
+      const tier = getEventTier(e);
+      if (!tier || seen.has(tier)) return;
+      seen.add(tier);
+      tiers.push(tier);
+    });
+
+    return tiers;
+  }, [baseFilteredEvents]);
+
+  // Events to display based on filter and limit
+  let eventsToShow = [];
+  let totalFilteredEvents = 0;
+  if (baseFilteredEvents.length > 0) {
+    let filtered = baseFilteredEvents;
+
+    // Apply tier filter: hide table events whose tier is in disabledTiers.
+    // Non-table events are always included.
+    if (disabledTiers.size > 0) {
+      filtered = filtered.filter((e) => {
+        if (e.reason !== "Table") return true;
+        const tier = getEventTier(e);
+        return !tier || !disabledTiers.has(tier);
       });
     }
 
@@ -722,14 +813,19 @@ function PlayerDetailView({
                       }`}
                       onClick={() => setGameModeOpen((o) => !o)}
                       aria-expanded={gameModeOpen}
+                      aria-controls="mode-filter-dropdown"
+                      aria-label="Toggle mode filter"
                     >
-                      Mode
+                      Modes
                       {hasActiveFilter &&
                         ` (${activeModeCount}/${availableGameModes.length})`}{" "}
                       ▾
                     </button>
                     {gameModeOpen && (
-                      <div className="game-mode-dropdown">
+                      <div
+                        id="mode-filter-dropdown"
+                        className="game-mode-dropdown"
+                      >
                         {availableGameModes.map((mode) => (
                           <label
                             key={mode}
@@ -749,6 +845,65 @@ function PlayerDetailView({
                             type="button"
                             className="game-mode-reset"
                             onClick={() => setDisabledModes(new Set())}
+                          >
+                            Show all
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            {(availableTiers.length > 1 ||
+              availableTiers.some((tier) => disabledTiers.has(tier))) &&
+              (() => {
+                const activeTierCount = availableTiers.filter(
+                  (tier) => !disabledTiers.has(tier),
+                ).length;
+                const hasActiveTierFilter =
+                  activeTierCount < availableTiers.length;
+
+                return (
+                  <div className="game-mode-filter" ref={tierMenuRef}>
+                    <button
+                      type="button"
+                      className={`game-mode-trigger${
+                        hasActiveTierFilter ? " game-mode-trigger-active" : ""
+                      }`}
+                      onClick={() => setTierOpen((o) => !o)}
+                      aria-expanded={tierOpen}
+                      aria-controls="tier-filter-dropdown"
+                      aria-label="Toggle tier filter"
+                    >
+                      Tiers
+                      {hasActiveTierFilter &&
+                        ` (${activeTierCount}/${availableTiers.length})`}{" "}
+                      ▾
+                    </button>
+                    {tierOpen && (
+                      <div
+                        id="tier-filter-dropdown"
+                        className="game-mode-dropdown"
+                      >
+                        {availableTiers.map((tier) => (
+                          <label
+                            key={tier}
+                            className="game-mode-checkbox-label"
+                          >
+                            <input
+                              type="checkbox"
+                              className="game-mode-checkbox"
+                              checked={!disabledTiers.has(tier)}
+                              onChange={() => toggleTier(tier)}
+                            />
+                            {tier}
+                          </label>
+                        ))}
+                        {hasActiveTierFilter && (
+                          <button
+                            type="button"
+                            className="game-mode-reset"
+                            onClick={() => setDisabledTiers(new Set())}
                           >
                             Show all
                           </button>

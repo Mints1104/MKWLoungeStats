@@ -50,6 +50,7 @@ function makePlayerDetails() {
         reason: "Table",
         numPlayers: 12,
         numTeams: 12,
+        tier: "A",
         score: 80,
         mmrDelta: 12,
         newMmr: 6100,
@@ -61,6 +62,7 @@ function makePlayerDetails() {
         reason: "Table",
         numPlayers: 24,
         numTeams: 12,
+        tier: "BC",
         score: 70,
         mmrDelta: -8,
         newMmr: 6092,
@@ -72,6 +74,7 @@ function makePlayerDetails() {
         reason: "Table",
         numPlayers: 24,
         numTeams: 8,
+        tier: "BC",
         score: 85,
         mmrDelta: 15,
         newMmr: 6107,
@@ -117,5 +120,35 @@ describe("PlayerDetailView mode filter persistence", () => {
     });
 
     expect(ffaCheckbox.checked).toBe(true);
+  });
+
+  it("builds tiers from recent events and persists tier filter updates", async () => {
+    sessionStorage.setItem("playerTierFilterPref", JSON.stringify(["A"]));
+
+    render(
+      <PlayerDetailView
+        playerDetails={makePlayerDetails()}
+        season={1}
+        mmrType={24}
+      />,
+    );
+
+    const tierButton = await screen.findByRole("button", { name: /tier/i });
+    fireEvent.click(tierButton);
+
+    const aCheckbox = await screen.findByRole("checkbox", { name: "A" });
+    const bcCheckbox = await screen.findByRole("checkbox", { name: "BC" });
+
+    expect(aCheckbox.checked).toBe(false);
+    expect(bcCheckbox.checked).toBe(true);
+    expect(screen.queryByRole("checkbox", { name: "X" })).toBeNull();
+
+    fireEvent.click(aCheckbox);
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem("playerTierFilterPref")).toBe("[]");
+    });
+
+    expect(aCheckbox.checked).toBe(true);
   });
 });
