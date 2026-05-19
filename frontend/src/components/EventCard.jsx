@@ -38,14 +38,26 @@ const EventCard = memo(function EventCard({
     if (isTable && event.changeId != null) {
       const isAboveAvg =
         relevantAverage != null && event.score > relevantAverage;
+      const partnerScores =
+        Array.isArray(event.partnerScores) ?
+          event.partnerScores.filter(
+            (score) => typeof score === "number" && !Number.isNaN(score),
+          )
+        : [];
       return (
         <>
           <div>
-            Scored{" "}
+            Scored:{" "}
             <span className={isAboveAvg ? "above-average" : "below-average"}>
               {event.score}
             </span>{" "}
           </div>
+          {partnerScores.length > 0 && (
+            <div>
+              Partner {partnerScores.length > 1 ? "Scores" : "Score"}:{" "}
+              {partnerScores.join(", ")}
+            </div>
+          )}
           <div>Placed: #{event.rank}</div>
           <div>
             Format: {event.numPlayers}p{" "}

@@ -403,6 +403,7 @@ function PlayerDetailView({
   // Stats for the currently displayed events
   let recentAvgScore = null;
   let recentBestScore = null;
+  let recentPartnerAvgScore = null;
   let recentWinRate = null;
   let largestGain = null;
   let largestLoss = null;
@@ -426,6 +427,17 @@ function PlayerDetailView({
         (max, e) => (e.score > max ? e.score : max),
         withScores[0].score,
       );
+    }
+
+    const partnerScores = tableEvents.flatMap((e) =>
+      Array.isArray(e.partnerScores) ? e.partnerScores : [],
+    );
+    const partnerScoresNumeric = partnerScores.filter(
+      (score) => typeof score === "number" && !Number.isNaN(score),
+    );
+    if (partnerScoresNumeric.length) {
+      const sum = partnerScoresNumeric.reduce((acc, score) => acc + score, 0);
+      recentPartnerAvgScore = sum / partnerScoresNumeric.length;
     }
 
     // Win rate only counts table events where MMR increased
@@ -963,6 +975,14 @@ function PlayerDetailView({
             <StatCard
               label="Avg score"
               value={recentAvgScore != null ? recentAvgScore.toFixed(2) : "N/A"}
+            />
+            <StatCard
+              label="PAvg score"
+              value={
+                recentPartnerAvgScore != null ?
+                  recentPartnerAvgScore.toFixed(2)
+                : "N/A"
+              }
             />
             <StatCard
               label="Best score"
