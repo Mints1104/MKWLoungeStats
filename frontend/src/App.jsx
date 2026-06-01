@@ -6,7 +6,7 @@ import {
   useNavigationType,
   Link,
 } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import "./App.css";
 import Navigation from "./components/Navigation";
 import PlayerInfo from "./PlayerInfo";
@@ -23,18 +23,21 @@ function ScrollRestoration() {
   const positionsRef = useRef(new Map());
   const rafRef = useRef(null);
 
-  const savePosition = (y) => {
-    positionsRef.current.set(location.key, y);
-    try {
-      const pathKey = `${location.pathname}${location.search}`;
-      sessionStorage.setItem(`scroll:${location.key}`, String(y));
-      sessionStorage.setItem(`scroll:${pathKey}`, String(y));
-    } catch {
-      // ignore sessionStorage failures
-    }
-  };
+  const savePosition = useCallback(
+    (y) => {
+      positionsRef.current.set(location.key, y);
+      try {
+        const pathKey = `${location.pathname}${location.search}`;
+        sessionStorage.setItem(`scroll:${location.key}`, String(y));
+        sessionStorage.setItem(`scroll:${pathKey}`, String(y));
+      } catch {
+        // ignore sessionStorage failures
+      }
+    },
+    [location.key, location.pathname, location.search],
+  );
 
-  const readSavedPosition = () => {
+  const readSavedPosition = useCallback(() => {
     const inMemory = positionsRef.current.get(location.key);
     if (inMemory != null) return inMemory;
     try {
@@ -48,9 +51,12 @@ function ScrollRestoration() {
     } catch {
       return null;
     }
-  };
+  }, [location.key, location.pathname, location.search]);
 
-  const restoreWithRetry = (targetY, attempt = 0) => {
+  const restoreWithRetry = useCallback(function restoreWithRetryInner(
+    targetY,
+    attempt = 0,
+  ) {
     const maxAttempts = 10;
     const scrollHeight = document.documentElement.scrollHeight;
     const maxY = Math.max(0, scrollHeight - window.innerHeight);
@@ -61,8 +67,8 @@ function ScrollRestoration() {
     }
 
     window.scrollTo(0, maxY);
-    setTimeout(() => restoreWithRetry(targetY, attempt + 1), 60);
-  };
+    setTimeout(() => restoreWithRetryInner(targetY, attempt + 1), 60);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,18 +89,19 @@ function ScrollRestoration() {
       }
       savePosition(window.scrollY);
     };
-  }, [location.key, location.pathname, location.search]);
+  }, [location.key, location.pathname, location.search, savePosition]);
 
   useEffect(() => {
-    if (navigationType === "POP") {
-      const savedPosition = readSavedPosition();
-      const target = savedPosition ?? 0;
-      setTimeout(() => restoreWithRetry(target), 0);
+    const savedPosition = readSavedPosition();
+    if (savedPosition != null) {
+      setTimeout(() => restoreWithRetry(savedPosition), 0);
       return;
     }
 
-    window.scrollTo(0, 0);
-  }, [location.key, navigationType]);
+    if (navigationType !== "POP") {
+      window.scrollTo(0, 0);
+    }
+  }, [location.key, navigationType, readSavedPosition, restoreWithRetry]);
 
   return null;
 }
