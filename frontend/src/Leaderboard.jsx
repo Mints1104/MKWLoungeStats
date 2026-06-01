@@ -76,8 +76,11 @@ function Leaderboard() {
         if (debouncedSearch) params.set("search", debouncedSearch);
         if (country) params.set("country", country);
 
-        setSearchParams(params, { replace: true });
-    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, defaultGameMode, setSearchParams]);
+        const nextSearch = params.toString();
+        if (nextSearch !== searchParams.toString()) {
+            setSearchParams(params, { replace: true });
+        }
+    }, [season, mmrType, currentPage, pageSize, sortBy, minMmr, maxMmr, minEventsPlayed, maxEventsPlayed, debouncedSearch, country, defaultGameMode, setSearchParams, searchParams]);
     const { loading, error, run } = useAbortableRequest();
 
     const debouncedSetSearch = useMemo(

@@ -38,28 +38,38 @@ function isScrollRestored(targetY) {
   return Math.abs(window.scrollY - targetY) <= SCROLL_RESTORE_TOLERANCE_PX;
 }
 
-function startScrollRestoreSession(targetY) {
-  const prevMinHeight = document.documentElement.style.minHeight;
-  let minHeightApplied = false;
-  let finished = false;
-
-  const neededHeight = targetY + window.innerHeight;
-
-  const applyMinHeight = () => {
-    if (document.documentElement.scrollHeight < neededHeight) {
-      document.documentElement.style.minHeight = `${neededHeight}px`;
-      minHeightApplied = true;
+function findSavedPositionOnPath(pathname, positionsRef) {
+  for (const [key, value] of positionsRef.current.entries()) {
+    if (key.startsWith(pathname) && value > 0) {
+      return value;
     }
-  };
+  }
 
-  const clearMinHeight = () => {
-    if (!minHeightApplied) return;
-    document.documentElement.style.minHeight = prevMinHeight;
-    minHeightApplied = false;
-  };
+  const storagePrefix = `scroll:${pathname}`;
+  let best = null;
+  try {
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const storageKey = sessionStorage.key(i);
+      if (storageKey == null || !storageKey.startsWith(storagePrefix)) {
+        continue;
+      }
+      const parsed = Number(sessionStorage.getItem(storageKey));
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        best = best == null ? parsed : Math.max(best, parsed);
+      }
+    }
+  } catch {
+    // ignore sessionStorage failures
+  }
+  return best;
+}
+
+function startScrollRestoreSession(targetY) {
+  let finished = false;
+  let observer = null;
+  let timeoutId = null;
 
   const tryRestore = () => {
-    applyMinHeight();
     scrollToY(targetY);
     return isScrollRestored(targetY);
   };
@@ -67,22 +77,24 @@ function startScrollRestoreSession(targetY) {
   const finish = () => {
     if (finished) return;
     finished = true;
-    observer.disconnect();
-    clearTimeout(timeoutId);
+    observer?.disconnect();
+    if (timeoutId != null) {
+      clearTimeout(timeoutId);
+    }
     tryRestore();
-    clearMinHeight();
   };
 
-  tryRestore();
+  if (tryRestore()) {
+    return finish;
+  }
 
-  const observer = new ResizeObserver(() => {
+  observer = new ResizeObserver(() => {
     if (tryRestore()) {
       finish();
     }
   });
   observer.observe(document.documentElement);
-
-  const timeoutId = setTimeout(finish, SCROLL_RESTORE_MAX_MS);
+  timeoutId = setTimeout(finish, SCROLL_RESTORE_MAX_MS);
 
   return finish;
 }
@@ -120,16 +132,22 @@ function ScrollRestoration() {
 
   const readSavedPosition = useCallback(() => {
     const inMemory = positionsRef.current.get(scrollKey);
-    if (inMemory != null) return inMemory;
+    if (inMemory != null && inMemory > 0) {
+      return inMemory;
+    }
     try {
       const raw = sessionStorage.getItem(`scroll:${scrollKey}`);
-      if (raw == null) return null;
-      const parsed = Number(raw);
-      return Number.isNaN(parsed) ? null : parsed;
+      if (raw != null) {
+        const parsed = Number(raw);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          return parsed;
+        }
+      }
     } catch {
-      return null;
+      // ignore sessionStorage failures
     }
-  }, [scrollKey]);
+    return findSavedPositionOnPath(location.pathname, positionsRef);
+  }, [scrollKey, location.pathname]);
 
   const endRestoreSessionRef = useRef(null);
 
@@ -162,11 +180,10 @@ function ScrollRestoration() {
   }, [scrollKey, savePosition]);
 
   useLayoutEffect(() => {
-    endRestoreSession();
-
     const savedPosition = readSavedPosition();
     if (savedPosition != null) {
       endRestoreSessionRef.current = startScrollRestoreSession(savedPosition);
+      savePosition(savedPosition);
     } else if (navigationType === "PUSH") {
       window.scrollTo(0, 0);
     }
@@ -177,7 +194,9 @@ function ScrollRestoration() {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-      savePosition(scrollYRef.current);
+      if (scrollYRef.current > 0) {
+        savePosition(scrollYRef.current);
+      }
     };
   }, [
     scrollKey,
