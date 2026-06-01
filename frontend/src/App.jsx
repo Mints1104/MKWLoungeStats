@@ -23,6 +23,70 @@ import TableInfo from "./TableInfo";
 import Stats from "./Stats";
 import { SettingsProvider } from "./context/SettingsContext.jsx";
 
+const SCROLL_RESTORE_TOLERANCE_PX = 2;
+const SCROLL_RESTORE_MAX_MS = 5000;
+
+function maxScrollY() {
+  return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+}
+
+function scrollToY(targetY) {
+  window.scrollTo(0, Math.min(targetY, maxScrollY()));
+}
+
+function isScrollRestored(targetY) {
+  return Math.abs(window.scrollY - targetY) <= SCROLL_RESTORE_TOLERANCE_PX;
+}
+
+function startScrollRestoreSession(targetY) {
+  const prevMinHeight = document.documentElement.style.minHeight;
+  let minHeightApplied = false;
+  let finished = false;
+
+  const neededHeight = targetY + window.innerHeight;
+
+  const applyMinHeight = () => {
+    if (document.documentElement.scrollHeight < neededHeight) {
+      document.documentElement.style.minHeight = `${neededHeight}px`;
+      minHeightApplied = true;
+    }
+  };
+
+  const clearMinHeight = () => {
+    if (!minHeightApplied) return;
+    document.documentElement.style.minHeight = prevMinHeight;
+    minHeightApplied = false;
+  };
+
+  const tryRestore = () => {
+    applyMinHeight();
+    scrollToY(targetY);
+    return isScrollRestored(targetY);
+  };
+
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    observer.disconnect();
+    clearTimeout(timeoutId);
+    tryRestore();
+    clearMinHeight();
+  };
+
+  tryRestore();
+
+  const observer = new ResizeObserver(() => {
+    if (tryRestore()) {
+      finish();
+    }
+  });
+  observer.observe(document.documentElement);
+
+  const timeoutId = setTimeout(finish, SCROLL_RESTORE_MAX_MS);
+
+  return finish;
+}
+
 function ScrollRestoration() {
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -67,21 +131,13 @@ function ScrollRestoration() {
     }
   }, [scrollKey]);
 
-  const restoreWithRetry = useCallback(function restoreWithRetryInner(
-    targetY,
-    attempt = 0,
-  ) {
-    const maxAttempts = 10;
-    const scrollHeight = document.documentElement.scrollHeight;
-    const maxY = Math.max(0, scrollHeight - window.innerHeight);
+  const endRestoreSessionRef = useRef(null);
 
-    if (targetY <= maxY || attempt >= maxAttempts) {
-      window.scrollTo(0, Math.min(targetY, maxY));
-      return;
+  const endRestoreSession = useCallback(() => {
+    if (endRestoreSessionRef.current) {
+      endRestoreSessionRef.current();
+      endRestoreSessionRef.current = null;
     }
-
-    window.scrollTo(0, maxY);
-    setTimeout(() => restoreWithRetryInner(targetY, attempt + 1), 60);
   }, []);
 
   useEffect(() => {
@@ -106,21 +162,30 @@ function ScrollRestoration() {
   }, [scrollKey, savePosition]);
 
   useLayoutEffect(() => {
+    endRestoreSession();
+
     const savedPosition = readSavedPosition();
     if (savedPosition != null) {
-      restoreWithRetry(savedPosition);
+      endRestoreSessionRef.current = startScrollRestoreSession(savedPosition);
     } else if (navigationType === "PUSH") {
       window.scrollTo(0, 0);
     }
 
     return () => {
+      endRestoreSession();
       if (rafRef.current != null) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
       savePosition(scrollYRef.current);
     };
-  }, [scrollKey, navigationType, readSavedPosition, restoreWithRetry, savePosition]);
+  }, [
+    scrollKey,
+    navigationType,
+    readSavedPosition,
+    savePosition,
+    endRestoreSession,
+  ]);
 
   return null;
 }
