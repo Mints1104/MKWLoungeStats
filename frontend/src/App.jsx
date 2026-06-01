@@ -6,7 +6,13 @@ import {
   useNavigationType,
   Link,
 } from "react-router-dom";
-import { useCallback, useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import "./App.css";
 import Navigation from "./components/Navigation";
 import PlayerInfo from "./PlayerInfo";
@@ -23,35 +29,42 @@ function ScrollRestoration() {
   const positionsRef = useRef(new Map());
   const rafRef = useRef(null);
 
+  const scrollKey = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const entries = Array.from(params.entries()).sort((a, b) => {
+      if (a[0] === b[0]) return a[1].localeCompare(b[1]);
+      return a[0].localeCompare(b[0]);
+    });
+    const normalized = new URLSearchParams();
+    entries.forEach(([key, value]) => normalized.append(key, value));
+    const query = normalized.toString();
+    return query ? `${location.pathname}?${query}` : location.pathname;
+  }, [location.pathname, location.search]);
+
   const savePosition = useCallback(
     (y) => {
-      positionsRef.current.set(location.key, y);
+      positionsRef.current.set(scrollKey, y);
       try {
-        const pathKey = `${location.pathname}${location.search}`;
-        sessionStorage.setItem(`scroll:${location.key}`, String(y));
-        sessionStorage.setItem(`scroll:${pathKey}`, String(y));
+        sessionStorage.setItem(`scroll:${scrollKey}`, String(y));
       } catch {
         // ignore sessionStorage failures
       }
     },
-    [location.key, location.pathname, location.search],
+    [scrollKey],
   );
 
   const readSavedPosition = useCallback(() => {
-    const inMemory = positionsRef.current.get(location.key);
+    const inMemory = positionsRef.current.get(scrollKey);
     if (inMemory != null) return inMemory;
     try {
-      const pathKey = `${location.pathname}${location.search}`;
-      const rawByKey = sessionStorage.getItem(`scroll:${location.key}`);
-      const rawByPath = sessionStorage.getItem(`scroll:${pathKey}`);
-      const raw = rawByKey ?? rawByPath;
+      const raw = sessionStorage.getItem(`scroll:${scrollKey}`);
       if (raw == null) return null;
       const parsed = Number(raw);
       return Number.isNaN(parsed) ? null : parsed;
     } catch {
       return null;
     }
-  }, [location.key, location.pathname, location.search]);
+  }, [scrollKey]);
 
   const restoreWithRetry = useCallback(function restoreWithRetryInner(
     targetY,
@@ -89,19 +102,19 @@ function ScrollRestoration() {
       }
       savePosition(window.scrollY);
     };
-  }, [location.key, location.pathname, location.search, savePosition]);
+  }, [scrollKey, savePosition]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const savedPosition = readSavedPosition();
     if (savedPosition != null) {
-      setTimeout(() => restoreWithRetry(savedPosition), 0);
+      restoreWithRetry(savedPosition);
       return;
     }
 
     if (navigationType === "PUSH") {
       window.scrollTo(0, 0);
     }
-  }, [location.key, navigationType, readSavedPosition, restoreWithRetry]);
+  }, [scrollKey, navigationType, readSavedPosition, restoreWithRetry]);
 
   return null;
 }
