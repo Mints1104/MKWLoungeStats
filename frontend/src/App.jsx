@@ -98,7 +98,7 @@ function ScrollRestoration() {
       return;
     }
 
-    if (navigationType !== "POP") {
+    if (navigationType === "PUSH") {
       window.scrollTo(0, 0);
     }
   }, [location.key, navigationType, readSavedPosition, restoreWithRetry]);
