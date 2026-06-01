@@ -1,30 +1,95 @@
-import { BrowserRouter, Routes, Route, useLocation, useNavigationType, Link } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
-import './App.css'
-import Navigation from './components/Navigation'
-import PlayerInfo from './PlayerInfo'
-import PlayerComparison from './PlayerComparison'
-import Leaderboard from './Leaderboard'
-import PlayerProfile from './PlayerProfile'
-import TableInfo from './TableInfo'
-import Stats from './Stats'
-import { SettingsProvider } from './context/SettingsContext.jsx'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigationType,
+  Link,
+} from "react-router-dom";
+import { useEffect, useRef } from "react";
+import "./App.css";
+import Navigation from "./components/Navigation";
+import PlayerInfo from "./PlayerInfo";
+import PlayerComparison from "./PlayerComparison";
+import Leaderboard from "./Leaderboard";
+import PlayerProfile from "./PlayerProfile";
+import TableInfo from "./TableInfo";
+import Stats from "./Stats";
+import { SettingsProvider } from "./context/SettingsContext.jsx";
 
 function ScrollRestoration() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const positionsRef = useRef(new Map());
+  const rafRef = useRef(null);
+
+  const savePosition = (y) => {
+    positionsRef.current.set(location.key, y);
+    try {
+      const pathKey = `${location.pathname}${location.search}`;
+      sessionStorage.setItem(`scroll:${location.key}`, String(y));
+      sessionStorage.setItem(`scroll:${pathKey}`, String(y));
+    } catch {
+      // ignore sessionStorage failures
+    }
+  };
+
+  const readSavedPosition = () => {
+    const inMemory = positionsRef.current.get(location.key);
+    if (inMemory != null) return inMemory;
+    try {
+      const pathKey = `${location.pathname}${location.search}`;
+      const rawByKey = sessionStorage.getItem(`scroll:${location.key}`);
+      const rawByPath = sessionStorage.getItem(`scroll:${pathKey}`);
+      const raw = rawByKey ?? rawByPath;
+      if (raw == null) return null;
+      const parsed = Number(raw);
+      return Number.isNaN(parsed) ? null : parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const restoreWithRetry = (targetY, attempt = 0) => {
+    const maxAttempts = 10;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const maxY = Math.max(0, scrollHeight - window.innerHeight);
+
+    if (targetY <= maxY || attempt >= maxAttempts) {
+      window.scrollTo(0, Math.min(targetY, maxY));
+      return;
+    }
+
+    window.scrollTo(0, maxY);
+    setTimeout(() => restoreWithRetry(targetY, attempt + 1), 60);
+  };
 
   useEffect(() => {
-    return () => {
-      positionsRef.current.set(location.key, window.scrollY);
+    const handleScroll = () => {
+      if (rafRef.current != null) return;
+      rafRef.current = window.requestAnimationFrame(() => {
+        rafRef.current = null;
+        savePosition(window.scrollY);
+      });
     };
-  }, [location.key]);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      savePosition(window.scrollY);
+    };
+  }, [location.key, location.pathname, location.search]);
 
   useEffect(() => {
-    if (navigationType === 'POP') {
-      const savedPosition = positionsRef.current.get(location.key);
-      window.scrollTo(0, savedPosition ?? 0);
+    if (navigationType === "POP") {
+      const savedPosition = readSavedPosition();
+      const target = savedPosition ?? 0;
+      setTimeout(() => restoreWithRetry(target), 0);
       return;
     }
 
@@ -36,9 +101,9 @@ function ScrollRestoration() {
 
 function ScrollRestorationManager() {
   useEffect(() => {
-    if ('scrollRestoration' in window.history) {
+    if ("scrollRestoration" in window.history) {
       const previous = window.history.scrollRestoration;
-      window.history.scrollRestoration = 'manual';
+      window.history.scrollRestoration = "manual";
       return () => {
         window.history.scrollRestoration = previous;
       };
@@ -59,13 +124,13 @@ function MissingRouteParamPage({
     <div className="player-info-page">
       <div className="player-card">
         <h1>{title}</h1>
-        <p>
-          {description}
-        </p>
-        <p>
-          Example: {example}
-        </p>
-        <Link className="player-button" to={linkTo} style={{ display: 'inline-block', width: 'auto' }}>
+        <p>{description}</p>
+        <p>Example: {example}</p>
+        <Link
+          className="player-button"
+          to={linkTo}
+          style={{ display: "inline-block", width: "auto" }}
+        >
           {linkLabel}
         </Link>
       </div>
@@ -114,7 +179,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </SettingsProvider>
-  )
+  );
 }
 
-export default App
+export default App;
