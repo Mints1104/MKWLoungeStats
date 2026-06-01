@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType, Link } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import './App.css'
 import Navigation from './components/Navigation'
 import PlayerInfo from './PlayerInfo'
@@ -10,12 +10,26 @@ import TableInfo from './TableInfo'
 import Stats from './Stats'
 import { SettingsProvider } from './context/SettingsContext.jsx'
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
+function ScrollRestoration() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const positionsRef = useRef(new Map());
 
   useEffect(() => {
+    return () => {
+      positionsRef.current.set(location.key, window.scrollY);
+    };
+  }, [location.key]);
+
+  useEffect(() => {
+    if (navigationType === 'POP') {
+      const savedPosition = positionsRef.current.get(location.key);
+      window.scrollTo(0, savedPosition ?? 0);
+      return;
+    }
+
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [location.key, navigationType]);
 
   return null;
 }
@@ -64,7 +78,7 @@ function App() {
     <SettingsProvider>
       <BrowserRouter>
         <ScrollRestorationManager />
-        <ScrollToTop />
+        <ScrollRestoration />
         <Navigation />
         <Routes>
           <Route path="/" element={<PlayerInfo />} />
