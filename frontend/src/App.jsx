@@ -28,6 +28,7 @@ function ScrollRestoration() {
   const navigationType = useNavigationType();
   const positionsRef = useRef(new Map());
   const rafRef = useRef(null);
+  const scrollYRef = useRef(0);
 
   const scrollKey = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -85,6 +86,7 @@ function ScrollRestoration() {
 
   useEffect(() => {
     const handleScroll = () => {
+      scrollYRef.current = window.scrollY;
       if (rafRef.current != null) return;
       rafRef.current = window.requestAnimationFrame(() => {
         rafRef.current = null;
@@ -100,7 +102,6 @@ function ScrollRestoration() {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-      savePosition(window.scrollY);
     };
   }, [scrollKey, savePosition]);
 
@@ -108,13 +109,18 @@ function ScrollRestoration() {
     const savedPosition = readSavedPosition();
     if (savedPosition != null) {
       restoreWithRetry(savedPosition);
-      return;
-    }
-
-    if (navigationType === "PUSH") {
+    } else if (navigationType === "PUSH") {
       window.scrollTo(0, 0);
     }
-  }, [scrollKey, navigationType, readSavedPosition, restoreWithRetry]);
+
+    return () => {
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      savePosition(scrollYRef.current);
+    };
+  }, [scrollKey, navigationType, readSavedPosition, restoreWithRetry, savePosition]);
 
   return null;
 }
