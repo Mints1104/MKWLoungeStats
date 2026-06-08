@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculateScoreDistribution } from "../chartUtils";
+import {
+  calculateScoreDistribution,
+  MMR_CHART_Y_DOMAIN,
+} from "../chartUtils";
 
 describe("chartUtils", () => {
   describe("calculateScoreDistribution", () => {
@@ -73,6 +76,21 @@ describe("chartUtils", () => {
       // Current implementation only counts numeric scores that fit a defined range.
       // `null` is coerced to 0, while `undefined` and `NaN` are ignored.
       expect(totalCount).toBe(2);
+    });
+  });
+
+  describe("MMR_CHART_Y_DOMAIN", () => {
+    it("should clamp the Y-axis floor to 0", () => {
+      const [minDomain] = MMR_CHART_Y_DOMAIN;
+      expect(minDomain(0)).toBe(0);
+      expect(minDomain(25)).toBe(0);
+      expect(minDomain(50)).toBe(0);
+      expect(minDomain(100)).toBe(50);
+    });
+
+    it("should add padding above the data maximum", () => {
+      const [, maxDomain] = MMR_CHART_Y_DOMAIN;
+      expect(maxDomain(1000)).toBe(1050);
     });
   });
 });

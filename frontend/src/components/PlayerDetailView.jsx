@@ -11,6 +11,7 @@ import { calculateEventStats } from "../utils/playerStats";
 import {
   calculateMmrHistoryData,
   calculateScoreDistribution,
+  MMR_CHART_Y_DOMAIN,
 } from "../utils/chartUtils";
 import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
@@ -637,7 +638,7 @@ function PlayerDetailView({
                 <YAxis
                   stroke="#9ca3af"
                   label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                  domain={["dataMin - 50", "dataMax + 50"]}
+                  domain={MMR_CHART_Y_DOMAIN}
                 />
                 <Tooltip
                   contentStyle={{

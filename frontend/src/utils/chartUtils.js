@@ -140,3 +140,9 @@ export function calculateComparisonMmrData(playersData) {
 
   return data;
 }
+
+/** Y-axis domain for MMR charts; floor is clamped to 0 since MMR cannot go negative */
+export const MMR_CHART_Y_DOMAIN = [
+  (min) => Math.max(0, min - 50),
+  (max) => max + 50,
+];

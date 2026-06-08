@@ -11,7 +11,10 @@ const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })
 const Legend = lazy(() => import('recharts').then(m => ({ default: m.Legend })));
 const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
 import { loungeApi } from "./api/loungeApi";
-import { calculateComparisonMmrData } from "./utils/chartUtils";
+import {
+  calculateComparisonMmrData,
+  MMR_CHART_Y_DOMAIN,
+} from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
@@ -299,7 +302,7 @@ function PlayerComparison() {
                                         <YAxis
                                             stroke="#9ca3af"
                                             label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                                            domain={["dataMin - 50", "dataMax + 50"]}
+                                            domain={MMR_CHART_Y_DOMAIN}
                                         />
                                         <Tooltip
                                             contentStyle={{
