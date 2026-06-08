@@ -59,6 +59,17 @@ function getEventTier(event) {
   return event.tier.trim();
 }
 
+function DetailStatRow({ label, children, valueClassName = "" }) {
+  return (
+    <div className="player-detail-stat-row">
+      <span className="recent-stat-label">{label}</span>
+      <span className={`recent-stat-value ${valueClassName}`.trim()}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
 function PlayerDetailView({
   playerDetails,
   season = 2,
@@ -499,6 +510,8 @@ function PlayerDetailView({
 
   if (!playerDetails) return null;
 
+  const nextRankText = getNextRank(playerDetails.mmr, season, mmrType);
+
   return (
     <div className="player-results">
       <div className="player-summary stats">
@@ -515,14 +528,17 @@ function PlayerDetailView({
             {playerDetails.name}
           </span>
         </h2>
-        <p>Player ID: {playerDetails.playerId}</p>
-        <p>Overall Rank: #{playerDetails.overallRank}</p>
-        <p>Current Rank: {playerDetails.rank}</p>
-        <p>{getNextRank(playerDetails.mmr, season, mmrType)}</p>
-        <p>Current MMR: {playerDetails.mmr}</p>
-        <p>Highest MMR: {playerDetails.maxMmr}</p>
-        <p>
-          Highest Score:{" "}
+        <DetailStatRow label="Player ID">{playerDetails.playerId}</DetailStatRow>
+        <DetailStatRow label="Overall Rank">
+          #{playerDetails.overallRank}
+        </DetailStatRow>
+        <DetailStatRow label="Current Rank">{playerDetails.rank}</DetailStatRow>
+        {nextRankText && (
+          <DetailStatRow label="Next Rank">{nextRankText}</DetailStatRow>
+        )}
+        <DetailStatRow label="Current MMR">{playerDetails.mmr}</DetailStatRow>
+        <DetailStatRow label="Highest MMR">{playerDetails.maxMmr}</DetailStatRow>
+        <DetailStatRow label="Highest Score">
           {highestScoreData && highestScoreData.changeId != null ?
             <button
               type="button"
@@ -539,9 +555,8 @@ function PlayerDetailView({
           : highestScoreData ?
             highestScoreData.score
           : "N/A"}
-        </p>
-        <p>
-          Average Score:{" "}
+        </DetailStatRow>
+        <DetailStatRow label="Average Score">
           {playerDetails.averageScore != null ?
             playerDetails.averageScore.toFixed(2)
           : "N/A"}
@@ -553,28 +568,28 @@ function PlayerDetailView({
               {avg24 != null ? `${avg24.toFixed(2)} 24p` : "N/A 24p"})
             </>
           )}
-        </p>
-        <p>
-          Partner Average Score:{" "}
+        </DetailStatRow>
+        <DetailStatRow label="Partner Average Score">
           {playerDetails.partnerAverage != null ?
             playerDetails.partnerAverage.toFixed(2)
           : "N/A"}
-        </p>
-        <p>
-          Total Events Played: {playerDetails.eventsPlayed}
+        </DetailStatRow>
+        <DetailStatRow label="Total Events Played">
+          {playerDetails.eventsPlayed}
           {season < 2 && (
             <>
               {" "}
               ({twelveCount} 12p / {twentyFourCount} 24p)
             </>
           )}
-        </p>
-        <p
-          className={`player-winrate ${
+        </DetailStatRow>
+        <DetailStatRow
+          label="Win Rate"
+          valueClassName={`player-winrate ${
             playerDetails.winRate >= 0.5 ? "positive" : "negative"
           }`}
         >
-          Win Rate: {(playerDetails.winRate * 100).toFixed(2)}%
+          {(playerDetails.winRate * 100).toFixed(2)}%
           {season < 2 && (
             <>
               {" "}
@@ -589,7 +604,7 @@ function PlayerDetailView({
               )
             </>
           )}
-        </p>
+        </DetailStatRow>
 
       </div>
 
@@ -597,13 +612,14 @@ function PlayerDetailView({
       <div className="player-summary mmr">
         <h3>MMR History</h3>
         <div
+          className="mmr-chart-frame"
           role="img"
           aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
         >
           <Suspense
             fallback={<div className="chart-loader">Loading chart...</div>}
           >
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={mmrHistoryData}
                 margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
@@ -732,9 +748,8 @@ function PlayerDetailView({
       </div>
 
       <div className="player-events-card">
-        <div className="player-events-header">
-          <h3>Recent Events</h3>
-          <div className="events-controls">
+        <h3>Recent Events</h3>
+        <div className="events-controls">
             <Selector
               options={[
                 { value: "recent", label: "Most Recent" },
@@ -929,7 +944,6 @@ function PlayerDetailView({
                   </div>
                 );
               })()}
-          </div>
         </div>
         {eventsToShow.length > 0 && (
           <div className="recent-stats-row">

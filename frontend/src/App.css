@@ -251,6 +251,9 @@ body {
 }
 
 .player-results {
+  --panel-bg: rgba(15, 23, 42, 0.97);
+  --panel-border: rgba(148, 163, 184, 0.3);
+  --panel-radius: 18px;
   width: 100%;
   margin: 0;
   display: flex;
@@ -268,12 +271,21 @@ body {
       "stats mmr mmr"
       "score events events";
     gap: 1.5rem;
+    align-items: stretch;
   }
 
   .player-results > .player-summary.stats { grid-area: stats; }
-  .player-results > .player-summary.mmr { grid-area: mmr; }
+  .player-results > .player-summary.mmr {
+    grid-area: mmr;
+    min-height: 400px;
+  }
   .player-results > .player-summary.score { grid-area: score; }
   .player-results > .player-events-card { grid-area: events; }
+
+  .player-results > .player-summary.stats .player-detail-stat-row {
+    grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+    gap: 0.55rem;
+  }
 
   /* keep the list spanning full width under the events card */
   .player-results .events-grid,
@@ -293,11 +305,11 @@ body {
 .player-summary,
 .player-events-card {
   width: 100%;
-  background: rgba(15, 23, 42, 0.97);
-  border-radius: 18px;
+  background: var(--panel-bg);
+  border-radius: var(--panel-radius);
   padding: 1.4rem 1.35rem 1.55rem;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--panel-border);
   text-align: left;
 }
 
@@ -310,14 +322,45 @@ body {
   gap: 0.5rem;
 }
 
-.player-summary p {
-  margin: 0.25rem 0;
-  font-size: 0.95rem;
+.player-detail-stat-row {
+  display: grid;
+  grid-template-columns: minmax(8.25rem, max-content) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  margin: 0.38rem 0;
+}
+
+.player-detail-stat-row .recent-stat-label {
+  display: inline;
+  margin-bottom: 0;
+}
+
+.player-detail-stat-row .recent-stat-value {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.player-summary h3,
+.player-events-header h3,
+.player-events-card > h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.player-summary > h3,
+.player-events-card > h3 {
+  margin-bottom: 0.75rem;
+}
+
+.mmr-chart-frame {
+  height: 315px;
 }
 
 .player-winrate {
-  margin-top: 0.75rem;
-  font-weight: 600;
+  margin-top: 0;
 }
 
 .positive {
@@ -336,11 +379,6 @@ body {
   color: #f97373;
 }
 
-.player-events h3 {
-  margin: 0 0 0.75rem;
-  text-align: left;
-}
-
 .player-events-header {
   display: flex;
   justify-content: space-between;
@@ -352,10 +390,22 @@ body {
 .events-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   font-size: 0.85rem;
   color: #e5e7eb;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  margin-bottom: 0.75rem;
+}
+
+.events-controls .season-select {
+  min-width: 110px;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.events-controls .sort-selector {
+  flex-shrink: 0;
 }
 
 .events-count {
@@ -365,8 +415,8 @@ body {
 }
 
 .events-count-input {
-  width: 4.5rem; /* Slightly wider */
-  padding: 0.75rem 0.5rem; /* Match vertical padding to .player-input */
+  width: 4.5rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.7);
   background: rgba(15, 23, 42, 0.9);
@@ -513,6 +563,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .mmr-chart-frame {
+    height: 300px;
+  }
+
   .player-events-header {
     flex-direction: column;
     align-items: flex-start;
@@ -520,39 +574,52 @@ body {
 
   .events-controls {
     width: 100%;
+    overflow-x: visible;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.5rem 0.55rem;
     align-items: center;
   }
 
-  /* Row 1: sort selector grows to fill space, Mode pins to right */
-  .sort-selector {
-    flex: 1;
-    min-width: 0;
+  .events-controls .sort-selector {
     order: 1;
-    display: flex;
+    flex: 1 1 8.5rem;
+    min-width: 0;
   }
 
-  /* Make select fill the growing sort-selector div */
-  .sort-selector select.season-select {
-    flex: 1;
+  .events-controls .sort-selector select.season-select {
     width: 100% !important;
     min-width: 0 !important;
   }
 
-  .game-mode-filter {
-    order: 1;
-  }
-
-  /* Row 2: event count controls take their own full row */
   .events-count {
     order: 2;
-    width: 100%;
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    min-width: 0;
   }
 
-  /* Row 2: season 12p/24p filter also goes below */
-  .events-controls > .filter-toggle {
+  .events-count-input {
+    flex: 0 0 4rem;
+    width: 4rem;
+  }
+
+  .show-all-events-btn {
+    margin-left: auto;
+  }
+
+  .events-controls .filter-toggle {
     order: 2;
+    flex: 0 1 auto;
+  }
+
+  .events-controls .game-mode-filter {
+    order: 1;
+    flex: 0 1 auto;
+  }
+
+  .events-controls .game-mode-trigger {
+    min-width: 5rem;
   }
 }
 
@@ -565,9 +632,9 @@ body {
 
 .recent-stat {
   padding: 0.6rem 0.9rem;
-  border-radius: 12px;
-  background: radial-gradient(circle at top left, #020617, #020617);
-  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-radius: var(--panel-radius, 18px);
+  background: var(--panel-bg, rgba(15, 23, 42, 0.97));
+  border: 1px solid var(--panel-border, rgba(148, 163, 184, 0.3));
 }
 
 .recent-stat-label {
@@ -617,6 +684,7 @@ body {
 /* Keep all main cards visually aligned horizontally */
 .player-card,
 .player-summary,
+.player-events-card,
 .event-card {
   padding-inline: 2rem;
 }
@@ -1404,6 +1472,7 @@ body {
 
   .player-card,
   .player-summary,
+  .player-events-card,
   .event-card {
     padding-inline: 1rem;
   }
