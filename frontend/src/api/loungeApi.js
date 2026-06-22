@@ -2,6 +2,7 @@
  * API service for Mario Kart Lounge endpoints.
  */
 import logger from "../utils/logger.js";
+import { CURRENT_SEASON } from "../config/seasons";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
@@ -113,11 +114,11 @@ export const loungeApi = {
   /**
    * Fetch detailed player information including MMR history
    * @param {string} name - Player name
-   * @param {number} season - Season number (default: 2)
+   * @param {number} season - Season number (default: current season)
    * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
-  async getPlayerDetails(name, season = 2, mmrType = 24, signal) {
+  async getPlayerDetails(name, season = CURRENT_SEASON, mmrType = 24, signal) {
     if (!name?.trim()) {
       throw new Error("Player name is required");
     }
@@ -138,11 +139,11 @@ export const loungeApi = {
   /**
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
-   * @param {number} season - Season number (default: 2)
+   * @param {number} season - Season number (default: current season)
    * @param {number} mmrType - MMR format (12 or 24, default: 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
-  async comparePlayers(names, season = 2, mmrType = 24, signal) {
+  async comparePlayers(names, season = CURRENT_SEASON, mmrType = 24, signal) {
     if (!Array.isArray(names) || names.length < 2 || names.length > 4) {
       throw new Error("Must provide between 2 and 4 player names");
     }
@@ -177,7 +178,7 @@ export const loungeApi = {
    * @param {number} params.minMmr - Minimum MMR filter
    * @param {number} params.maxMmr - Maximum MMR filter
    * @param {string} params.search - Player name search query
-   * @param {number} params.season - Season number (default: 2)
+   * @param {number} params.season - Season number (default: current season)
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
   async getLeaderboard(params = {}, signal) {
@@ -190,7 +191,7 @@ export const loungeApi = {
       minEventsPlayed,
       maxEventsPlayed,
       search,
-      season = 2,
+      season = CURRENT_SEASON,
       mmrType = 24,
       country,
     } = params;
@@ -266,12 +267,12 @@ export const loungeApi = {
   /**
    * Fetch global player statistics (players per rank, activity, etc.)
    * @param {Object} params - Query parameters
-   * @param {number} params.season - Season number (default: 2)
+   * @param {number} params.season - Season number (default: current season)
    * @param {string} params.game - Game identifier (default: "mkworld")
    * @param {AbortSignal} signal - Optional abort signal for cancellation
    */
   async getPlayerStats(params = {}, signal) {
-    const { season = 2, game = "mkworld" } = params;
+    const { season = CURRENT_SEASON, game = "mkworld" } = params;
 
     const seasonNum = Number(season);
     if (!Number.isInteger(seasonNum) || seasonNum < 0 || seasonNum > 100) {

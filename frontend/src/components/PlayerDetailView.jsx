@@ -17,6 +17,7 @@ import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
 import EventCard from "./EventCard";
 import Selector from "./Selector";
+import { CURRENT_SEASON } from "../config/seasons";
 
 // Lazy load chart components
 const LineChart = lazy(() =>
@@ -72,7 +73,7 @@ function DetailStatRow({ label, children, valueClassName = "" }) {
 
 function PlayerDetailView({
   playerDetails,
-  season = 2,
+  season = CURRENT_SEASON,
   mmrType = 24,
   gradientIdPrefix = "mmrGradient",
 }) {

@@ -48,3 +48,33 @@ test("GET /api/table:tableid returns table data on valid id", async (t) => {
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, fakeTable);
 });
+
+test("GET /api/player/details/:name defaults to season 3", async (t) => {
+  t.mock.method(axios, "get", async (url) => {
+    assert.match(String(url), /season=3/);
+    return { data: { name: "SomePlayer" } };
+  });
+
+  const response = await request(app).get(
+    "/api/player/details/SomePlayer?game=mkworld24p",
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { name: "SomePlayer" });
+});
+
+test("GET /api/leaderboard defaults to season 3", async (t) => {
+  t.mock.method(axios, "get", async (url) => {
+    assert.match(String(url), /season=3/);
+    return { data: { data: [], totalPlayers: 0 } };
+  });
+
+  const response = await request(app).get("/api/leaderboard?game=mkworld24p");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    data: [],
+    totalCount: 0,
+    totalPlayers: 0,
+  });
+});

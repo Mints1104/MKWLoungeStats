@@ -9,6 +9,7 @@ import Flag from "react-world-flags";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { CURRENT_SEASON } from "./config/seasons";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
 import {
   ResponsiveContainer,
@@ -46,7 +47,7 @@ function Stats() {
   const { loading, error, run } = useAbortableRequest();
   const { season, setSeason, setSelectedMmrType, mmrType } =
     useSeasonMmrSelection({
-      initialSeason: 2,
+      initialSeason: CURRENT_SEASON,
       initialMmrType: null,
       defaultMmrType: defaultGameMode,
     });
@@ -95,8 +96,9 @@ function Stats() {
     const totalPlayers = stats.totalPlayers || 0;
     if (!totalPlayers) return [];
 
-    const order = Array.isArray(stats.divisionsToTier?.Q)
-      ? [...stats.divisionsToTier.Q]
+    const order =
+      Array.isArray(stats.divisionsToTier?.Q) ?
+        [...stats.divisionsToTier.Q]
       : undefined;
 
     const byTier = new Map(
@@ -292,8 +294,14 @@ function Stats() {
               label="Total Mogis"
               value={formatNumber(stats.totalMogis)}
             />
-            <StatCard label="Average MMR" value={formatNumber(stats.averageMmr)} />
-            <StatCard label="Median MMR" value={formatNumber(stats.medianMmr)} />
+            <StatCard
+              label="Average MMR"
+              value={formatNumber(stats.averageMmr)}
+            />
+            <StatCard
+              label="Median MMR"
+              value={formatNumber(stats.medianMmr)}
+            />
           </div>
         )}
       </div>
@@ -587,7 +595,9 @@ function Stats() {
                       : "N/A"}
                     </td>
                     <td>
-                      {row.topSixMmr != null ? formatNumber(row.topSixMmr) : "N/A"}
+                      {row.topSixMmr != null ?
+                        formatNumber(row.topSixMmr)
+                      : "N/A"}
                     </td>
                     <td className="country-top-players">
                       {row.topPlayers.length > 0 ?

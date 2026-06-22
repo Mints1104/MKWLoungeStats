@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { loungeApi } from "../api/loungeApi";
 import { useAbortableRequest } from "./useAbortableRequest";
+import { CURRENT_SEASON } from "../config/seasons";
 
 /**
  * Shared hook for requesting detailed player information from the backend.
@@ -11,7 +12,7 @@ function usePlayerDetails(initialData = null) {
   const { loading, error, setError, run } = useAbortableRequest();
 
   const fetchPlayerDetails = useCallback(
-    async (playerName, season = 2, mmrType = 24) => {
+    async (playerName, season = CURRENT_SEASON, mmrType = 24) => {
       if (!playerName || !playerName.trim()) {
         setError("Please enter a name");
         setPlayerDetails(null);

@@ -22,6 +22,7 @@ import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
+import { CURRENT_SEASON } from "./config/seasons";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
@@ -33,7 +34,7 @@ function PlayerComparison() {
     const { loading, error, run, setError } = useAbortableRequest();
     const { season, setSeason, setSelectedMmrType, mmrType } =
         useSeasonMmrSelection({
-            initialSeason: 2,
+            initialSeason: CURRENT_SEASON,
             initialMmrType: null,
             defaultMmrType: defaultGameMode,
         });

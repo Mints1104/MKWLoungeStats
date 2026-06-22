@@ -27,6 +27,21 @@ describe("playerUtils", () => {
       expect(getRankForMmrValue(14500).name).toBe("Master");
       expect(getRankForMmrValue(14499).name).toBe("Diamond");
     });
+
+    it("should use season 3 thresholds for 12-player MMR", () => {
+      expect(getRankForMmrValue(7999, 3, 12).name).toBe("Gold");
+      expect(getRankForMmrValue(8000, 3, 12).name).toBe("Platinum");
+      expect(getRankForMmrValue(9499, 3, 12).name).toBe("Platinum");
+      expect(getRankForMmrValue(9500, 3, 12).name).toBe("Sapphire");
+      expect(getRankForMmrValue(14999, 3, 12).name).toBe("Master");
+      expect(getRankForMmrValue(15000, 3, 12).name).toBe("Grandmaster");
+    });
+
+    it("should preserve season 2 thresholds for 12-player MMR", () => {
+      expect(getRankForMmrValue(7500, 2, 12).name).toBe("Platinum");
+      expect(getRankForMmrValue(9000, 2, 12).name).toBe("Sapphire");
+      expect(getRankForMmrValue(14500, 2, 12).name).toBe("Grandmaster");
+    });
   });
 
   describe("getRankColor", () => {

@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
+import { CURRENT_SEASON } from "../config/seasons";
 
 function resolveInitialValue(value) {
   return typeof value === "function" ? value() : value;
 }
 
-export function parseSeasonValue(value, fallback = 2) {
+export function parseSeasonValue(value, fallback = CURRENT_SEASON) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
@@ -19,7 +20,7 @@ export function parseNullableMmrType(value) {
 }
 
 export function useSeasonMmrSelection({
-  initialSeason = 2,
+  initialSeason = CURRENT_SEASON,
   initialMmrType = null,
   defaultMmrType = 24,
 } = {}) {

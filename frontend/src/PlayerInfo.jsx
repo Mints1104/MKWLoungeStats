@@ -6,6 +6,7 @@ import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { CURRENT_SEASON } from "./config/seasons";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
@@ -45,9 +46,9 @@ function PlayerInfo() {
       initialSeason: () => {
         try {
           const saved = sessionStorage.getItem("playerInfoSeason");
-          return saved !== null ? Number(saved) : 2;
+          return saved !== null ? Number(saved) : CURRENT_SEASON;
         } catch {
-          return 2;
+          return CURRENT_SEASON;
         }
       },
       initialMmrType: null,

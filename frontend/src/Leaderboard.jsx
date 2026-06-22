@@ -11,6 +11,7 @@ import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
+import { CURRENT_SEASON } from "./config/seasons";
 
 function Leaderboard() {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ function Leaderboard() {
     } = useSeasonMmrSelection({
         initialSeason: () => {
             const param = searchParams.get("season");
-            return param ? Number(param) : 2;
+            return param ? Number(param) : CURRENT_SEASON;
         },
         initialMmrType: () => {
             const param = searchParams.get("mmrType");
@@ -64,7 +65,7 @@ function Leaderboard() {
     // Sync URL params
     useEffect(() => {
         const params = new URLSearchParams();
-        if (season !== 2) params.set("season", season);
+        if (season !== CURRENT_SEASON) params.set("season", season);
         if (mmrType !== defaultGameMode) params.set("mmrType", mmrType);
         if (currentPage !== 1) params.set("page", currentPage);
         if (pageSize !== 50) params.set("pageSize", pageSize);

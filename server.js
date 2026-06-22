@@ -87,6 +87,7 @@ app.use((req, res, next) => {
 const MAX_CACHE_SIZE = 1000;
 const MAX_PLAYER_NAME_LENGTH = 50;
 const MAX_SEARCH_LENGTH = 100;
+const CURRENT_SEASON = 3;
 const ALLOWED_GAMES = new Set(["mkworld", "mkworld12p", "mkworld24p"]);
 
 // Input validation and sanitization
@@ -344,7 +345,7 @@ app.get("/api/player/details/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "2");
+    const seasonValidation = validateSeason(req.query.season || String(CURRENT_SEASON));
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
@@ -409,7 +410,7 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "2");
+    const seasonValidation = validateSeason(req.query.season || String(CURRENT_SEASON));
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
@@ -467,7 +468,7 @@ app.get("/api/players/compare", async (req, res) => {
         .json({ error: "Please provide 1-4 player names separated by commas" });
     }
 
-    const seasonValidation = validateSeason(req.query.season || "2");
+    const seasonValidation = validateSeason(req.query.season || String(CURRENT_SEASON));
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }
@@ -549,7 +550,7 @@ app.get("/api/leaderboard", async (req, res) => {
       country,
     } = req.query;
 
-    const seasonValidation = validateSeason(season || "2");
+    const seasonValidation = validateSeason(season || String(CURRENT_SEASON));
     if (!seasonValidation.valid) {
       return res.status(400).json({ error: seasonValidation.error });
     }

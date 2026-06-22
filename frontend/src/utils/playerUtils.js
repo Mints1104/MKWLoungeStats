@@ -32,7 +32,12 @@ export function getThresholds(season, mmrType) {
   if (Number(season) < 2) {
     return RANK_THRESHOLDS;
   }
-  return Number(mmrType) === 12 ? RANK_THRESHOLDS_12 : RANK_THRESHOLDS_24P;
+  if (Number(mmrType) !== 12) {
+    return RANK_THRESHOLDS_24P;
+  }
+  return Number(season) >= 3 ?
+      RANK_THRESHOLDS_12P_SEASON_3
+    : RANK_THRESHOLDS_12P_SEASON_2;
 }
 
 /**
@@ -108,7 +113,7 @@ export const RANK_THRESHOLDS = [
   { name: "Grandmaster", min: 13500, max: Infinity },
 ];
 
-export const RANK_THRESHOLDS_12 = [
+export const RANK_THRESHOLDS_12P_SEASON_2 = [
   { name: "Iron", min: 0, max: 1999 },
   { name: "Bronze", min: 2000, max: 3999 },
   { name: "Silver", min: 4000, max: 5999 },
@@ -119,6 +124,19 @@ export const RANK_THRESHOLDS_12 = [
   { name: "Diamond", min: 12000, max: 13499 },
   { name: "Master", min: 13500, max: 14499 },
   { name: "Grandmaster", min: 14500, max: Infinity },
+];
+
+export const RANK_THRESHOLDS_12P_SEASON_3 = [
+  { name: "Iron", min: 0, max: 1999 },
+  { name: "Bronze", min: 2000, max: 3999 },
+  { name: "Silver", min: 4000, max: 5999 },
+  { name: "Gold", min: 6000, max: 7999 },
+  { name: "Platinum", min: 8000, max: 9499 },
+  { name: "Sapphire", min: 9500, max: 10999 },
+  { name: "Ruby", min: 11000, max: 12499 },
+  { name: "Diamond", min: 12500, max: 13999 },
+  { name: "Master", min: 14000, max: 14999 },
+  { name: "Grandmaster", min: 15000, max: Infinity },
 ];
 
 export const RANK_THRESHOLDS_24P = [
