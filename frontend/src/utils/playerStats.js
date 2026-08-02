@@ -1,3 +1,71 @@
+// Squad Queue events are marked by the upstream API with tier "SQ" (not by the
+// presence of partners: non-SQ team events exist too, e.g. tier "S" with numTeams 12).
+export const isSquadQueueEvent = (event) =>
+  typeof event?.tier === "string" && event.tier.trim().toUpperCase() === "SQ";
+
+const isNumericScore = (score) =>
+  typeof score === "number" && !Number.isNaN(score);
+
+const averageScoreOf = (events) => {
+  const withScores = events.filter((event) => isNumericScore(event.score));
+  if (!withScores.length) return null;
+  return (
+    withScores.reduce((acc, event) => acc + event.score, 0) / withScores.length
+  );
+};
+
+const averagePartnerScoreOf = (events) => {
+  // Flattened across events: a 3v3 contributes 2 scores, an FFA contributes none.
+  const partnerScores = events
+    .flatMap((event) =>
+      Array.isArray(event.partnerScores) ? event.partnerScores : [],
+    )
+    .filter(isNumericScore);
+  if (!partnerScores.length) return null;
+  return (
+    partnerScores.reduce((acc, score) => acc + score, 0) / partnerScores.length
+  );
+};
+
+// Score stats for an arbitrary slice of events (e.g. the currently displayed
+// "recent events"). Penalties and other non-table events are excluded.
+// The noSq* variants use the same formulas the Lounge API uses for
+// noSQAverageScore / noSQPartnerAverage.
+export const calculateRecentScoreStats = (events = []) => {
+  const empty = {
+    avgScore: null,
+    bestScore: null,
+    partnerAvgScore: null,
+    noSqAvgScore: null,
+    noSqPartnerAvgScore: null,
+  };
+
+  if (!Array.isArray(events) || events.length === 0) return empty;
+
+  const tableEvents = events.filter((event) => event.reason === "Table");
+  if (!tableEvents.length) return empty;
+
+  const noSqTableEvents = tableEvents.filter(
+    (event) => !isSquadQueueEvent(event),
+  );
+
+  const withScores = tableEvents.filter((event) => isNumericScore(event.score));
+
+  return {
+    avgScore: averageScoreOf(tableEvents),
+    bestScore:
+      withScores.length ?
+        withScores.reduce(
+          (max, event) => (event.score > max ? event.score : max),
+          withScores[0].score,
+        )
+      : null,
+    partnerAvgScore: averagePartnerScoreOf(tableEvents),
+    noSqAvgScore: averageScoreOf(noSqTableEvents),
+    noSqPartnerAvgScore: averagePartnerScoreOf(noSqTableEvents),
+  };
+};
+
 export const calculateEventStats = (mmrChanges = []) => {
   if (!Array.isArray(mmrChanges) || mmrChanges.length === 0) {
     return {

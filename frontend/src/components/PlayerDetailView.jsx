@@ -7,7 +7,10 @@ import {
   getRankColor,
   getEventFormat,
 } from "../utils/playerUtils";
-import { calculateEventStats } from "../utils/playerStats";
+import {
+  calculateEventStats,
+  calculateRecentScoreStats,
+} from "../utils/playerStats";
 import {
   calculateMmrHistoryData,
   calculateScoreDistribution,
@@ -54,6 +57,15 @@ const ResponsiveContainer = lazy(() =>
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
 const GAME_MODE_FILTER_KEY = "playerGameModeFilterPref";
 const TIER_FILTER_KEY = "playerTierFilterPref";
+const SORT_METHOD_KEY = "playerSortMethodPref";
+
+const SORT_OPTIONS = [
+  { value: "recent", label: "Most Recent" },
+  { value: "gain", label: "Biggest Gains" },
+  { value: "loss", label: "Biggest Losses" },
+  { value: "score_asc", label: "Scores (Asc)" },
+  { value: "score_desc", label: "Scores (Desc)" },
+];
 
 function getEventTier(event) {
   if (typeof event?.tier !== "string") return "";
@@ -120,7 +132,18 @@ function PlayerDetailView({
   );
   const [eventFilter, setEventFilter] = useState("all");
   const [scoreFilter, setScoreFilter] = useState("all");
-  const [sortMethod, setSortMethod] = useState("recent");
+  // Restore sort order so it survives navigating to a table and back
+  const [sortMethod, setSortMethod] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(SORT_METHOD_KEY);
+      if (saved && SORT_OPTIONS.some((option) => option.value === saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return "recent";
+  });
   // Set of game mode labels (e.g. "FFA", "2v2") that are currently hidden
   const [disabledModes, setDisabledModes] = useState(() => {
     try {
@@ -187,6 +210,15 @@ function PlayerDetailView({
       // ignore
     }
   }, [disabledTiers]);
+
+  // Persist sort order to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SORT_METHOD_KEY, sortMethod);
+    } catch {
+      // ignore
+    }
+  }, [sortMethod]);
 
   // Close open dropdowns when clicking outside
   useEffect(() => {
@@ -414,9 +446,14 @@ function PlayerDetailView({
   ]);
 
   // Stats for the currently displayed events
-  let recentAvgScore = null;
-  let recentBestScore = null;
-  let recentPartnerAvgScore = null;
+  const {
+    avgScore: recentAvgScore,
+    bestScore: recentBestScore,
+    partnerAvgScore: recentPartnerAvgScore,
+    noSqAvgScore: recentNoSqAvgScore,
+    noSqPartnerAvgScore: recentNoSqPartnerAvgScore,
+  } = calculateRecentScoreStats(eventsToShow);
+
   let recentWinRate = null;
   let largestGain = null;
   let largestLoss = null;
@@ -430,28 +467,6 @@ function PlayerDetailView({
     const tableEventsWithRank = tableEvents.filter((e) =>
       Number.isFinite(e.rank),
     );
-    const withScores = tableEvents.filter(
-      (e) => typeof e.score === "number" && !Number.isNaN(e.score),
-    );
-    if (withScores.length) {
-      const sum = withScores.reduce((acc, e) => acc + e.score, 0);
-      recentAvgScore = sum / withScores.length;
-      recentBestScore = withScores.reduce(
-        (max, e) => (e.score > max ? e.score : max),
-        withScores[0].score,
-      );
-    }
-
-    const partnerScores = tableEvents.flatMap((e) =>
-      Array.isArray(e.partnerScores) ? e.partnerScores : [],
-    );
-    const partnerScoresNumeric = partnerScores.filter(
-      (score) => typeof score === "number" && !Number.isNaN(score),
-    );
-    if (partnerScoresNumeric.length) {
-      const sum = partnerScoresNumeric.reduce((acc, score) => acc + score, 0);
-      recentPartnerAvgScore = sum / partnerScoresNumeric.length;
-    }
 
     // Win rate only counts table events where MMR increased
     const tableWins = tableEvents.filter((e) => (e.mmrDelta ?? 0) > 0).length;
@@ -570,9 +585,19 @@ function PlayerDetailView({
             </>
           )}
         </DetailStatRow>
+        <DetailStatRow label="No SQ Average Score">
+          {playerDetails.noSQAverageScore != null ?
+            playerDetails.noSQAverageScore.toFixed(2)
+          : "N/A"}
+        </DetailStatRow>
         <DetailStatRow label="Partner Average Score">
           {playerDetails.partnerAverage != null ?
             playerDetails.partnerAverage.toFixed(2)
+          : "N/A"}
+        </DetailStatRow>
+        <DetailStatRow label="No SQ Partner Average">
+          {playerDetails.noSQPartnerAverage != null ?
+            playerDetails.noSQPartnerAverage.toFixed(2)
           : "N/A"}
         </DetailStatRow>
         <DetailStatRow label="Total Events Played">
@@ -752,13 +777,7 @@ function PlayerDetailView({
         <h3>Recent Events</h3>
         <div className="events-controls">
             <Selector
-              options={[
-                { value: "recent", label: "Most Recent" },
-                { value: "gain", label: "Biggest Gains" },
-                { value: "loss", label: "Biggest Losses" },
-                { value: "score_asc", label: "Scores (Asc)" },
-                { value: "score_desc", label: "Scores (Desc)" },
-              ]}
+              options={SORT_OPTIONS}
               value={sortMethod}
               onChange={setSortMethod}
               className="sort-selector"
@@ -993,10 +1012,26 @@ function PlayerDetailView({
               value={recentAvgScore != null ? recentAvgScore.toFixed(2) : "N/A"}
             />
             <StatCard
+              label="No SQ avg"
+              value={
+                recentNoSqAvgScore != null ?
+                  recentNoSqAvgScore.toFixed(2)
+                : "N/A"
+              }
+            />
+            <StatCard
               label="PAvg score"
               value={
                 recentPartnerAvgScore != null ?
                   recentPartnerAvgScore.toFixed(2)
+                : "N/A"
+              }
+            />
+            <StatCard
+              label="No SQ PAvg"
+              value={
+                recentNoSqPartnerAvgScore != null ?
+                  recentNoSqPartnerAvgScore.toFixed(2)
                 : "N/A"
               }
             />
