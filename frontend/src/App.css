@@ -1780,3 +1780,152 @@ body {
 .inline-flag {
   display: inline-block;
 }
+
+/* Stats page: activity granularity and season comparison */
+
+.stats-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stats-card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.stats-card-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.stats-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-control-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.stats-basis-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #9ca3af;
+}
+
+.stats-comparison-intro {
+  margin-top: 0;
+  margin-bottom: 0.9rem;
+}
+
+.stats-headline {
+  padding: 0.85rem 1rem;
+  border-radius: var(--panel-radius, 18px);
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.stats-headline-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stats-headline-detail {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.stats-delta-up {
+  color: #22c55e;
+}
+
+.stats-delta-down {
+  color: #f87171;
+}
+
+.stats-delta-flat {
+  color: #9ca3af;
+}
+
+.stats-season-table {
+  min-width: 560px;
+}
+
+.stats-season-table th[scope="row"] {
+  font-weight: 600;
+  text-align: left;
+}
+
+.stats-season-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.stats-season-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.stats-season-tag {
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.stats-cell-note {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.stats-overlay-section {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .stats-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats-card-controls {
+    width: 100%;
+  }
+}
+
+.stats-missing-note {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.08);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #fde68a;
+}

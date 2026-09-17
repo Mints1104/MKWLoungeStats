@@ -4,7 +4,14 @@ import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import FilterToggle from "./components/FilterToggle";
+import SeasonComparison from "./components/SeasonComparison";
 import { getRankColor } from "./utils/playerUtils";
+import {
+  bucketActivity,
+  GRANULARITY_OPTIONS,
+  GRANULARITY_VALUES,
+} from "./utils/activityStats";
 import Flag from "react-world-flags";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "./context/settingsContext";
@@ -34,12 +41,16 @@ function formatPercent(value) {
   return `${value.toFixed(1)}%`;
 }
 
-function formatDateShort(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${date.getMonth() + 1}/${date.getDate()}`;
-}
+const ACTIVITY_GRANULARITY_KEY = "statsActivityGranularityPref";
+
+// Bars clipped by the start or end of the season cover fewer days than a whole week
+// or month, so they are dimmed rather than presented as a genuine drop in activity.
+const ACTIVITY_BAR_COLOR = "#22c55e";
+const ACTIVITY_BAR_PARTIAL_COLOR = "rgba(34, 197, 94, 0.45)";
+
+// Roughly how wide each bar should be allowed to get in the horizontally scrolling
+// chart; weekly and monthly buckets are far fewer, so they need more room each.
+const BAR_MIN_WIDTH = { daily: 20, weekly: 44, monthly: 90 };
 
 function Stats() {
   const { defaultGameMode } = useSettings();
@@ -52,6 +63,18 @@ function Stats() {
       defaultMmrType: defaultGameMode,
     });
   const [isMobile, setIsMobile] = useState(false);
+  // Restore the daily/weekly/monthly choice so it survives navigating away and back
+  const [granularity, setGranularity] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(ACTIVITY_GRANULARITY_KEY);
+      if (saved && GRANULARITY_VALUES.includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return "daily";
+  });
   const navigate = useNavigate();
 
   const handleMmrTypeChange = (nextMmrType) => {
@@ -87,6 +110,14 @@ function Stats() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(ACTIVITY_GRANULARITY_KEY, granularity);
+    } catch {
+      // ignore
+    }
+  }, [granularity]);
 
   const divisionTable = useMemo(() => {
     if (!stats?.divisionData || !Array.isArray(stats.divisionData)) {
@@ -190,25 +221,15 @@ function Stats() {
       }));
   }, [stats]);
 
-  const dailyActivityData = useMemo(() => {
-    const daily = stats?.activityData?.dailyActivity || {};
-    return Object.entries(daily)
-      .map(([date, values]) => {
-        const total = values?.Total;
-        const fallbackTotal =
-          values ?
-            Object.values(values).reduce(
-              (sum, value) => sum + (Number(value) || 0),
-              0,
-            )
-          : 0;
-        return {
-          date,
-          total: Number.isFinite(total) ? Number(total) : fallbackTotal,
-        };
-      })
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [stats]);
+  const activityBuckets = useMemo(
+    () => bucketActivity(stats?.activityData?.dailyActivity, granularity),
+    [stats, granularity],
+  );
+
+  const hasPartialBuckets = useMemo(
+    () => activityBuckets.some((bucket) => bucket.isPartial),
+    [activityBuckets],
+  );
 
   const countryRows = useMemo(() => {
     const countryData = stats?.countryData || {};
@@ -497,19 +518,39 @@ function Stats() {
         </div>
       )}
 
-      {stats && dailyActivityData.length > 0 && (
+      {stats && activityBuckets.length > 0 && (
         <div className="player-card stats-card">
-          <h2 style={{ marginTop: 0, marginBottom: "1rem" }}>Daily Activity</h2>
-          <div className="stats-scroll">
+          <div className="stats-card-header">
+            <h2 className="stats-card-title">Activity Over Time</h2>
+            <div className="stats-card-controls">
+              <span className="stats-control-label" id="activity-granularity">
+                Group by
+              </span>
+              <FilterToggle
+                activeFilter={granularity}
+                onFilterChange={setGranularity}
+                options={GRANULARITY_OPTIONS}
+                ariaLabelledBy="activity-granularity"
+              />
+            </div>
+          </div>
+          <div
+            className="stats-scroll"
+            role="img"
+            aria-label={`Bar chart of Mario Kart World Lounge events per ${granularity === "daily" ? "day" : granularity.replace("ly", "")}, from ${activityBuckets[0].tooltipLabel} to ${activityBuckets[activityBuckets.length - 1].tooltipLabel}.`}
+          >
             <div
               className="stats-scroll-inner"
               style={{
-                minWidth: Math.max(640, dailyActivityData.length * 20),
+                minWidth: Math.max(
+                  640,
+                  activityBuckets.length * (BAR_MIN_WIDTH[granularity] ?? 20),
+                ),
               }}
             >
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart
-                  data={dailyActivityData}
+                  data={activityBuckets}
                   margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                 >
                   <CartesianGrid
@@ -518,15 +559,15 @@ function Stats() {
                     vertical={false}
                   />
                   <XAxis
-                    dataKey="date"
+                    dataKey="label"
                     tick={{ fontSize: 10, fill: "#e5e7eb" }}
                     axisLine={{ stroke: "rgba(148,163,184,0.6)" }}
                     tickLine={false}
-                    interval={Math.max(
-                      0,
-                      Math.floor(dailyActivityData.length / 14),
-                    )}
-                    tickFormatter={formatDateShort}
+                    interval={
+                      granularity === "daily" ?
+                        Math.max(0, Math.floor(activityBuckets.length / 14))
+                      : 0
+                    }
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: "#9ca3af" }}
@@ -545,16 +586,50 @@ function Stats() {
                     }}
                     labelStyle={{ color: "#e5e7eb" }}
                     itemStyle={{ color: "#e5e7eb" }}
-                    formatter={(value) => [formatNumber(value), "Events"]}
-                    labelFormatter={(value) => `Date: ${value}`}
+                    formatter={(value, name, item) => {
+                      const bucket = item?.payload;
+                      if (granularity === "daily" || !bucket) {
+                        return [formatNumber(value), "Events"];
+                      }
+                      const perDay = bucket.average.toFixed(1);
+                      const dayLabel = bucket.days === 1 ? "day" : "days";
+                      return [
+                        `${formatNumber(value)} · ${perDay}/day over ${bucket.days} ${dayLabel}`,
+                        "Events",
+                      ];
+                    }}
+                    labelFormatter={(value, payload) =>
+                      payload?.[0]?.payload?.tooltipLabel ?? value
+                    }
                   />
-                  <Bar dataKey="total" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                    {activityBuckets.map((bucket) => (
+                      <Cell
+                        key={bucket.key}
+                        fill={
+                          bucket.isPartial ?
+                            ACTIVITY_BAR_PARTIAL_COLOR
+                          : ACTIVITY_BAR_COLOR
+                        }
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
+          {hasPartialBuckets && (
+            <p className="stats-basis-note">
+              Dimmed bars cover only part of a{" "}
+              {granularity === "monthly" ? "month" : "week"} because the season
+              starts or ends mid-{granularity === "monthly" ? "month" : "week"}.
+              Hover any bar for its per-day rate.
+            </p>
+          )}
         </div>
       )}
+
+      <SeasonComparison isMobile={isMobile} />
 
       {stats && countryRows.length > 0 && (
         <div className="player-card stats-card">
