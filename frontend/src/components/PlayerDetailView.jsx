@@ -10,6 +10,7 @@ import {
   winRateClassName,
 } from "../utils/playerUtils";
 import logger from "../utils/logger";
+import { useRankThresholds } from "../hooks/useRankThresholds";
 import {
   calculateEventStats,
   calculateRecentScoreStats,
@@ -306,6 +307,7 @@ function PlayerDetailView({
 
   // Derived stats for 12p / 24p events
   const navigate = useNavigate();
+  const rankThresholds = useRankThresholds(season, mmrType);
 
   const { twelveCount, twentyFourCount, avg12, avg24, winRate12, winRate24 } =
     calculateEventStats(sanitizedEvents);
@@ -313,7 +315,7 @@ function PlayerDetailView({
   const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
     return calculateMmrHistoryData(
       sanitizedEvents,
-      (val) => getRankForMmrValue(val, season, mmrType),
+      (val) => getRankForMmrValue(val, season, mmrType, rankThresholds),
       `${gradientIdPrefix}-${playerDetails?.playerId || "default"}`,
     );
   }, [
@@ -322,6 +324,7 @@ function PlayerDetailView({
     gradientIdPrefix,
     season,
     mmrType,
+    rankThresholds,
   ]);
 
   const baseFilteredEvents = useMemo(() => {
@@ -521,7 +524,12 @@ function PlayerDetailView({
 
   if (!playerDetails) return null;
 
-  const nextRankText = getNextRank(playerDetails.mmr, season, mmrType);
+  const nextRankText = getNextRank(
+    playerDetails.mmr,
+    season,
+    mmrType,
+    rankThresholds,
+  );
 
   return (
     <div className="player-results">

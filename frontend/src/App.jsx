@@ -17,6 +17,7 @@ import {
 } from "react";
 import "./App.css";
 import Navigation from "./components/Navigation";
+import ErrorBoundary from "./components/ErrorBoundary";
 import PlayerInfo from "./PlayerInfo";
 import { SettingsProvider } from "./context/SettingsContext.jsx";
 import { isScrollKeyOnPath } from "./utils/scrollKeys";
@@ -283,6 +284,14 @@ function MissingRouteParamPage({
   );
 }
 
+// A crash inside one page (or a page chunk that fails to load) shows the error card
+// below the navigation instead of replacing the whole app, and clears as soon as
+// the user navigates to another page.
+function PageErrorBoundary({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
+
 function RouteFallback() {
   return (
     <div className="player-info-page">
@@ -308,51 +317,53 @@ function App() {
         <ScrollRestorationManager />
         <ScrollRestoration />
         <Navigation />
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<PlayerInfo />} />
-            <Route
-              path="/player"
-              element={
-                <MissingRouteParamPage
-                  title="Player Not Specified"
-                  description="This route needs a username after /player."
-                  example="/player/Player123"
-                  linkTo="/"
-                  linkLabel="Go To Player Search"
-                />
-              }
-            />
-            <Route path="/compare" element={<PlayerComparison />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route
-              path="/table"
-              element={
-                <MissingRouteParamPage
-                  title="Table Not Specified"
-                  description="This route needs a table ID after /table."
-                  example="/table/123456"
-                  linkTo="/leaderboard"
-                  linkLabel="Go To Leaderboard"
-                />
-              }
-            />
-            <Route path="/table/:tableId" element={<TableInfo />} />
-            <Route path="/player/:playerName" element={<PlayerProfile />} />
-            <Route
-              path="*"
-              element={
-                <MissingRouteParamPage
-                  title="Page Not Found"
-                  description="There is no page at this address."
-                  linkTo="/"
-                  linkLabel="Go To Player Search"
-                />
-              }
-            />
-          </Routes>
-        </Suspense>
+        <PageErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<PlayerInfo />} />
+              <Route
+                path="/player"
+                element={
+                  <MissingRouteParamPage
+                    title="Player Not Specified"
+                    description="This route needs a username after /player."
+                    example="/player/Player123"
+                    linkTo="/"
+                    linkLabel="Go To Player Search"
+                  />
+                }
+              />
+              <Route path="/compare" element={<PlayerComparison />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/stats" element={<Stats />} />
+              <Route
+                path="/table"
+                element={
+                  <MissingRouteParamPage
+                    title="Table Not Specified"
+                    description="This route needs a table ID after /table."
+                    example="/table/123456"
+                    linkTo="/leaderboard"
+                    linkLabel="Go To Leaderboard"
+                  />
+                }
+              />
+              <Route path="/table/:tableId" element={<TableInfo />} />
+              <Route path="/player/:playerName" element={<PlayerProfile />} />
+              <Route
+                path="*"
+                element={
+                  <MissingRouteParamPage
+                    title="Page Not Found"
+                    description="There is no page at this address."
+                    linkTo="/"
+                    linkLabel="Go To Player Search"
+                  />
+                }
+              />
+            </Routes>
+          </Suspense>
+        </PageErrorBoundary>
       </BrowserRouter>
     </SettingsProvider>
   );

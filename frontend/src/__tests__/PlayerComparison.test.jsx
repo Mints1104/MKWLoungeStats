@@ -19,8 +19,13 @@ vi.mock("recharts", () => {
   };
 });
 
-vi.mock("../api/loungeApi", () => ({
-  loungeApi: { comparePlayers: vi.fn() },
+vi.mock("../api/loungeApi", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loungeApi: {
+    comparePlayers: vi.fn(),
+    // Rank thresholds fall back to the bundled tables
+    getPlayerStats: vi.fn(() => Promise.reject(new Error("offline"))),
+  },
 }));
 
 const player = (name, playerId, extra = {}) => ({
@@ -88,6 +93,26 @@ describe("PlayerComparison", () => {
     expect(screen.getByRole("alert").textContent).toBe(
       "Could not find enough players to compare. Couldn't load: Ghost, Phantom",
     );
+  });
+
+  it("compares the names in the order typed, for the selected season and ladder", async () => {
+    loungeApi.comparePlayers.mockResolvedValue([
+      player("Zed", 2),
+      player("Amy", 1),
+    ]);
+
+    await compare(["Zed", "Amy"]);
+
+    expect(loungeApi.comparePlayers).toHaveBeenLastCalledWith(
+      ["Zed", "Amy"],
+      3,
+      24,
+      expect.anything(),
+    );
+    const headings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(headings).toEqual(["● Zed", "● Amy"]);
   });
 
   it("shows N/A instead of NaN% for a missing win rate", async () => {

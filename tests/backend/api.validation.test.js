@@ -197,3 +197,93 @@ test("GET /api/player/leaderboard/:name returns 404 when upstream has no data ar
   assert.equal(response.status, 404);
   assert.equal(response.body.error, "Player not found");
 });
+
+test("successful responses are cacheable by the CDN", async (t) => {
+  t.mock.method(axios, "get", async () => ({ data: { id: 987 } }));
+
+  const fresh = await request(app).get("/api/table/987");
+  const cached = await request(app).get("/api/table/987");
+
+  for (const response of [fresh, cached]) {
+    assert.equal(response.status, 200);
+    assert.equal(
+      response.headers["cache-control"],
+      "public, s-maxage=60, stale-while-revalidate=300",
+    );
+  }
+});
+
+test("player details and stats use the longer CDN TTL", async (t) => {
+  t.mock.method(axios, "get", async () => ({ data: { name: "TtlPlayer" } }));
+
+  const response = await request(app).get(
+    "/api/player/details/TtlPlayer?game=mkworld24p",
+  );
+
+  assert.equal(
+    response.headers["cache-control"],
+    "public, s-maxage=120, stale-while-revalidate=600",
+  );
+});
+
+test("error responses are not cacheable", async (t) => {
+  t.mock.method(axios, "get", async () => {
+    throw upstreamError(404);
+  });
+
+  const invalid = await request(app).get("/api/table/not-a-number");
+  const missing = await request(app).get("/api/table/404404");
+
+  assert.equal(invalid.status, 400);
+  assert.equal(missing.status, 404);
+  assert.equal(invalid.headers["cache-control"], undefined);
+  assert.equal(missing.headers["cache-control"], undefined);
+});
+
+test("GET /api/players/compare keeps the requested order on a cache hit", async (t) => {
+  t.mock.method(axios, "get", async (url, config) => ({
+    data: { name: config.params.name },
+  }));
+
+  await request(app).get("/api/players/compare?names=Ann,Bo&game=mkworld24p");
+  const reversed = await request(app).get(
+    "/api/players/compare?names=Bo,Ann&game=mkworld24p",
+  );
+
+  assert.deepEqual(
+    reversed.body.map((player) => player.name),
+    ["Bo", "Ann"],
+  );
+});
+
+test("GET /api/players/compare does not cache a transient upstream failure", async (t) => {
+  let flakyCalls = 0;
+  t.mock.method(axios, "get", async (url, config) => {
+    if (config.params.name === "Flaky") {
+      flakyCalls += 1;
+      if (flakyCalls === 1) throw upstreamError(503);
+    }
+    return { data: { name: config.params.name } };
+  });
+
+  const first = await request(app).get(
+    "/api/players/compare?names=Steady,Flaky&game=mkworld24p",
+  );
+  const second = await request(app).get(
+    "/api/players/compare?names=Steady,Flaky&game=mkworld24p",
+  );
+
+  assert.equal(first.body[1].error, true);
+  assert.equal(first.headers["cache-control"], undefined);
+  assert.deepEqual(second.body[1], { name: "Flaky" });
+});
+
+test("CORS preflight only allows GET and no credentials", async () => {
+  const response = await request(app)
+    .options("/api/leaderboard")
+    .set("Origin", "http://localhost:5173")
+    .set("Access-Control-Request-Method", "GET");
+
+  assert.equal(response.headers["access-control-allow-methods"], "GET");
+  assert.equal(response.headers["access-control-allow-credentials"], undefined);
+});

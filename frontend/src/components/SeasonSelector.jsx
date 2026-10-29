@@ -1,17 +1,11 @@
 import React from 'react';
 import Selector from './Selector';
+import { SEASON_OPTIONS } from '../config/seasons';
 
 function SeasonSelector({ selectedSeason, onSeasonChange, className = "", id = "season-select" }) {
-    const seasons = [
-        { value: 3, label: "Season 3" },
-        { value: 2, label: "Season 2" },
-        { value: 1, label: "Season 1" },
-        { value: 0, label: "Preseason" },
-    ];
-
     return (
         <Selector
-            options={seasons}
+            options={SEASON_OPTIONS}
             value={selectedSeason}
             onChange={(val) => onSeasonChange(Number(val))}
             className={className}

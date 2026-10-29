@@ -1,7 +1,7 @@
 {
-  "name": "js_practice",
+  "name": "mkw-lounge-stats",
   "version": "1.0.0",
-  "main": "code.js",
+  "main": "server.js",
   "scripts": {
     "test": "node --test tests/backend/api.validation.test.js",
     "start": "node server.js",
@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Mario Kart World Lounge stats site: caching Express proxy over the MKCentral Lounge API",
   "dependencies": {
     "axios": "^1.13.2",
     "cors": "^2.8.5",

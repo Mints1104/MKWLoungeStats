@@ -22,6 +22,14 @@ vi.mock("recharts", () => {
   };
 });
 
+// Rank thresholds fall back to the bundled tables without touching the network
+vi.mock("../../api/loungeApi", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loungeApi: {
+    getPlayerStats: vi.fn(() => Promise.reject(new Error("offline"))),
+  },
+}));
+
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");

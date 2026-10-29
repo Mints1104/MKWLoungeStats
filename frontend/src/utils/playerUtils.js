@@ -44,7 +44,30 @@ export function winRateClassName(rate) {
 }
 
 /**
- * Retrieves the rank thresholds for a specific season and MMR type.
+ * Converts the Lounge API's rank map (`/player/stats` → `ranks`, e.g.
+ * `{ Iron: 0, Bronze: 2000, ... }`) into threshold objects sorted by MMR.
+ * @param {Object} ranks - Rank name to minimum MMR.
+ * @returns {Array|null} `{ name, min, max }[]`, or null when the map is unusable.
+ */
+export function parseRankThresholds(ranks) {
+  if (!ranks || typeof ranks !== "object") return null;
+
+  const sorted = Object.entries(ranks)
+    .map(([name, min]) => ({ name, min: Number(min) }))
+    .filter((rank) => rank.name && Number.isFinite(rank.min))
+    .sort((a, b) => a.min - b.min);
+
+  if (sorted.length === 0) return null;
+
+  return sorted.map((rank, index) => ({
+    ...rank,
+    max: index < sorted.length - 1 ? sorted[index + 1].min - 1 : Infinity,
+  }));
+}
+
+/**
+ * Bundled rank thresholds for a specific season and MMR type. Pages use the API's
+ * own thresholds through useRankThresholds and fall back to these until it answers.
  * @param {number} season - Season number.
  * @param {number} mmrType - MMR type (12 or 24).
  * @returns {Array} Array of rank threshold objects.
@@ -66,10 +89,15 @@ export function getThresholds(season, mmrType) {
  * @param {number} mmr - Current MMR.
  * @param {number} season - Season number.
  * @param {number} mmrType - MMR type.
+ * @param {Array} [ranks] - Thresholds to use instead of the bundled ones.
  * @returns {string} Message indicating MMR needed for next rank.
  */
-export function getNextRank(mmr, season, mmrType) {
-  const ranks = getThresholds(season, mmrType);
+export function getNextRank(
+  mmr,
+  season,
+  mmrType,
+  ranks = getThresholds(season, mmrType),
+) {
 
   for (let i = 0; i < ranks.length; i++) {
     const rank = ranks[i];
@@ -178,15 +206,20 @@ export const RANK_THRESHOLDS_24P = [
  * @param {number} mmr - MMR value.
  * @param {number} season - Season number.
  * @param {number} mmrType - MMR type.
+ * @param {Array} [thresholds] - Thresholds to use instead of the bundled ones.
  * @returns {Object} Object containing rank name and color.
  */
-export function getRankForMmrValue(mmr, season, mmrType) {
+export function getRankForMmrValue(
+  mmr,
+  season,
+  mmrType,
+  thresholds = getThresholds(season, mmrType),
+) {
   if (mmr == null || Number.isNaN(Number(mmr))) {
     return { name: null, color: "#38bdf8" };
   }
 
   const numericMmr = Number(mmr);
-  const thresholds = getThresholds(season, mmrType);
   const threshold = thresholds.find(
     (rank) => numericMmr >= rank.min && numericMmr <= rank.max,
   );

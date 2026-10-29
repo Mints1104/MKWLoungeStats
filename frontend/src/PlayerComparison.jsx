@@ -28,6 +28,7 @@ import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
+import { useRankThresholds } from "./hooks/useRankThresholds";
 import { CURRENT_SEASON } from "./config/seasons";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
@@ -46,6 +47,7 @@ function PlayerComparison() {
             initialMmrType: null,
             defaultMmrType: defaultGameMode,
         });
+    const rankThresholds = useRankThresholds(season, mmrType);
 
     const handleMmrTypeChange = (nextMmrType) => {
         setSelectedMmrType(nextMmrType);
@@ -243,7 +245,7 @@ function PlayerComparison() {
                                 </h2>
                                 <p>Overall Rank: #{player.overallRank}</p>
                                 <p>Current Rank: {player.rank}</p>
-                                <p>{getNextRank(player.mmr, season, mmrType)}</p>
+                                <p>{getNextRank(player.mmr, season, mmrType, rankThresholds)}</p>
                                 <p>Current MMR: {player.mmr}</p>
                                 <p>Highest MMR: {player.maxMmr}</p>
                                 <p>

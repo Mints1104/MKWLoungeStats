@@ -12,6 +12,14 @@ class ErrorBoundary extends React.Component {
     return { hasError: true };
   }
 
+  // When `resetKey` changes (e.g. the user navigates to another page), clear the
+  // error so the new content gets a fresh chance to render.
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null, errorInfo: null });
+    }
+  }
+
   componentDidCatch(error, errorInfo) {
     // Log error details for debugging
     logger.error("ErrorBoundary caught an error:", error, errorInfo);
