@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateComparisonMmrData,
+  calculateGradientStops,
+  calculateMmrHistoryData,
   calculateScoreDistribution,
+  findPeakPoint,
+  getVisibleRankLines,
   comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
 } from "../chartUtils";
@@ -139,5 +143,87 @@ describe("chartUtils", () => {
       const [, maxDomain] = MMR_CHART_Y_DOMAIN;
       expect(maxDomain(1000)).toBe(1050);
     });
+  });
+});
+
+describe("MMR history chart data", () => {
+  const colorFor = (mmr) => ({ color: mmr >= 6000 ? "gold" : "silver" });
+
+  // Newest first, as the API sends mmrChanges
+  const changes = [
+    { reason: "TableDelete", changeId: 2, newMmr: 6100, mmrDelta: 50, time: "2026-07-04T00:00:00Z" },
+    { reason: "Strike", changeId: 9, newMmr: 6050, mmrDelta: -100, time: "2026-07-03T00:00:00Z" },
+    { reason: "Table", changeId: 2, newMmr: 6150, mmrDelta: -50, score: 40, rank: 9, tier: "B", numPlayers: 24, numTeams: 12, time: "2026-07-02T00:00:00Z" },
+    { reason: "Table", changeId: 1, newMmr: 5950, mmrDelta: 30, score: 90, rank: 2, tier: "A", numPlayers: 24, numTeams: 24, time: "2026-07-01T00:00:00Z" },
+  ];
+
+  it("keeps what the tooltip and markers need, oldest first", () => {
+    const { mmrHistoryData } = calculateMmrHistoryData(changes, colorFor, "p1");
+
+    expect(mmrHistoryData.map((point) => point.reason)).toEqual([
+      "Table",
+      "Table",
+      "Strike",
+      "TableDelete",
+    ]);
+    expect(mmrHistoryData[0]).toEqual({
+      event: 1,
+      time: Date.parse("2026-07-01T00:00:00Z"),
+      mmr: 5950,
+      rankColor: "silver",
+      reason: "Table",
+      mmrDelta: 30,
+      score: 90,
+      placement: 2,
+      tier: "A",
+      numPlayers: 24,
+      numTeams: 24,
+      tableDeleted: false,
+    });
+    expect(mmrHistoryData[1].tableDeleted).toBe(true);
+  });
+
+  it("places gradient stops by index, or by an x value such as time", () => {
+    const points = [
+      { rankColor: "silver", time: 0 },
+      { rankColor: "gold", time: 10 },
+      { rankColor: "gold", time: 100 },
+    ];
+
+    expect(calculateGradientStops(points)).toEqual([
+      { offset: "0%", color: "silver" },
+      { offset: "49.9%", color: "silver" },
+      { offset: "50%", color: "gold" },
+      { offset: "100%", color: "gold" },
+    ]);
+    expect(calculateGradientStops(points, "time")).toEqual([
+      { offset: "0%", color: "silver" },
+      { offset: "9.9%", color: "silver" },
+      { offset: "10%", color: "gold" },
+      { offset: "100%", color: "gold" },
+    ]);
+  });
+
+  it("finds the latest peak", () => {
+    const points = [{ mmr: 10 }, { mmr: 30, id: "first" }, { mmr: 30, id: "last" }, { mmr: 5 }];
+
+    expect(findPeakPoint(points).id).toBe("last");
+    expect(findPeakPoint([])).toBeNull();
+  });
+
+  it("only draws rank lines inside the plotted MMR range", () => {
+    const thresholds = [
+      { name: "Iron", min: 0 },
+      { name: "Silver", min: 4000 },
+      { name: "Gold", min: 6000 },
+      { name: "Platinum", min: 8000 },
+    ];
+
+    expect(
+      getVisibleRankLines(thresholds, [{ mmr: 5100 }, { mmr: 7200 }]).map(
+        (rank) => rank.name,
+      ),
+    ).toEqual(["Gold"]);
+    expect(getVisibleRankLines(thresholds, [])).toEqual([]);
   });
 });

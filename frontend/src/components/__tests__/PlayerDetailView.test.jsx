@@ -19,6 +19,9 @@ vi.mock("recharts", () => {
     Tooltip: passthrough,
     Legend: passthrough,
     ResponsiveContainer: passthrough,
+    ReferenceLine: passthrough,
+    ReferenceDot: passthrough,
+    Brush: passthrough,
   };
 });
 
@@ -194,7 +197,9 @@ describe("PlayerDetailView mode filter persistence", () => {
       />,
     );
 
-    const tierButton = await screen.findByRole("button", { name: /tier/i });
+    const tierButton = await screen.findByRole("button", {
+      name: "Toggle tier filter",
+    });
     fireEvent.click(tierButton);
 
     const aCheckbox = await screen.findByRole("checkbox", { name: "A" });
@@ -222,7 +227,10 @@ describe("PlayerDetailView noSQ stats", () => {
 
   // Both the overall rows and the recent-events cards render as
   // <span class="recent-stat-label">…</span><span class="recent-stat-value">…</span>
-  const valueFor = (label) => screen.getByText(label).parentElement.textContent;
+  // Stat labels only (the breakdown table has column headers with the same text)
+  const valueFor = (label) =>
+    screen.getByText(label, { selector: ".recent-stat-label" }).parentElement
+      .textContent;
 
   it("renders the noSQ averages from the player payload in the overall stats card", async () => {
     render(
@@ -268,5 +276,52 @@ describe("PlayerDetailView noSQ stats", () => {
     // Partner scores [72] (non-SQ) and [90, 96] (SQ)
     expect(valueFor("PAvg score")).toContain("86.00");
     expect(valueFor("No SQ PAvg")).toContain("72.00");
+  });
+});
+
+describe("PlayerDetailView performance breakdown", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  const eventTiers = () =>
+    Array.from(document.querySelectorAll(".event-card")).map(
+      // Tier names are capitals; the MMR delta follows straight after in textContent
+      (card) => /Tier ([A-Z]+)/.exec(card.textContent)?.[1],
+    );
+
+  it("narrows the recent events to a tier picked in the breakdown, and back", async () => {
+    render(
+      <PlayerDetailView playerDetails={makePlayerDetails()} season={3} mmrType={24} />,
+    );
+
+    const bc = await screen.findByRole("button", { name: "BC" });
+    expect(bc.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(bc);
+
+    expect(eventTiers()).toEqual(["BC"]);
+    expect(screen.getByRole("button", { name: "BC" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /Toggle tier filter/ }).textContent).toContain(
+      "(1/3)",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "BC" }));
+
+    expect(eventTiers()).toEqual(["A", "BC", "SQ"]);
+  });
+
+  it("groups by format and narrows to one", async () => {
+    render(
+      <PlayerDetailView playerDetails={makePlayerDetails()} season={3} mmrType={24} />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "By format" }));
+    fireEvent.click(screen.getByRole("button", { name: "2v2" }));
+
+    expect(eventTiers()).toEqual(["BC"]);
+    expect(sessionStorage.getItem("playerBreakdownPref")).toBe("format");
   });
 });

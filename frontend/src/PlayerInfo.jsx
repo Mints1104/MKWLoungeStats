@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import usePlayerDetails from "./hooks/usePlayerDetails";
-import PlayerDetailView from "./components/PlayerDetailView";
+import { Link, useNavigate } from "react-router-dom";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import PlayerNameInput from "./components/PlayerNameInput";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
+import { useFavourites } from "./hooks/useFavourites";
 import { CURRENT_SEASON } from "./config/seasons";
-import logger from "./utils/logger";
+import { loadRecentSearches } from "./utils/recentSearches";
+import { getProfilePath } from "./utils/playerLinks";
 
-const RECENT_KEY = "recentPlayerSearches";
-const LAST_DETAILS_KEY = "lastPlayerDetails";
 const SEASON_KEY = "playerInfoSeason";
 const MMR_TYPE_KEY = "playerInfoMmrType";
 
@@ -22,62 +22,26 @@ function readSessionItem(key) {
   }
 }
 
+/**
+ * Home page: search for a player and open their profile. The profile URL is the
+ * shareable result; recent searches and favourites are shortcuts to it.
+ */
 function PlayerInfo() {
+  const navigate = useNavigate();
   const { defaultGameMode } = useSettings();
+  const { favourites, toggleFavourite } = useFavourites();
+  const [recent] = useState(loadRecentSearches);
+  const [name, setName] = useState("");
 
-  // 1. Initialize 'recent' lazily from localStorage
-  const [recent, setRecent] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
-      return Array.isArray(saved) ? saved.slice(0, 3) : [];
-    } catch (e) {
-      logger.warn("Failed to load recent searches", e);
-      return [];
-    }
-  });
-
-  // 2. Initialize 'name' and 'initialDetails' lazily from sessionStorage, along
-  // with the season and MMR type they were fetched for (absent in older entries)
-  const [initialState] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(LAST_DETAILS_KEY);
-      if (!raw) return { name: "", details: null };
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.name && parsed.data) {
-        return {
-          name: parsed.name,
-          details: parsed.data,
-          season: parsed.season,
-          mmrType: parsed.mmrType,
-        };
-      }
-    } catch (e) {
-      logger.warn("Failed to restore last player details", e);
-    }
-    return { name: "", details: null };
-  });
-
-  const [name, setName] = useState(initialState.name);
-  // Restored details must be shown with the season and MMR type they were fetched
-  // for, or ranks are drawn against the wrong thresholds.
   const { season, setSeason, selectedMmrType, setSelectedMmrType, mmrType } =
     useSeasonMmrSelection({
       initialSeason: () => {
-        if (initialState.season != null) return initialState.season;
         const saved = readSessionItem(SEASON_KEY);
         return saved !== null ? Number(saved) : CURRENT_SEASON;
       },
-      initialMmrType: () => initialState.mmrType ?? readSessionItem(MMR_TYPE_KEY),
+      initialMmrType: () => readSessionItem(MMR_TYPE_KEY),
       defaultMmrType: defaultGameMode,
     });
-
-  // 3. Pass initialDetails to the hook
-  const {
-    playerDetails: detailedInfo,
-    loading,
-    error,
-    fetchPlayerDetails,
-  } = usePlayerDetails(initialState.details);
 
   // Persist season and MMR type selection across page reloads
   useEffect(() => {
@@ -100,69 +64,10 @@ function PlayerInfo() {
     }
   }, [selectedMmrType]);
 
-  const rememberRecent = (value) => {
-    const clean = value.trim();
-    if (!clean) return;
-    const deduped = [
-      clean,
-      ...recent.filter((n) => n.toLowerCase() !== clean.toLowerCase()),
-    ].slice(0, 3);
-    setRecent(deduped);
-    try {
-      localStorage.setItem(RECENT_KEY, JSON.stringify(deduped));
-    } catch (e) {
-      logger.warn("Failed to save recent searches", e);
-    }
-  };
-
-  const rememberLastDetails = (playerName, data, seasonValue, mmrValue) => {
-    if (!data) return;
-    try {
-      sessionStorage.setItem(
-        LAST_DETAILS_KEY,
-        JSON.stringify({
-          name: playerName,
-          data,
-          season: seasonValue,
-          // Pre-split seasons have no 12p/24p ladder, so there is nothing to pin
-          mmrType: Number(seasonValue) >= 2 ? mmrValue : null,
-        }),
-      );
-    } catch (e) {
-      logger.warn("Failed to save last player details", e);
-    }
-  };
-
-  const fetchAndRemember = async (playerName, seasonValue, mmrValue) => {
+  const openProfile = (playerName) => {
     const trimmed = playerName.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    const data = await fetchPlayerDetails(trimmed, seasonValue, mmrValue);
-    if (data) {
-      rememberRecent(trimmed);
-      rememberLastDetails(trimmed, data, seasonValue, mmrValue);
-    }
-    return data;
-  };
-
-  const getPlayerInfo = async () => {
-    return fetchAndRemember(name, season, mmrType);
-  };
-
-  const handleSeasonChange = (nextSeason) => {
-    setSeason(nextSeason);
-    if (name.trim()) {
-      fetchAndRemember(name, nextSeason, mmrType);
-    }
-  };
-
-  const handleMmrChange = (nextMmrType) => {
-    setSelectedMmrType(nextMmrType);
-    if (name.trim()) {
-      fetchAndRemember(name, season, nextMmrType);
-    }
+    if (!trimmed) return;
+    navigate(getProfilePath(trimmed, season, mmrType));
   };
 
   return (
@@ -177,26 +82,24 @@ function PlayerInfo() {
           className="player-form"
           onSubmit={(e) => {
             e.preventDefault();
-            getPlayerInfo();
+            openProfile(name);
           }}
         >
-          <input
-            className="player-input"
+          <PlayerNameInput
+            id="player-search"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter a player name"
-            aria-label="Player name"
+            onChange={setName}
+            onSelect={openProfile}
+            season={season}
+            mmrType={mmrType}
           />
 
           <div className="season-selector-container">
-            <SeasonSelector
-              selectedSeason={season}
-              onSeasonChange={handleSeasonChange}
-            />
+            <SeasonSelector selectedSeason={season} onSeasonChange={setSeason} />
             {season >= 2 && (
               <MMRSelector
                 selectedMMR={mmrType}
-                onMMRChange={handleMmrChange}
+                onMMRChange={setSelectedMmrType}
               />
             )}
           </div>
@@ -211,48 +114,50 @@ function PlayerInfo() {
         </form>
 
         {recent.length > 0 && (
-          <div className="recent-searches" aria-label="Recent searches">
-            {recent.map((r) => (
-              <button
-                key={r}
-                className="recent-chip"
-                onClick={() => {
-                  setName(r);
-                  fetchAndRemember(r, season, mmrType);
-                }}
-              >
-                {r}
-              </button>
-            ))}
+          <div className="shortcut-group">
+            <h2 className="shortcut-heading">Recent</h2>
+            <div className="recent-searches">
+              {recent.map((recentName) => (
+                <Link
+                  key={recentName}
+                  className="recent-chip"
+                  to={getProfilePath(recentName, season, mmrType)}
+                >
+                  {recentName}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 
-        {error && (
-          <p className="player-error" role="alert" aria-live="assertive">
-            {error}
-          </p>
-        )}
-        {loading && (
-          <div
-            className="loading-skeleton"
-            aria-live="polite"
-            aria-label="Loading player data"
-          >
-            <div className="skeleton-row"></div>
-            <div className="skeleton-row"></div>
-            <div className="skeleton-row"></div>
+        {favourites.length > 0 && (
+          <div className="shortcut-group">
+            <h2 className="shortcut-heading">Favourites</h2>
+            <ul className="recent-searches favourite-list">
+              {favourites.map((favourite) => (
+                <li key={favourite} className="favourite-chip">
+                  <Link
+                    className="recent-chip"
+                    to={getProfilePath(favourite, season, mmrType)}
+                  >
+                    <span aria-hidden="true">★ </span>
+                    {favourite}
+                  </Link>
+                  <button
+                    type="button"
+                    className="favourite-remove"
+                    onClick={() => toggleFavourite(favourite)}
+                    aria-label={`Remove ${favourite} from favourites`}
+                    title="Remove from favourites"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
-
-      {detailedInfo && (
-        <PlayerDetailView
-          playerDetails={detailedInfo}
-          season={season}
-          mmrType={mmrType}
-          gradientIdPrefix="mmrGradient-info"
-        />
-      )}
     </div>
   );
 }
