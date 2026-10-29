@@ -6,6 +6,14 @@ import { CURRENT_SEASON } from "../config/seasons";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
+/**
+ * Upstream game id: seasons before 2 ran a single "mkworld" ladder, later seasons
+ * split into "mkworld12p" / "mkworld24p".
+ */
+export function getGameId(season, mmrType = 24) {
+  return Number(season) >= 2 ? `mkworld${mmrType}p` : "mkworld";
+}
+
 function combineAbortSignals(signals) {
   const controller = new AbortController();
   for (const signal of signals) {
@@ -126,11 +134,7 @@ export const loungeApi = {
     const encodedName = encodeURIComponent(name.trim());
     logger.api("GET", `/player/details/${encodedName}`);
 
-    let gameParam = "mkworld";
-    if (Number(season) >= 2) {
-      gameParam = `mkworld${mmrType}p`;
-    }
-
+    const gameParam = getGameId(season, mmrType);
     const url = `${API_BASE}/player/details/${encodedName}?season=${season}&game=${gameParam}`;
 
     return fetchApi(url, { signal });
@@ -158,11 +162,7 @@ export const loungeApi = {
       `/players/compare?names=${validNames.join(",")}&season=${season}`,
     );
 
-    let gameParam = "mkworld";
-    if (Number(season) >= 2) {
-      gameParam = `mkworld${mmrType}p`;
-    }
-
+    const gameParam = getGameId(season, mmrType);
     const namesParam = validNames.map((n) => encodeURIComponent(n)).join(",");
     const url = `${API_BASE}/players/compare?names=${namesParam}&season=${season}&game=${gameParam}`;
 
@@ -199,8 +199,7 @@ export const loungeApi = {
     // Convert page to skip for backend
     const skip = (page - 1) * pageSize;
 
-    // Convert to game parameter (e.g. "mkworld12p" or "mkworld24p")
-    const game = `mkworld${mmrType}p`;
+    const game = getGameId(season, mmrType);
 
     const queryParams = new URLSearchParams({
       skip: String(skip),

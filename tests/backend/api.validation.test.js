@@ -78,3 +78,122 @@ test("GET /api/leaderboard defaults to season 3", async (t) => {
     totalPlayers: 0,
   });
 });
+
+const upstreamError = (status) =>
+  new axios.AxiosError(
+    `Request failed with status code ${status}`,
+    "ERR_BAD_RESPONSE",
+    undefined,
+    undefined,
+    { status, data: {} },
+  );
+
+test("GET /api/players/compare returns players in the requested order", async (t) => {
+  t.mock.method(axios, "get", async (url, config) => ({
+    data: { name: config.params.name },
+  }));
+
+  const response = await request(app).get(
+    "/api/players/compare?names=Zed,Amy,Mid&game=mkworld24p",
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    response.body.map((player) => player.name),
+    ["Zed", "Amy", "Mid"],
+  );
+});
+
+test("GET /api/player/details/:name keeps other players cached after a 404", async (t) => {
+  let cachedPlayerCalls = 0;
+  t.mock.method(axios, "get", async (url) => {
+    if (String(url).includes("MissingPlayer")) {
+      throw upstreamError(404);
+    }
+    cachedPlayerCalls += 1;
+    return { data: { name: "CachePlayer" } };
+  });
+
+  await request(app).get("/api/player/details/CachePlayer?game=mkworld24p");
+  const missing = await request(app).get(
+    "/api/player/details/MissingPlayer?game=mkworld24p",
+  );
+  const again = await request(app).get(
+    "/api/player/details/CachePlayer?game=mkworld24p",
+  );
+
+  assert.equal(missing.status, 404);
+  assert.equal(again.status, 200);
+  assert.equal(cachedPlayerCalls, 1);
+});
+
+test("GET /api/leaderboard rejects non-numeric pageSize", async () => {
+  const response = await request(app).get(
+    "/api/leaderboard?game=mkworld24p&pageSize=abc",
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error, "pageSize must be a non-negative integer");
+});
+
+test("GET /api/leaderboard rejects unsupported sortBy", async () => {
+  const response = await request(app).get(
+    "/api/leaderboard?game=mkworld24p&sortBy=password",
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error, "Unsupported sortBy value");
+});
+
+test("GET /api/leaderboard rejects invalid country codes", async () => {
+  const response = await request(app).get(
+    "/api/leaderboard?game=mkworld24p&country=USA",
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error, "Country must be a 2-letter country code");
+});
+
+test("GET /api/leaderboard clamps pageSize and normalizes params", async (t) => {
+  let upstreamParams;
+  t.mock.method(axios, "get", async (url, config) => {
+    upstreamParams = config.params;
+    return { data: { data: [], totalPlayers: 0 } };
+  });
+
+  const response = await request(app).get(
+    "/api/leaderboard?game=mkworld12p&pageSize=500&skip=100&country=us&sortBy=maxMmr&minMmr=8000",
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(upstreamParams, {
+    skip: 100,
+    pageSize: 100,
+    sortBy: "maxMmr",
+    minMmr: 8000,
+    country: "US",
+  });
+});
+
+test("GET /api/leaderboard passes through upstream error status", async (t) => {
+  t.mock.method(axios, "get", async () => {
+    throw upstreamError(503);
+  });
+
+  const response = await request(app).get(
+    "/api/leaderboard?game=mkworld24p&season=2",
+  );
+
+  assert.equal(response.status, 503);
+});
+
+test("GET /api/player/leaderboard/:name returns 404 when upstream has no data array", async (t) => {
+  t.mock.method(axios, "get", async () => ({ data: {} }));
+
+  const response = await request(app).get(
+    "/api/player/leaderboard/NoDataPlayer?game=mkworld24p",
+  );
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.error, "Player not found");
+});

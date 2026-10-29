@@ -6,6 +6,10 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const logger = require("./server/utils/logger");
 
+// Fail upstream calls before Vercel's function timeout kills the request
+const UPSTREAM_TIMEOUT_MS = 8000;
+axios.defaults.timeout = UPSTREAM_TIMEOUT_MS;
+
 // Trust Vercel's proxy to correctly identify client IP
 app.set("trust proxy", 1);
 
@@ -89,6 +93,14 @@ const MAX_PLAYER_NAME_LENGTH = 50;
 const MAX_SEARCH_LENGTH = 100;
 const CURRENT_SEASON = 3;
 const ALLOWED_GAMES = new Set(["mkworld", "mkworld12p", "mkworld24p"]);
+const LEADERBOARD_SORT_FIELDS = new Set([
+  "mmr",
+  "maxmmr",
+  "eventsplayed",
+  "lastweekrankchange",
+]);
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 
 // Input validation and sanitization
 const validatePlayerName = (name) => {
@@ -165,14 +177,6 @@ const getCache = (key) => {
   return entry.value;
 };
 
-const invalidateCache = (predicate) => {
-  for (const key of cacheStore.keys()) {
-    if (predicate(key)) {
-      cacheStore.delete(key);
-    }
-  }
-};
-
 // Validate season (non-negative integer in a reasonable range, 0 allowed for pre-season)
 const validateSeason = (season) => {
   if (season === undefined || season === null || season === "") {
@@ -200,7 +204,7 @@ const validateGame = (game) => {
   if (!ALLOWED_GAMES.has(trimmed)) {
     return {
       valid: false,
-      error: "Unsupported game. Currently only mkworld is supported",
+      error: `Unsupported game. Supported games: ${[...ALLOWED_GAMES].join(", ")}`,
     };
   }
 
@@ -231,6 +235,45 @@ const validateTableId = (id) => {
   }
 
   return { valid: true, sanitized: idStr };
+};
+
+// Validate an optional non-negative integer query param (empty means "not set")
+const validateOptionalNonNegativeInt = (value, label) => {
+  if (value === undefined || value === null || value === "") {
+    return { valid: true, sanitized: undefined };
+  }
+
+  const str = String(value).trim();
+  if (!/^\d{1,9}$/.test(str)) {
+    return { valid: false, error: `${label} must be a non-negative integer` };
+  }
+
+  return { valid: true, sanitized: Number(str) };
+};
+
+// Validate leaderboard sort field (case-insensitive, passed through as given)
+const validateSortBy = (sortBy) => {
+  if (
+    typeof sortBy !== "string" ||
+    !LEADERBOARD_SORT_FIELDS.has(sortBy.trim().toLowerCase())
+  ) {
+    return { valid: false, error: "Unsupported sortBy value" };
+  }
+
+  return { valid: true, sanitized: sortBy.trim() };
+};
+
+// Validate an optional ISO 3166-1 alpha-2 country code
+const validateCountryCode = (country) => {
+  if (country === undefined || country === null || country === "") {
+    return { valid: true, sanitized: undefined };
+  }
+
+  if (typeof country !== "string" || !/^[A-Za-z]{2}$/.test(country.trim())) {
+    return { valid: false, error: "Country must be a 2-letter country code" };
+  }
+
+  return { valid: true, sanitized: country.trim().toUpperCase() };
 };
 
 // Get a single lounge table by ID
@@ -319,8 +362,6 @@ app.get("/api/player/stats", async (req, res) => {
     setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
     res.json(data);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("player-stats"));
-
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       if (status) {
@@ -381,7 +422,6 @@ app.get("/api/player/details/:name", async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("player-details"));
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       if (status === 404) {
@@ -440,8 +480,9 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
     )}`;
     const { data } = await axios.get(full_url);
 
-    const player = data.data.find(
-      (p) => p.name.toLowerCase() === playerName.toLowerCase(),
+    const players = Array.isArray(data?.data) ? data.data : [];
+    const player = players.find(
+      (p) => p?.name?.toLowerCase() === playerName.toLowerCase(),
     );
 
     if (player) {
@@ -452,6 +493,16 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       res.status(404).json({ error: "Player not found" });
     }
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Leaderboard search API error (${status}):`, error.message);
+        return res.status(status).json({
+          error: error.response?.data?.error || "Failed to fetch data",
+        });
+      }
+    }
+
     logger.error("Failed to fetch leaderboard search:", error.message);
     res.status(500).json({ error: "Failed to fetch data" });
   }
@@ -494,7 +545,8 @@ app.get("/api/players/compare", async (req, res) => {
 
     const season = seasonValidation.sanitized;
     const cacheKey = getCacheKey("players-compare", {
-      names: validatedNames.sort().join(","),
+      // Copy before sorting: results must come back in the order requested
+      names: [...validatedNames].sort().join(","),
       season,
       game: normalizedGame,
     });
@@ -537,17 +589,11 @@ app.get("/api/players/compare", async (req, res) => {
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const {
-      skip = 0,
-      pageSize = 50,
-      minMmr,
-      maxMmr,
-      minEventsPlayed,
-      maxEventsPlayed,
-      search,
       sortBy = "Mmr",
       season,
       game = "mkworld",
       country,
+      search,
     } = req.query;
 
     const seasonValidation = validateSeason(season || String(CURRENT_SEASON));
@@ -560,22 +606,55 @@ app.get("/api/leaderboard", async (req, res) => {
       return res.status(400).json({ error: gameValidation.error });
     }
 
+    const sortByValidation = validateSortBy(sortBy);
+    if (!sortByValidation.valid) {
+      return res.status(400).json({ error: sortByValidation.error });
+    }
+
+    const countryValidation = validateCountryCode(country);
+    if (!countryValidation.valid) {
+      return res.status(400).json({ error: countryValidation.error });
+    }
+
+    const numericParams = {};
+    for (const key of [
+      "skip",
+      "pageSize",
+      "minMmr",
+      "maxMmr",
+      "minEventsPlayed",
+      "maxEventsPlayed",
+    ]) {
+      const validation = validateOptionalNonNegativeInt(req.query[key], key);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+      numericParams[key] = validation.sanitized;
+    }
+
     const normalizedSeason = seasonValidation.sanitized;
     const normalizedGame = gameValidation.sanitized;
     const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
 
     const params = {
-      skip: parseInt(skip),
-      pageSize: Math.min(parseInt(pageSize), 100),
-      sortBy,
+      skip: numericParams.skip ?? 0,
+      pageSize: Math.min(
+        Math.max(numericParams.pageSize ?? DEFAULT_PAGE_SIZE, 1),
+        MAX_PAGE_SIZE,
+      ),
+      sortBy: sortByValidation.sanitized,
     };
 
-    if (minMmr) params.minMmr = parseInt(minMmr);
-    if (maxMmr) params.maxMmr = parseInt(maxMmr);
-    if (minEventsPlayed) params.minEventsPlayed = parseInt(minEventsPlayed);
-    if (maxEventsPlayed) params.maxEventsPlayed = parseInt(maxEventsPlayed);
-    if (country) params.country = country;
-    if (search) {
+    for (const key of [
+      "minMmr",
+      "maxMmr",
+      "minEventsPlayed",
+      "maxEventsPlayed",
+    ]) {
+      if (numericParams[key] !== undefined) params[key] = numericParams[key];
+    }
+    if (countryValidation.sanitized) params.country = countryValidation.sanitized;
+    if (typeof search === "string") {
       // Sanitize search parameter
       const sanitized = search
         .trim()
@@ -610,7 +689,17 @@ app.get("/api/leaderboard", async (req, res) => {
     setCache(cacheKey, response);
     res.json(response);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("leaderboard"));
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Leaderboard API error (${status}):`, error.message);
+        return res.status(status).json({
+          error:
+            error.response?.data?.error || "Failed to retrieve leaderboard",
+        });
+      }
+    }
+
     logger.error("Failed to fetch main leaderboard:", error.message);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }

@@ -1,10 +1,44 @@
 import { describe, it, expect } from "vitest";
 import {
+  calculateComparisonMmrData,
   calculateScoreDistribution,
+  comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
 } from "../chartUtils";
 
 describe("chartUtils", () => {
+  describe("calculateComparisonMmrData", () => {
+    it("keys each series by player index, oldest event first", () => {
+      const players = [
+        // mmrChanges arrive newest first
+        { name: "J.R.", mmrChanges: [{ newMmr: 1200 }, { newMmr: 1100 }] },
+        { name: "Amy", mmrChanges: [{ newMmr: 900 }] },
+      ];
+
+      expect(calculateComparisonMmrData(players)).toEqual([
+        {
+          event: 1,
+          [comparisonSeriesKey(0)]: 1100,
+          [comparisonSeriesKey(1)]: 900,
+        },
+        { event: 2, [comparisonSeriesKey(0)]: 1200 },
+      ]);
+    });
+
+    it("never uses a player name as a data key", () => {
+      const data = calculateComparisonMmrData([
+        { name: "J.R.", mmrChanges: [{ newMmr: 1000 }] },
+      ]);
+
+      expect(Object.keys(data[0])).not.toContain("J.R.");
+    });
+
+    it("returns an empty array without players", () => {
+      expect(calculateComparisonMmrData([])).toEqual([]);
+      expect(calculateComparisonMmrData(null)).toEqual([]);
+    });
+  });
+
   describe("calculateScoreDistribution", () => {
     it("should create correct score distribution for all events", () => {
       const events = [

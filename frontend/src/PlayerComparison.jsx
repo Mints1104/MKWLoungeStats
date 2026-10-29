@@ -13,6 +13,7 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
 import { loungeApi } from "./api/loungeApi";
 import {
   calculateComparisonMmrData,
+  comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
 } from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
@@ -213,7 +214,7 @@ function PlayerComparison() {
                     {/* Side-by-side player stats */}
                     <div className="comparison-grid">
                         {playersData.map((player, index) => (
-                            <div key={player.playerId} className="player-summary">
+                            <div key={`${player.playerId}-${index}`} className="player-summary">
                                 <h2>
                                     <span style={{ color: PLAYER_COLORS[index] }}>●</span>{" "}
                                     <span style={{ color: getRankColor(player.rank) }}>
@@ -329,9 +330,10 @@ function PlayerComparison() {
                                         />
                                         {playersData.map((player, index) => (
                                             <Line
-                                                key={player.playerId}
+                                                key={`${player.playerId}-${index}`}
                                                 type="monotone"
-                                                dataKey={player.name}
+                                                dataKey={comparisonSeriesKey(index)}
+                                                name={player.name}
                                                 stroke={PLAYER_COLORS[index]}
                                                 strokeWidth={2.5}
                                                 strokeDasharray={PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length]}

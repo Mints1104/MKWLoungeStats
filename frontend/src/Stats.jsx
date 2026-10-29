@@ -12,7 +12,7 @@ import {
   GRANULARITY_OPTIONS,
   GRANULARITY_VALUES,
 } from "./utils/activityStats";
-import Flag from "react-world-flags";
+import Flag from "./components/CountryFlag";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";

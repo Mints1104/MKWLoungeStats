@@ -61,7 +61,8 @@ Conventions:
 - Validators (`validatePlayerName`, `validateSeason`, `validateGame`, `validateTableId`)
   return `{ valid, sanitized }` or `{ valid, error }`. Follow that shape for new ones.
 - In-memory `Map` cache, 60s default TTL (2× for player details/stats), 1000-entry FIFO cap,
-  `invalidateCache(prefix)` on error paths. Per-serverless-instance, so best-effort in prod.
+  only successes are cached (errors never clear other entries). Per-serverless-instance, so
+  best-effort in prod. Upstream axios calls time out after `UPSTREAM_TIMEOUT_MS` (8s).
 - `helmet`, `express-rate-limit` (100 req / 15 min / IP), and a CORS allowlist.
 - Logging goes through `server/utils/logger.js` — **never bare `console.*`**. `debug`/`cache`
   are gated behind `process.env.DEBUG`; `info`/`warn`/`request` are dev-only.
@@ -86,7 +87,13 @@ Conventions:
 - **Shared hooks**: `useAbortableRequest` (cancels the previous in-flight request),
   `usePlayerDetails`, `useSeasonMmrSelection`. Prefer these over ad-hoc `fetch` + `useEffect`.
 - Recharts is `lazy()`-imported inside `PlayerDetailView.jsx` behind `Suspense`, and split
-  into its own chunk in `vite.config.js`. Keep it out of the main bundle.
+  into its own chunk in `vite.config.js`. Keep it out of the main bundle. Every route except
+  the home page is `lazy()` in `App.jsx`, so pages that import Recharts directly (`Stats`)
+  stay out of the entry. `vite.config.js` has no catch-all vendor chunk on purpose — check
+  `dist/index.html` doesn't preload `charts-*.js` after changing chunking.
+- Flags: use `components/CountryFlag.jsx`, **not** `react-world-flags`' component (which
+  inlines every flag, ~3.7 MB). `utils/flagUrls.js` globs that package's SVGs as separate
+  assets instead.
 
 ## Domain model
 
@@ -125,7 +132,7 @@ Season is cross-cutting. All of these must change together:
 - **Frontend**: Vitest + Testing Library. Config is **inlined in `frontend/vite.config.js`**
   (`test: { globals: true, environment: "jsdom" }`) — there is no `vitest.config.js` and no
   setup file. Tests are co-located in `__tests__/` folders next to the source.
-  `PlayerDetailView.test.jsx` mocks `recharts`, `react-world-flags` and `useNavigate`.
+  `PlayerDetailView.test.jsx` mocks `recharts`, `CountryFlag` and `useNavigate`.
 - Prefer putting new logic in `src/utils/` as a pure function so it can be unit-tested
   without rendering.
 

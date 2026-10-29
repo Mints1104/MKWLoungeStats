@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import Flag from "react-world-flags";
+import Flag from "./CountryFlag";
 import {
   getNextRank,
   getRankForMmrValue,

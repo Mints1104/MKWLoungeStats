@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Flag from "react-world-flags";
+import Flag from "./components/CountryFlag";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getRankColor } from "./utils/playerUtils";
 import { COUNTRY_MAPPING } from "./utils/countryMapping";
@@ -398,8 +398,8 @@ function Leaderboard() {
                                                 </button>
                                             </div>
                                         </td>
-                                        <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank.name) }}>{player.mmr}</td>
-                                        <td style={{ color: getRankColor(player.maxMmrRank.name) }}>{player.maxMmr}</td>
+                                        <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank?.name) }}>{player.mmr}</td>
+                                        <td style={{ color: getRankColor(player.maxMmrRank?.name) }}>{player.maxMmr}</td>
                                         <td className={player.lastWeekRankChange < 0 ? "positive" : player.lastWeekRankChange > 0 ? "negative" : ""}>
                                             {player.lastWeekRankChange < 0 ? "▲ " : player.lastWeekRankChange > 0 ? "▼ " : ""}
                                             {player.lastWeekRankChange !== 0 && player.lastWeekRankChange != null ? Math.abs(player.lastWeekRankChange) : "—"}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import Flag from "react-world-flags";
+import Flag from "./components/CountryFlag";
 import { useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";

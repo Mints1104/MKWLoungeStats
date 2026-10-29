@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PlayerDetailView from "../PlayerDetailView";
 
-vi.mock("react-world-flags", () => ({
+vi.mock("../CountryFlag", () => ({
   default: ({ code }) => <span data-testid="flag">{code}</span>,
 }));
 

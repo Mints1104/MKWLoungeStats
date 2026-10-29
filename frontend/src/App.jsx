@@ -7,6 +7,8 @@ import {
   Link,
 } from "react-router-dom";
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -16,12 +18,15 @@ import {
 import "./App.css";
 import Navigation from "./components/Navigation";
 import PlayerInfo from "./PlayerInfo";
-import PlayerComparison from "./PlayerComparison";
-import Leaderboard from "./Leaderboard";
-import PlayerProfile from "./PlayerProfile";
-import TableInfo from "./TableInfo";
-import Stats from "./Stats";
 import { SettingsProvider } from "./context/SettingsContext.jsx";
+
+// Only the home page ships in the entry bundle; the rest (and Recharts, which Stats
+// imports directly) load when their route is first visited.
+const PlayerComparison = lazy(() => import("./PlayerComparison"));
+const Leaderboard = lazy(() => import("./Leaderboard"));
+const PlayerProfile = lazy(() => import("./PlayerProfile"));
+const TableInfo = lazy(() => import("./TableInfo"));
+const Stats = lazy(() => import("./Stats"));
 
 const SCROLL_RESTORE_TOLERANCE_PX = 2;
 const SCROLL_RESTORE_MAX_MS = 5000;
@@ -248,6 +253,24 @@ function MissingRouteParamPage({
   );
 }
 
+function RouteFallback() {
+  return (
+    <div className="player-info-page">
+      <div className="player-card">
+        <div
+          className="loading-skeleton"
+          aria-live="polite"
+          aria-label="Loading page"
+        >
+          <div className="skeleton-row"></div>
+          <div className="skeleton-row"></div>
+          <div className="skeleton-row"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <SettingsProvider>
@@ -255,38 +278,40 @@ function App() {
         <ScrollRestorationManager />
         <ScrollRestoration />
         <Navigation />
-        <Routes>
-          <Route path="/" element={<PlayerInfo />} />
-          <Route
-            path="/player"
-            element={
-              <MissingRouteParamPage
-                title="Player Not Specified"
-                description="This route needs a username after /player."
-                example="/player/Player123"
-                linkTo="/"
-                linkLabel="Go To Player Search"
-              />
-            }
-          />
-          <Route path="/compare" element={<PlayerComparison />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route
-            path="/table"
-            element={
-              <MissingRouteParamPage
-                title="Table Not Specified"
-                description="This route needs a table ID after /table."
-                example="/table/123456"
-                linkTo="/leaderboard"
-                linkLabel="Go To Leaderboard"
-              />
-            }
-          />
-          <Route path="/table/:tableId" element={<TableInfo />} />
-          <Route path="/player/:playerName" element={<PlayerProfile />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<PlayerInfo />} />
+            <Route
+              path="/player"
+              element={
+                <MissingRouteParamPage
+                  title="Player Not Specified"
+                  description="This route needs a username after /player."
+                  example="/player/Player123"
+                  linkTo="/"
+                  linkLabel="Go To Player Search"
+                />
+              }
+            />
+            <Route path="/compare" element={<PlayerComparison />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route
+              path="/table"
+              element={
+                <MissingRouteParamPage
+                  title="Table Not Specified"
+                  description="This route needs a table ID after /table."
+                  example="/table/123456"
+                  linkTo="/leaderboard"
+                  linkLabel="Go To Leaderboard"
+                />
+              }
+            />
+            <Route path="/table/:tableId" element={<TableInfo />} />
+            <Route path="/player/:playerName" element={<PlayerProfile />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </SettingsProvider>
   );
