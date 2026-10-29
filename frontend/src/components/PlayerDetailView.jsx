@@ -2,11 +2,14 @@ import { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import Flag from "./CountryFlag";
 import {
+  formatWinRate,
   getNextRank,
   getRankForMmrValue,
   getRankColor,
   getEventFormat,
+  winRateClassName,
 } from "../utils/playerUtils";
+import logger from "../utils/logger";
 import {
   calculateEventStats,
   calculateRecentScoreStats,
@@ -100,7 +103,7 @@ function PlayerDetailView({
         }
       }
     } catch (e) {
-      console.warn("Failed to load event limit mode from sessionStorage", e);
+      logger.warn("Failed to load event limit mode from sessionStorage", e);
     }
     return "number";
   });
@@ -116,7 +119,7 @@ function PlayerDetailView({
         }
       }
     } catch (e) {
-      console.warn(
+      logger.warn(
         "Failed to load event limit preference from sessionStorage",
         e,
       );
@@ -180,7 +183,7 @@ function PlayerDetailView({
         }),
       );
     } catch (e) {
-      console.warn(
+      logger.warn(
         "Failed to save event limit preference to sessionStorage",
         e,
       );
@@ -611,11 +614,11 @@ function PlayerDetailView({
         </DetailStatRow>
         <DetailStatRow
           label="Win Rate"
-          valueClassName={`player-winrate ${
-            playerDetails.winRate >= 0.5 ? "positive" : "negative"
-          }`}
+          valueClassName={`player-winrate ${winRateClassName(
+            playerDetails.winRate,
+          )}`}
         >
-          {(playerDetails.winRate * 100).toFixed(2)}%
+          {formatWinRate(playerDetails.winRate)}
           {season < 2 && (
             <>
               {" "}

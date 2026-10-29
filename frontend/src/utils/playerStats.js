@@ -87,16 +87,9 @@ export const calculateEventStats = (mmrChanges = []) => {
   const twelveCount = twelves.length;
   const twentyFourCount = twentyFours.length;
 
-  const avg12 =
-    twelveCount ?
-      twelves.reduce((acc, event) => acc + (event.score ?? 0), 0) / twelveCount
-    : null;
-
-  const avg24 =
-    twentyFourCount ?
-      twentyFours.reduce((acc, event) => acc + (event.score ?? 0), 0) /
-      twentyFourCount
-    : null;
+  // Events without a numeric score are left out rather than counted as 0
+  const avg12 = averageScoreOf(twelves);
+  const avg24 = averageScoreOf(twentyFours);
 
   const winRate12 =
     twelveCount ?

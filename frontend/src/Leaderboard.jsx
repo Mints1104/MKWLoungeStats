@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Flag from "./components/CountryFlag";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { getRankColor } from "./utils/playerUtils";
+import {
+    useLocation,
+    useNavigate,
+    useNavigationType,
+    useSearchParams,
+} from "react-router-dom";
+import { formatWinRate, getRankColor, winRateClassName } from "./utils/playerUtils";
 import { COUNTRY_MAPPING } from "./utils/countryMapping";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
@@ -404,12 +409,8 @@ function Leaderboard() {
                                             {player.lastWeekRankChange < 0 ? "▲ " : player.lastWeekRankChange > 0 ? "▼ " : ""}
                                             {player.lastWeekRankChange !== 0 && player.lastWeekRankChange != null ? Math.abs(player.lastWeekRankChange) : "—"}
                                         </td>
-                                        <td
-                                            className={
-                                                player.winRate >= 0.5 ? "positive" : "negative"
-                                            }
-                                        >
-                                            {(player.winRate * 100).toFixed(1)}%
+                                        <td className={winRateClassName(player.winRate)}>
+                                            {formatWinRate(player.winRate, 1)}
                                         </td>
                                         <td>{player.eventsPlayed}</td>
                                     </tr>
@@ -476,4 +477,20 @@ function Leaderboard() {
     );
 }
 
-export default Leaderboard;
+// Leaderboard reads its filters from the URL once, on mount, and then mirrors them
+// back with REPLACE navigations. Any other navigation that lands here (the nav link,
+// back/forward between leaderboard entries) remounts it so it re-reads the new URL
+// instead of writing its old filters back over it.
+function LeaderboardRoute() {
+    const location = useLocation();
+    const navigationType = useNavigationType();
+    const [mountKey, setMountKey] = useState(location.key);
+
+    if (navigationType !== "REPLACE" && location.key !== mountKey) {
+        setMountKey(location.key);
+    }
+
+    return <Leaderboard key={mountKey} />;
+}
+
+export default LeaderboardRoute;

@@ -23,6 +23,27 @@ export function formatTimeAgo(dateInput) {
 }
 
 /**
+ * Formats a 0-1 win rate as a percentage.
+ * @param {number} rate - Win rate between 0 and 1.
+ * @param {number} digits - Decimal places to show.
+ * @returns {string} e.g. "62.50%", or "N/A" when the rate is missing.
+ */
+export function formatWinRate(rate, digits = 2) {
+  if (rate == null || !Number.isFinite(Number(rate))) return "N/A";
+  return `${(Number(rate) * 100).toFixed(digits)}%`;
+}
+
+/**
+ * CSS class for a win rate.
+ * @param {number} rate - Win rate between 0 and 1.
+ * @returns {string} "positive" from 50%, "negative" below it, "" when missing.
+ */
+export function winRateClassName(rate) {
+  if (rate == null || !Number.isFinite(Number(rate))) return "";
+  return Number(rate) >= 0.5 ? "positive" : "negative";
+}
+
+/**
  * Retrieves the rank thresholds for a specific season and MMR type.
  * @param {number} season - Season number.
  * @param {number} mmrType - MMR type (12 or 24).

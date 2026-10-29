@@ -1,5 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { getRankColor, getNextRank } from "./utils/playerUtils";
+import {
+    formatWinRate,
+    getRankColor,
+    getNextRank,
+    winRateClassName,
+} from "./utils/playerUtils";
 
 // Lazy load chart components
 const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
@@ -32,6 +37,8 @@ function PlayerComparison() {
     const { defaultGameMode } = useSettings();
     const [playerNames, setPlayerNames] = useState(["", ""]);
     const [playersData, setPlayersData] = useState([]);
+    // Names the backend could not load (not found, or an upstream error)
+    const [unloadedNames, setUnloadedNames] = useState([]);
     const { loading, error, run, setError } = useAbortableRequest();
     const { season, setSeason, setSelectedMmrType, mmrType } =
         useSeasonMmrSelection({
@@ -67,10 +74,12 @@ function PlayerComparison() {
         if (validNames.length < 2) {
             setError("Please enter at least 2 player names");
             setPlayersData([]);
+            setUnloadedNames([]);
             return;
         }
 
         setPlayersData([]);
+        setUnloadedNames([]);
         const data = await run(
             (signal) => loungeApi.comparePlayers(validNames, season, mmrType, signal),
             { mapError: (err) => err.message || "Failed to compare players" },
@@ -81,12 +90,18 @@ function PlayerComparison() {
         }
 
         const validPlayers = data.filter((p) => !p.error);
+        const failedNames = data.filter((p) => p.error).map((p) => p.name);
 
         if (validPlayers.length < 2) {
-            setError("Could not find enough valid players to compare");
+            setError(
+                failedNames.length > 0
+                    ? `Could not find enough players to compare. Couldn't load: ${failedNames.join(", ")}`
+                    : "Could not find enough valid players to compare",
+            );
             return;
         }
 
+        setUnloadedNames(failedNames);
         setPlayersData(validPlayers);
     };
 
@@ -200,6 +215,11 @@ function PlayerComparison() {
                         {error}
                     </p>
                 )}
+                {!error && unloadedNames.length > 0 && (
+                    <p className="player-error" role="status">
+                        Left out of the comparison (couldn't load): {unloadedNames.join(", ")}
+                    </p>
+                )}
                 {loading && (
                     <div className="loading-skeleton" aria-live="polite" aria-label="Comparing players">
                         <div className="skeleton-row"></div>
@@ -234,10 +254,9 @@ function PlayerComparison() {
                                 </p>
                                 <p>Events Played: {player.eventsPlayed}</p>
                                 <p
-                                    className={`player-winrate ${player.winRate >= 0.5 ? "positive" : "negative"
-                                        }`}
+                                    className={`player-winrate ${winRateClassName(player.winRate)}`}
                                 >
-                                    Win Rate: {(player.winRate * 100).toFixed(2)}%
+                                    Win Rate: {formatWinRate(player.winRate)}
                                 </p>
                             </div>
                         ))}

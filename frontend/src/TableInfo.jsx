@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import Flag from "./components/CountryFlag";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import { getRankForMmrValue } from "./utils/playerUtils";
@@ -9,6 +9,7 @@ import { useAbortableRequest } from "./hooks/useAbortableRequest";
 function TableInfo() {
   const { tableId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [result, setResult] = useState(null);
   const { loading, error, run, setError } = useAbortableRequest();
 
@@ -69,7 +70,8 @@ function TableInfo() {
           title={result ? `Table #${result.id}` : "Event Table"}
           subtitle="Viewing standings and MMR changes for this lounge event."
         >
-          {window.history.length > 1 && (
+          {/* "default" is the entry the app was opened on: nothing in-app to go back to */}
+          {location.key !== "default" && (
             <button
               className="player-button"
               type="button"

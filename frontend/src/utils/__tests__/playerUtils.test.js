@@ -4,9 +4,37 @@ import {
   getRankColor,
   getNextRank,
   formatTimeAgo,
+  formatWinRate,
+  winRateClassName,
 } from "../playerUtils";
 
 describe("playerUtils", () => {
+  describe("formatWinRate", () => {
+    it("formats a 0-1 rate as a percentage", () => {
+      expect(formatWinRate(0.625)).toBe("62.50%");
+      expect(formatWinRate(0.625, 1)).toBe("62.5%");
+      expect(formatWinRate(0)).toBe("0.00%");
+    });
+
+    it("returns N/A instead of NaN% when the rate is missing", () => {
+      expect(formatWinRate(undefined)).toBe("N/A");
+      expect(formatWinRate(null)).toBe("N/A");
+      expect(formatWinRate(NaN)).toBe("N/A");
+    });
+  });
+
+  describe("winRateClassName", () => {
+    it("marks 50% and above positive, below negative", () => {
+      expect(winRateClassName(0.5)).toBe("positive");
+      expect(winRateClassName(0.49)).toBe("negative");
+    });
+
+    it("returns no class when the rate is missing", () => {
+      expect(winRateClassName(undefined)).toBe("");
+      expect(winRateClassName(null)).toBe("");
+    });
+  });
+
   describe("getRankForMmrValue", () => {
     it("should return rank objects for MMR values", () => {
       expect(getRankForMmrValue(15500).name).toBe("Grandmaster");

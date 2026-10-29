@@ -19,6 +19,7 @@ import "./App.css";
 import Navigation from "./components/Navigation";
 import PlayerInfo from "./PlayerInfo";
 import { SettingsProvider } from "./context/SettingsContext.jsx";
+import { isScrollKeyOnPath } from "./utils/scrollKeys";
 
 // Only the home page ships in the entry bundle; the rest (and Recharts, which Stats
 // imports directly) load when their route is first visited.
@@ -45,17 +46,20 @@ function isScrollRestored(targetY) {
 
 function findSavedPositionOnPath(pathname, positionsRef) {
   for (const [key, value] of positionsRef.current.entries()) {
-    if (key.startsWith(pathname) && value > 0) {
+    if (isScrollKeyOnPath(key, pathname) && value > 0) {
       return value;
     }
   }
 
-  const storagePrefix = `scroll:${pathname}`;
   let best = null;
   try {
     for (let i = 0; i < sessionStorage.length; i += 1) {
       const storageKey = sessionStorage.key(i);
-      if (storageKey == null || !storageKey.startsWith(storagePrefix)) {
+      if (
+        storageKey == null ||
+        !storageKey.startsWith("scroll:") ||
+        !isScrollKeyOnPath(storageKey.slice("scroll:".length), pathname)
+      ) {
         continue;
       }
       const parsed = Number(sessionStorage.getItem(storageKey));
@@ -123,28 +127,33 @@ function ScrollRestoration() {
     return query ? `${location.pathname}?${query}` : location.pathname;
   }, [location.pathname, location.search]);
 
-  const savePosition = useCallback(
-    (y) => {
-      positionsRef.current.set(scrollKey, y);
-      try {
-        sessionStorage.setItem(`scroll:${scrollKey}`, String(y));
-      } catch {
-        // ignore sessionStorage failures
-      }
-    },
-    [scrollKey],
-  );
+  // The key scroll events are saved under. It moves to the new URL in the layout
+  // effect, before any scroll a navigation causes, so a scroll event that lands
+  // after navigating (scrolling to the top, the browser clamping a shorter page)
+  // is never saved against the page that was just left.
+  const activeKeyRef = useRef(scrollKey);
 
+  const savePosition = useCallback((key, y) => {
+    positionsRef.current.set(key, y);
+    try {
+      sessionStorage.setItem(`scroll:${key}`, String(y));
+    } catch {
+      // ignore sessionStorage failures
+    }
+  }, []);
+
+  // A saved 0 counts: it means this URL was left at the top. Only a URL with no
+  // saved position at all borrows one from the same path.
   const readSavedPosition = useCallback(() => {
     const inMemory = positionsRef.current.get(scrollKey);
-    if (inMemory != null && inMemory > 0) {
+    if (inMemory != null) {
       return inMemory;
     }
     try {
       const raw = sessionStorage.getItem(`scroll:${scrollKey}`);
       if (raw != null) {
         const parsed = Number(raw);
-        if (!Number.isNaN(parsed) && parsed > 0) {
+        if (!Number.isNaN(parsed) && parsed >= 0) {
           return parsed;
         }
       }
@@ -169,7 +178,7 @@ function ScrollRestoration() {
       if (rafRef.current != null) return;
       rafRef.current = window.requestAnimationFrame(() => {
         rafRef.current = null;
-        savePosition(window.scrollY);
+        savePosition(activeKeyRef.current, window.scrollY);
       });
     };
 
@@ -182,34 +191,55 @@ function ScrollRestoration() {
         rafRef.current = null;
       }
     };
-  }, [scrollKey, savePosition]);
+  }, [savePosition]);
 
   useLayoutEffect(() => {
-    const savedPosition = readSavedPosition();
-    if (savedPosition != null) {
-      endRestoreSessionRef.current = startScrollRestoreSession(savedPosition);
-      savePosition(savedPosition);
-    } else if (navigationType === "PUSH") {
-      window.scrollTo(0, 0);
+    activeKeyRef.current = scrollKey;
+
+    // REPLACE is a page syncing its own state into the URL (filters, pagination):
+    // leave the scroll alone and let a restore that is still waiting for content
+    // finish.
+    if (navigationType !== "REPLACE") {
+      endRestoreSession();
+
+      if (navigationType === "POP") {
+        // Back/forward or a reload: return to where this URL was left.
+        const savedPosition = readSavedPosition();
+        if (savedPosition != null) {
+          endRestoreSessionRef.current =
+            startScrollRestoreSession(savedPosition);
+          savePosition(scrollKey, savedPosition);
+        }
+      } else {
+        // A new navigation starts at the top, even on a page visited before.
+        window.scrollTo(0, 0);
+        savePosition(scrollKey, 0);
+      }
     }
 
     return () => {
-      endRestoreSession();
+      // Drop the pending frame-throttled save and write this URL's latest position
+      // directly, before the key moves on.
       if (rafRef.current != null) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
       if (scrollYRef.current > 0) {
-        savePosition(scrollYRef.current);
+        savePosition(scrollKey, scrollYRef.current);
       }
     };
+    // location.key: re-run for a new navigation to the same URL (e.g. the nav link
+    // to the page already open), which should still scroll to the top.
   }, [
+    location.key,
     scrollKey,
     navigationType,
     readSavedPosition,
     savePosition,
     endRestoreSession,
   ]);
+
+  useEffect(() => endRestoreSession, [endRestoreSession]);
 
   return null;
 }
@@ -240,7 +270,7 @@ function MissingRouteParamPage({
       <div className="player-card">
         <h1>{title}</h1>
         <p>{description}</p>
-        <p>Example: {example}</p>
+        {example && <p>Example: {example}</p>}
         <Link
           className="player-button"
           to={linkTo}
@@ -310,6 +340,17 @@ function App() {
             />
             <Route path="/table/:tableId" element={<TableInfo />} />
             <Route path="/player/:playerName" element={<PlayerProfile />} />
+            <Route
+              path="*"
+              element={
+                <MissingRouteParamPage
+                  title="Page Not Found"
+                  description="There is no page at this address."
+                  linkTo="/"
+                  linkLabel="Go To Player Search"
+                />
+              }
+            />
           </Routes>
         </Suspense>
       </BrowserRouter>

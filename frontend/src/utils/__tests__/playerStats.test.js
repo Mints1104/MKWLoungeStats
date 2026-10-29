@@ -141,8 +141,8 @@ describe("playerStats", () => {
       const result = calculateEventStats(events);
 
       expect(result.twelveCount).toBe(2);
-      // Current implementation treats missing scores as 0 in the average
-      expect(result.avg12).toBe(40);
+      // Events without a score are left out of the average, not counted as 0
+      expect(result.avg12).toBe(80);
       expect(result.winRate12).toBe(1); // Both positive deltas
     });
 

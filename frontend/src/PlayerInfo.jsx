@@ -7,9 +7,20 @@ import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { CURRENT_SEASON } from "./config/seasons";
+import logger from "./utils/logger";
 
 const RECENT_KEY = "recentPlayerSearches";
 const LAST_DETAILS_KEY = "lastPlayerDetails";
+const SEASON_KEY = "playerInfoSeason";
+const MMR_TYPE_KEY = "playerInfoMmrType";
+
+function readSessionItem(key) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
 
 function PlayerInfo() {
   const { defaultGameMode } = useSettings();
@@ -20,38 +31,43 @@ function PlayerInfo() {
       const saved = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
       return Array.isArray(saved) ? saved.slice(0, 3) : [];
     } catch (e) {
-      console.warn("Failed to load recent searches", e);
+      logger.warn("Failed to load recent searches", e);
       return [];
     }
   });
 
-  // 2. Initialize 'name' and 'initialDetails' lazily from sessionStorage
+  // 2. Initialize 'name' and 'initialDetails' lazily from sessionStorage, along
+  // with the season and MMR type they were fetched for (absent in older entries)
   const [initialState] = useState(() => {
     try {
       const raw = sessionStorage.getItem(LAST_DETAILS_KEY);
       if (!raw) return { name: "", details: null };
       const parsed = JSON.parse(raw);
       if (parsed && parsed.name && parsed.data) {
-        return { name: parsed.name, details: parsed.data };
+        return {
+          name: parsed.name,
+          details: parsed.data,
+          season: parsed.season,
+          mmrType: parsed.mmrType,
+        };
       }
     } catch (e) {
-      console.warn("Failed to restore last player details", e);
+      logger.warn("Failed to restore last player details", e);
     }
     return { name: "", details: null };
   });
 
   const [name, setName] = useState(initialState.name);
-  const { season, setSeason, setSelectedMmrType, mmrType } =
+  // Restored details must be shown with the season and MMR type they were fetched
+  // for, or ranks are drawn against the wrong thresholds.
+  const { season, setSeason, selectedMmrType, setSelectedMmrType, mmrType } =
     useSeasonMmrSelection({
       initialSeason: () => {
-        try {
-          const saved = sessionStorage.getItem("playerInfoSeason");
-          return saved !== null ? Number(saved) : CURRENT_SEASON;
-        } catch {
-          return CURRENT_SEASON;
-        }
+        if (initialState.season != null) return initialState.season;
+        const saved = readSessionItem(SEASON_KEY);
+        return saved !== null ? Number(saved) : CURRENT_SEASON;
       },
-      initialMmrType: null,
+      initialMmrType: () => initialState.mmrType ?? readSessionItem(MMR_TYPE_KEY),
       defaultMmrType: defaultGameMode,
     });
 
@@ -63,14 +79,26 @@ function PlayerInfo() {
     fetchPlayerDetails,
   } = usePlayerDetails(initialState.details);
 
-  // Persist season across page reloads
+  // Persist season and MMR type selection across page reloads
   useEffect(() => {
     try {
-      sessionStorage.setItem("playerInfoSeason", season);
+      sessionStorage.setItem(SEASON_KEY, season);
     } catch {
       /* ignore */
     }
   }, [season]);
+
+  useEffect(() => {
+    try {
+      if (selectedMmrType == null) {
+        sessionStorage.removeItem(MMR_TYPE_KEY);
+      } else {
+        sessionStorage.setItem(MMR_TYPE_KEY, selectedMmrType);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [selectedMmrType]);
 
   const rememberRecent = (value) => {
     const clean = value.trim();
@@ -83,19 +111,25 @@ function PlayerInfo() {
     try {
       localStorage.setItem(RECENT_KEY, JSON.stringify(deduped));
     } catch (e) {
-      console.warn("Failed to save recent searches", e);
+      logger.warn("Failed to save recent searches", e);
     }
   };
 
-  const rememberLastDetails = (playerName, data) => {
+  const rememberLastDetails = (playerName, data, seasonValue, mmrValue) => {
     if (!data) return;
     try {
       sessionStorage.setItem(
         LAST_DETAILS_KEY,
-        JSON.stringify({ name: playerName, data }),
+        JSON.stringify({
+          name: playerName,
+          data,
+          season: seasonValue,
+          // Pre-split seasons have no 12p/24p ladder, so there is nothing to pin
+          mmrType: Number(seasonValue) >= 2 ? mmrValue : null,
+        }),
       );
     } catch (e) {
-      console.warn("Failed to save last player details", e);
+      logger.warn("Failed to save last player details", e);
     }
   };
 
@@ -108,7 +142,7 @@ function PlayerInfo() {
     const data = await fetchPlayerDetails(trimmed, seasonValue, mmrValue);
     if (data) {
       rememberRecent(trimmed);
-      rememberLastDetails(trimmed, data);
+      rememberLastDetails(trimmed, data, seasonValue, mmrValue);
     }
     return data;
   };
