@@ -99,9 +99,16 @@ Conventions:
 
 The upstream shapes are documented in `API-GET-Endpoints.md`. Things that bite:
 
-- `playerDetails.mmrChanges` mixes real events with penalties/bonuses. **Always filter to
-  `reason === "Table"` first** — `utils/playerStats.js` and `utils/chartUtils.js` do.
-  Other `reason` values: `Strike`, `TableDelete`, `Bonus`, `Placement`.
+- `playerDetails.mmrChanges` mixes real events with penalties/bonuses. **For stats, use
+  `getCountedTableEvents()`** (`utils/playerStats.js`), not a bare `reason === "Table"`
+  filter: it also drops tables that were later deleted. Other `reason` values: `Strike`,
+  `Penalty`, `StrikeDelete`, `TableDelete`, `Bonus`, `Placement`.
+- **Deleted tables** keep their `Table` entry; a later `TableDelete` with the **same
+  `changeId`** refunds the MMR. The API leaves them out of `eventsPlayed`, `averageScore`,
+  `winRate` and every other aggregate, so stats must too (verified against live data).
+  Keep both entries in the event list and MMR chart.
+- `changeId` is only unique **within a `reason`** (penalties and bonuses have their own ID
+  sequences), so dedupe/key mmrChanges with `getMmrChangeKey()` (reason + changeId).
 - `tier === "SQ"` marks a **Squad Queue** event. This is the only SQ discriminator — it is
   *not* the same as "has partners", since non-SQ team events exist (e.g. tier `S` with
   `numTeams: 12`). The API's own `noSQAverageScore` / `noSQPartnerAverage` are reproduced

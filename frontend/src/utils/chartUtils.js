@@ -1,3 +1,5 @@
+import { getCountedTableEvents } from "./playerStats";
+
 /**
  * Calculates score distribution data for a bar chart
  * @param {Array} events - Array of event objects with score and numPlayers properties
@@ -7,8 +9,8 @@
 export function calculateScoreDistribution(events, filter = "all") {
   if (!events || !Array.isArray(events)) return [];
 
-  // Only include table events (exclude penalties)
-  const tableEvents = events.filter((e) => e.reason === "Table");
+  // Only include table events (exclude penalties and deleted tables)
+  const tableEvents = getCountedTableEvents(events);
 
   let filteredEvents = tableEvents;
   if (filter === "12") {

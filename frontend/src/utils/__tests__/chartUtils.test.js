@@ -79,6 +79,19 @@ describe("chartUtils", () => {
       expect(total24).toBe(1);
     });
 
+    it("should leave out tables that were later deleted", () => {
+      const events = [
+        { reason: "TableDelete", changeId: 7, mmrDelta: 80 },
+        { reason: "Table", changeId: 7, score: 30, numPlayers: 24 },
+        { reason: "Table", changeId: 8, score: 95, numPlayers: 24 },
+      ];
+
+      const result = calculateScoreDistribution(events, "all");
+
+      expect(result[0].count).toBe(0); // 0-40: the deleted table's 30
+      expect(result[3].count).toBe(1); // 81-100
+    });
+
     it("should handle empty or null events", () => {
       const result1 = calculateScoreDistribution(null, "all");
       const result2 = calculateScoreDistribution([], "all");
