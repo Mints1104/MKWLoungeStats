@@ -160,6 +160,36 @@ export function findPeakPoint(points) {
   );
 }
 
+const MMR_TICK_STEPS = [100, 250, 500, 1000, 2000, 2500, 5000];
+
+/**
+ * Y axis for an MMR chart: the plotted range padded by 50 and widened to round
+ * numbers, with evenly spaced round ticks (at most `maxTicks`), so labels read
+ * 4000 / 5000 / 6000 rather than 2257 / 3757 / 5257.
+ * @param {Array} points - plotted `{ mmr }` points
+ * @param {number} [maxTicks=6]
+ * @returns {{ domain: [number, number], ticks: number[] }|null}
+ */
+export function getMmrAxis(points, maxTicks = 6) {
+  if (!Array.isArray(points) || points.length === 0) return null;
+
+  const mmrs = points.map((point) => point.mmr);
+  const low = Math.max(0, Math.min(...mmrs) - 50);
+  const high = Math.max(...mmrs) + 50;
+  const step =
+    MMR_TICK_STEPS.find(
+      (candidate) =>
+        Math.ceil(high / candidate) - Math.floor(low / candidate) <= maxTicks - 1,
+    ) ?? MMR_TICK_STEPS[MMR_TICK_STEPS.length - 1];
+
+  const min = Math.floor(low / step) * step;
+  const max = Math.ceil(high / step) * step;
+  const ticks = [];
+  for (let tick = min; tick <= max; tick += step) ticks.push(tick);
+
+  return { domain: [min, max], ticks };
+}
+
 /**
  * Rank thresholds worth drawing as reference lines: those whose floor falls
  * inside the plotted MMR range (the bottom rank's 0 floor never does).

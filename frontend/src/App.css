@@ -267,14 +267,20 @@ body {
     display: grid;
     /* Give the MMR chart more space by spanning two columns. */
     grid-template-columns: 320px 1fr 1fr;
+    /* Insights and breakdown hold wide tables and chip rows: full-width rows,
+       never the 320px column. */
     grid-template-areas:
       "stats mmr mmr"
+      "insights insights insights"
+      "breakdown breakdown breakdown"
       "score events events";
     gap: 1.5rem;
     align-items: stretch;
   }
 
   .player-results > .player-summary.stats { grid-area: stats; }
+  .player-results > .player-summary.insights-card { grid-area: insights; }
+  .player-results > .player-summary.breakdown-card { grid-area: breakdown; }
   .player-results > .player-summary.mmr {
     grid-area: mmr;
     min-height: 400px;
@@ -2106,6 +2112,7 @@ a.recent-chip {
 
 .form-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
   margin: 0;
   padding: 0;
@@ -2356,4 +2363,9 @@ a.recent-chip {
 
 .mmr-chart-hint {
   color: #64748b;
+}
+
+/* Short values: two streak cards per row even on phones */
+.insights-card .recent-stats-row {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }

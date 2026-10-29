@@ -15,8 +15,8 @@ import FilterToggle from "./FilterToggle";
 import {
   calculateGradientStops,
   findPeakPoint,
+  getMmrAxis,
   getVisibleRankLines,
-  MMR_CHART_Y_DOMAIN,
 } from "../utils/chartUtils";
 import { getEventFormat } from "../utils/playerUtils";
 
@@ -37,6 +37,18 @@ const PEAK_COLOR = "#38bdf8";
 const PENALTY_COLOR = "#ef4444";
 const DELETED_COLOR = "#94a3b8";
 const RANK_LINE_COLOR = "#f59e0b";
+
+// Outline in the card colour so labels stay readable where they cross the line
+const LABEL_HALO = { stroke: "#0f172a", strokeWidth: 3, paintOrder: "stroke" };
+
+// Keep the peak label inside the plot: beside the dot near either edge, above it
+// elsewhere
+function peakLabelPosition(index, count) {
+  const fraction = count > 1 ? index / (count - 1) : 0.5;
+  if (fraction > 0.85) return "left";
+  if (fraction < 0.15) return "right";
+  return "top";
+}
 
 function readPref(key, fallback) {
   try {
@@ -209,7 +221,8 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
   const first = points[0];
   const last = points[points.length - 1];
   const showBrush = points.length >= BRUSH_MIN_POINTS;
-  const peakVisible = peak && visible.includes(peak);
+  const peakIndex = peak ? visible.indexOf(peak) : -1;
+  const yAxis = getMmrAxis(visible) ?? { domain: ["auto", "auto"], ticks: undefined };
 
   return (
     <>
@@ -281,7 +294,9 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
             <YAxis
               stroke="#9ca3af"
               label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-              domain={MMR_CHART_Y_DOMAIN}
+              domain={yAxis.domain}
+              ticks={yAxis.ticks}
+              allowDataOverflow
             />
             <Tooltip content={<MmrTooltip />} />
             {rankLines.map((rank) => (
@@ -293,9 +308,11 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
                 strokeOpacity={0.75}
                 label={{
                   value: `${rank.name} ${rank.min}`,
-                  position: "insideTopRight",
+                  // Left end: seasons usually climb, so the line is lower there
+                  position: "insideTopLeft",
                   fill: "#fbbf24",
                   fontSize: 11,
+                  ...LABEL_HALO,
                 }}
               />
             ))}
@@ -309,7 +326,7 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
               isAnimationActive={false}
               strokeLinecap="round"
             />
-            {peakVisible && (
+            {peakIndex >= 0 && (
               <ReferenceDot
                 x={peak[xKey]}
                 y={peak.mmr}
@@ -319,9 +336,11 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
                 strokeWidth={1.5}
                 label={{
                   value: `Peak ${peak.mmr}`,
-                  position: "top",
+                  position: peakLabelPosition(peakIndex, visible.length),
+                  offset: 8,
                   fill: "#e5e7eb",
                   fontSize: 11,
+                  ...LABEL_HALO,
                 }}
               />
             )}

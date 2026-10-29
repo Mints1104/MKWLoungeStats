@@ -5,6 +5,7 @@ import {
   calculateMmrHistoryData,
   calculateScoreDistribution,
   findPeakPoint,
+  getMmrAxis,
   getVisibleRankLines,
   comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
@@ -225,5 +226,26 @@ describe("MMR history chart data", () => {
       ),
     ).toEqual(["Gold"]);
     expect(getVisibleRankLines(thresholds, [])).toEqual([]);
+  });
+});
+
+describe("getMmrAxis", () => {
+  it("widens the range to round numbers with round ticks", () => {
+    // 2257..7140 after padding: steps of 1000 would need 7 ticks, so 2000
+    expect(getMmrAxis([{ mmr: 2307 }, { mmr: 7090 }])).toEqual({
+      domain: [2000, 8000],
+      ticks: [2000, 4000, 6000, 8000],
+    });
+  });
+
+  it("uses finer steps for a narrow range and never goes below 0", () => {
+    expect(getMmrAxis([{ mmr: 30 }, { mmr: 420 }])).toEqual({
+      domain: [0, 500],
+      ticks: [0, 100, 200, 300, 400, 500],
+    });
+  });
+
+  it("returns null without points", () => {
+    expect(getMmrAxis([])).toBeNull();
   });
 });

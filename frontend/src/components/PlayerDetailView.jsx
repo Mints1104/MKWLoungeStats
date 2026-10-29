@@ -680,16 +680,6 @@ function PlayerDetailView({
 
       </div>
 
-      <PlayerInsights events={sanitizedEvents} season={season} mmrType={mmrType} />
-
-      <PerformanceBreakdown
-        events={sanitizedEvents}
-        splitByPlayerCount={season < 2}
-        selectedTier={selectedTier}
-        selectedFormat={selectedFormat}
-        onSelect={handleBreakdownSelect}
-      />
-
       {/* MMR History Chart */}
       <div className="player-summary mmr">
         <Suspense
@@ -702,6 +692,18 @@ function PlayerDetailView({
           />
         </Suspense>
       </div>
+
+      {/* After the chart when stacked on narrow screens; full-width grid rows
+          under it on desktop */}
+      <PlayerInsights events={sanitizedEvents} season={season} mmrType={mmrType} />
+
+      <PerformanceBreakdown
+        events={sanitizedEvents}
+        splitByPlayerCount={season < 2}
+        selectedTier={selectedTier}
+        selectedFormat={selectedFormat}
+        onSelect={handleBreakdownSelect}
+      />
 
       {/* Score Distribution Chart */}
       <div className="player-summary score">
