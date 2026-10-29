@@ -12,7 +12,7 @@ import {
 import FilterToggle from "./FilterToggle";
 import { loungeApi } from "../api/loungeApi";
 import { useAbortableRequest } from "../hooks/useAbortableRequest";
-import { CURRENT_SEASON } from "../config/seasons";
+import { CURRENT_SEASON, getSeasonLabel } from "../config/seasons";
 import {
   buildSeasonComparison,
   buildSeasonOverlay,
@@ -42,10 +42,6 @@ const SEASON_COLORS = [
   "#f472b6",
   "#facc15",
 ];
-
-function seasonLabel(season) {
-  return season === 0 ? "Preseason" : `Season ${season}`;
-}
 
 function seasonColor(season) {
   return SEASON_COLORS[season % SEASON_COLORS.length];
@@ -124,7 +120,7 @@ async function fetchSeason(season, scope, signal) {
     );
     return {
       season,
-      label: seasonLabel(season),
+      label: getSeasonLabel(season),
       dailyActivity: data?.activityData?.dailyActivity ?? null,
       totalPlayers: Number(data?.totalPlayers) || null,
       averageMmr: Number(data?.averageMmr) || null,
@@ -140,7 +136,7 @@ async function fetchSeason(season, scope, signal) {
 
     return {
       season,
-      label: seasonLabel(season),
+      label: getSeasonLabel(season),
       dailyActivity: mergeDailyActivity([
         twelve?.activityData?.dailyActivity,
         twentyFour?.activityData?.dailyActivity,
@@ -159,7 +155,7 @@ async function fetchSeason(season, scope, signal) {
   );
   return {
     season,
-    label: seasonLabel(season),
+    label: getSeasonLabel(season),
     dailyActivity: data?.activityData?.dailyActivity ?? null,
     totalPlayers: Number(data?.totalPlayers) || null,
     averageMmr: Number(data?.averageMmr) || null,
@@ -217,7 +213,7 @@ function SeasonComparison({ isMobile = false }) {
           // quietly missing a season is worse than one that says so.
           const missing = seasonNumbers
             .filter((season) => !loaded.some((entry) => entry.season === season))
-            .map(seasonLabel);
+            .map(getSeasonLabel);
 
           return { loaded, missing };
         },

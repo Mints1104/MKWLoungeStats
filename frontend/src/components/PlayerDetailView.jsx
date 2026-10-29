@@ -1,15 +1,23 @@
 import { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import Flag from "react-world-flags";
+import Flag from "./CountryFlag";
 import {
+  formatWinRate,
   getNextRank,
   getRankForMmrValue,
   getRankColor,
   getEventFormat,
+  winRateClassName,
 } from "../utils/playerUtils";
+import logger from "../utils/logger";
+import { useRankThresholds } from "../hooks/useRankThresholds";
 import {
   calculateEventStats,
   calculateRecentScoreStats,
+  dedupeMmrChanges,
+  getCountedTableEvents,
+  getDeletedTableIds,
+  getMmrChangeKey,
 } from "../utils/playerStats";
 import {
   calculateMmrHistoryData,
@@ -100,7 +108,7 @@ function PlayerDetailView({
         }
       }
     } catch (e) {
-      console.warn("Failed to load event limit mode from sessionStorage", e);
+      logger.warn("Failed to load event limit mode from sessionStorage", e);
     }
     return "number";
   });
@@ -116,7 +124,7 @@ function PlayerDetailView({
         }
       }
     } catch (e) {
-      console.warn(
+      logger.warn(
         "Failed to load event limit preference from sessionStorage",
         e,
       );
@@ -180,7 +188,7 @@ function PlayerDetailView({
         }),
       );
     } catch (e) {
-      console.warn(
+      logger.warn(
         "Failed to save event limit preference to sessionStorage",
         e,
       );
@@ -249,28 +257,18 @@ function PlayerDetailView({
     return () => document.removeEventListener("mousedown", handler);
   }, [gameModeOpen, tierOpen]);
 
-  // Create a unique set of events, prioritizing changeId to avoid duplicates
-  // from API responses or state updates.
-  const sanitizedEvents = useMemo(() => {
-    if (!playerDetails || !Array.isArray(playerDetails.mmrChanges)) return [];
+  // Drop repeated entries (same reason and changeId), preserving order.
+  const sanitizedEvents = useMemo(
+    () => dedupeMmrChanges(playerDetails?.mmrChanges),
+    [playerDetails],
+  );
 
-    const unique = new Map();
-    // Traverse original array
-    playerDetails.mmrChanges.forEach((e) => {
-      // Create a unique key. Prefer changeId, fallback to composite key.
-      const key =
-        e.changeId ? `id-${e.changeId}` : `${e.time}-${e.newMmr}-${e.reason}`;
-
-      // Only add if not already present
-      if (!unique.has(key)) {
-        // Store a shallow copy to prevent mutation
-        unique.set(key, { ...e });
-      }
-    });
-
-    // Return values, preserving original order
-    return Array.from(unique.values());
-  }, [playerDetails]);
+  // Deleted tables stay in the event list and MMR chart but, like in the API's own
+  // aggregates, are left out of every stat.
+  const deletedTableIds = useMemo(
+    () => getDeletedTableIds(sanitizedEvents),
+    [sanitizedEvents],
+  );
 
   // Unique game modes played, derived from table events (e.g. ["FFA", "2v2", "3v3"])
   const availableGameModes = useMemo(() => {
@@ -309,6 +307,7 @@ function PlayerDetailView({
 
   // Derived stats for 12p / 24p events
   const navigate = useNavigate();
+  const rankThresholds = useRankThresholds(season, mmrType);
 
   const { twelveCount, twentyFourCount, avg12, avg24, winRate12, winRate24 } =
     calculateEventStats(sanitizedEvents);
@@ -316,7 +315,7 @@ function PlayerDetailView({
   const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
     return calculateMmrHistoryData(
       sanitizedEvents,
-      (val) => getRankForMmrValue(val, season, mmrType),
+      (val) => getRankForMmrValue(val, season, mmrType, rankThresholds),
       `${gradientIdPrefix}-${playerDetails?.playerId || "default"}`,
     );
   }, [
@@ -325,6 +324,7 @@ function PlayerDetailView({
     gradientIdPrefix,
     season,
     mmrType,
+    rankThresholds,
   ]);
 
   const baseFilteredEvents = useMemo(() => {
@@ -452,7 +452,7 @@ function PlayerDetailView({
     partnerAvgScore: recentPartnerAvgScore,
     noSqAvgScore: recentNoSqAvgScore,
     noSqPartnerAvgScore: recentNoSqPartnerAvgScore,
-  } = calculateRecentScoreStats(eventsToShow);
+  } = calculateRecentScoreStats(eventsToShow, deletedTableIds);
 
   let recentWinRate = null;
   let largestGain = null;
@@ -462,8 +462,8 @@ function PlayerDetailView({
   let avgPlacement24 = null;
 
   if (eventsToShow.length) {
-    // Only calculate score stats for table events (exclude penalties)
-    const tableEvents = eventsToShow.filter((e) => e.reason === "Table");
+    // Only calculate score stats for table events (exclude penalties and deleted tables)
+    const tableEvents = getCountedTableEvents(eventsToShow, deletedTableIds);
     const tableEventsWithRank = tableEvents.filter((e) =>
       Number.isFinite(e.rank),
     );
@@ -504,13 +504,11 @@ function PlayerDetailView({
   const highestScoreData = useMemo(() => {
     if (!sanitizedEvents.length) return null;
 
-    // Only consider table events (exclude penalties)
-    const tableEvents = sanitizedEvents.filter(
-      (e) =>
-        e.reason === "Table" &&
-        typeof e.score === "number" &&
-        !Number.isNaN(e.score),
-    );
+    // Only consider table events (exclude penalties and deleted tables)
+    const tableEvents = getCountedTableEvents(
+      sanitizedEvents,
+      deletedTableIds,
+    ).filter((e) => typeof e.score === "number" && !Number.isNaN(e.score));
 
     if (!tableEvents.length) return null;
 
@@ -522,11 +520,16 @@ function PlayerDetailView({
       score: highestEvent.score,
       changeId: highestEvent.changeId,
     };
-  }, [sanitizedEvents]);
+  }, [sanitizedEvents, deletedTableIds]);
 
   if (!playerDetails) return null;
 
-  const nextRankText = getNextRank(playerDetails.mmr, season, mmrType);
+  const nextRankText = getNextRank(
+    playerDetails.mmr,
+    season,
+    mmrType,
+    rankThresholds,
+  );
 
   return (
     <div className="player-results">
@@ -611,11 +614,11 @@ function PlayerDetailView({
         </DetailStatRow>
         <DetailStatRow
           label="Win Rate"
-          valueClassName={`player-winrate ${
-            playerDetails.winRate >= 0.5 ? "positive" : "negative"
-          }`}
+          valueClassName={`player-winrate ${winRateClassName(
+            playerDetails.winRate,
+          )}`}
         >
-          {(playerDetails.winRate * 100).toFixed(2)}%
+          {formatWinRate(playerDetails.winRate)}
           {season < 2 && (
             <>
               {" "}
@@ -1100,8 +1103,11 @@ function PlayerDetailView({
       : <div className="events-grid">
           {eventsToShow.map((event) => (
             <EventCard
-              key={event.changeId || `${event.time}-${event.newMmr}`}
+              key={getMmrChangeKey(event)}
               event={event}
+              tableWasDeleted={
+                event.reason === "Table" && deletedTableIds.has(event.changeId)
+              }
               averageScore={playerDetails.averageScore}
               avg12={avg12}
               avg24={avg24}

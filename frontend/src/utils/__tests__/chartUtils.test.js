@@ -1,10 +1,44 @@
 import { describe, it, expect } from "vitest";
 import {
+  calculateComparisonMmrData,
   calculateScoreDistribution,
+  comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
 } from "../chartUtils";
 
 describe("chartUtils", () => {
+  describe("calculateComparisonMmrData", () => {
+    it("keys each series by player index, oldest event first", () => {
+      const players = [
+        // mmrChanges arrive newest first
+        { name: "J.R.", mmrChanges: [{ newMmr: 1200 }, { newMmr: 1100 }] },
+        { name: "Amy", mmrChanges: [{ newMmr: 900 }] },
+      ];
+
+      expect(calculateComparisonMmrData(players)).toEqual([
+        {
+          event: 1,
+          [comparisonSeriesKey(0)]: 1100,
+          [comparisonSeriesKey(1)]: 900,
+        },
+        { event: 2, [comparisonSeriesKey(0)]: 1200 },
+      ]);
+    });
+
+    it("never uses a player name as a data key", () => {
+      const data = calculateComparisonMmrData([
+        { name: "J.R.", mmrChanges: [{ newMmr: 1000 }] },
+      ]);
+
+      expect(Object.keys(data[0])).not.toContain("J.R.");
+    });
+
+    it("returns an empty array without players", () => {
+      expect(calculateComparisonMmrData([])).toEqual([]);
+      expect(calculateComparisonMmrData(null)).toEqual([]);
+    });
+  });
+
   describe("calculateScoreDistribution", () => {
     it("should create correct score distribution for all events", () => {
       const events = [
@@ -43,6 +77,19 @@ describe("chartUtils", () => {
 
       expect(total12).toBe(2);
       expect(total24).toBe(1);
+    });
+
+    it("should leave out tables that were later deleted", () => {
+      const events = [
+        { reason: "TableDelete", changeId: 7, mmrDelta: 80 },
+        { reason: "Table", changeId: 7, score: 30, numPlayers: 24 },
+        { reason: "Table", changeId: 8, score: 95, numPlayers: 24 },
+      ];
+
+      const result = calculateScoreDistribution(events, "all");
+
+      expect(result[0].count).toBe(0); // 0-40: the deleted table's 30
+      expect(result[3].count).toBe(1); // 81-100
     });
 
     it("should handle empty or null events", () => {

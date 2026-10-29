@@ -2,10 +2,103 @@ import { describe, it, expect } from "vitest";
 import {
   calculateEventStats,
   calculateRecentScoreStats,
+  dedupeMmrChanges,
+  getCountedTableEvents,
+  getDeletedTableIds,
+  getMmrChangeKey,
   isSquadQueueEvent,
 } from "../playerStats";
 
+// Shape seen in real season 3 data: a deleted table keeps its Table entry, and a
+// later TableDelete with the same changeId refunds the MMR. Newest first, as the
+// API sends them. Penalty/bonus IDs come from their own sequences.
+const deletedTableHistory = [
+  { reason: "TableDelete", changeId: 1148866, mmrDelta: 111, newMmr: 5955 },
+  {
+    reason: "Table",
+    changeId: 1148866,
+    mmrDelta: -111,
+    newMmr: 5844,
+    score: 40,
+    numPlayers: 24,
+    partnerScores: [10],
+  },
+  { reason: "Strike", changeId: 1148866, mmrDelta: -100, newMmr: 5955 },
+  {
+    reason: "Table",
+    changeId: 1148800,
+    mmrDelta: 50,
+    newMmr: 6055,
+    score: 90,
+    numPlayers: 24,
+    partnerScores: [70],
+  },
+];
+
 describe("playerStats", () => {
+  describe("dedupeMmrChanges", () => {
+    it("keeps a deleted table's Table and TableDelete entries", () => {
+      const result = dedupeMmrChanges(deletedTableHistory);
+
+      expect(result).toHaveLength(4);
+      expect(result.map((e) => e.reason)).toEqual([
+        "TableDelete",
+        "Table",
+        "Strike",
+        "Table",
+      ]);
+    });
+
+    it("drops an entry repeated with the same reason and changeId", () => {
+      const event = { reason: "Table", changeId: 1, newMmr: 100 };
+
+      expect(dedupeMmrChanges([event, { ...event }])).toHaveLength(1);
+    });
+
+    it("falls back to time/newMmr/reason when there is no changeId", () => {
+      const placement = { reason: "Placement", time: "t1", newMmr: 5000 };
+
+      expect(dedupeMmrChanges([placement, { ...placement }])).toHaveLength(1);
+      expect(getMmrChangeKey(placement)).toBe("t1-5000-Placement");
+    });
+
+    it("returns an empty array for missing input", () => {
+      expect(dedupeMmrChanges(undefined)).toEqual([]);
+    });
+  });
+
+  describe("deleted tables", () => {
+    it("collects the IDs of deleted tables", () => {
+      expect([...getDeletedTableIds(deletedTableHistory)]).toEqual([1148866]);
+    });
+
+    it("leaves deleted tables and non-table events out of counted events", () => {
+      expect(
+        getCountedTableEvents(deletedTableHistory).map((e) => e.changeId),
+      ).toEqual([1148800]);
+    });
+
+    it("excludes deleted tables from event stats, as the API does", () => {
+      const stats = calculateEventStats(deletedTableHistory);
+
+      expect(stats.twentyFourCount).toBe(1);
+      expect(stats.avg24).toBe(90);
+      expect(stats.winRate24).toBe(1);
+    });
+
+    it("uses the season's deleted IDs for a slice that lacks the TableDelete", () => {
+      const slice = deletedTableHistory.slice(1); // TableDelete not displayed
+      const deletedIds = getDeletedTableIds(deletedTableHistory);
+
+      expect(calculateRecentScoreStats(slice, deletedIds).avgScore).toBe(90);
+      expect(calculateRecentScoreStats(slice, deletedIds).partnerAvgScore).toBe(
+        70,
+      );
+      // Without the season's IDs the slice can't know the table was deleted
+      expect(calculateRecentScoreStats(slice).avgScore).toBe(65);
+    });
+  });
+
   describe("isSquadQueueEvent", () => {
     it("detects SQ events regardless of casing or padding", () => {
       expect(isSquadQueueEvent({ tier: "SQ" })).toBe(true);
@@ -141,8 +234,8 @@ describe("playerStats", () => {
       const result = calculateEventStats(events);
 
       expect(result.twelveCount).toBe(2);
-      // Current implementation treats missing scores as 0 in the average
-      expect(result.avg12).toBe(40);
+      // Events without a score are left out of the average, not counted as 0
+      expect(result.avg12).toBe(80);
       expect(result.winRate12).toBe(1); // Both positive deltas
     });
 

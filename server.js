@@ -6,6 +6,10 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const logger = require("./server/utils/logger");
 
+// Fail upstream calls before Vercel's function timeout kills the request
+const UPSTREAM_TIMEOUT_MS = 8000;
+axios.defaults.timeout = UPSTREAM_TIMEOUT_MS;
+
 // Trust Vercel's proxy to correctly identify client IP
 app.set("trust proxy", 1);
 
@@ -34,16 +38,8 @@ app.use(
           return callback(null, true);
         }
 
-        // Allow Vercel preview deployments (e.g., mkw-lounge-stats-git-branch.vercel.app)
-        if (
-          hostname.endsWith(".vercel.app") &&
-          (hostname === "mkw-lounge-stats.vercel.app" ||
-            hostname.endsWith(".mkw-lounge-stats.vercel.app"))
-        ) {
-          return callback(null, true);
-        }
-
-        // Check if origin is in allowed list
+        // Check if origin is in allowed list. Vercel preview deployments need no
+        // entry: their frontend calls their own /api, which is same-origin.
         if (allowedOrigins.has(origin)) {
           return callback(null, true);
         }
@@ -55,9 +51,9 @@ app.use(
         return callback(null, false);
       }
     },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    // The API is read-only and sends no cookies or auth
+    methods: ["GET"],
+    allowedHeaders: ["Content-Type"],
     maxAge: 86400, // Cache preflight requests for 24 hours
   }),
 );
@@ -89,6 +85,14 @@ const MAX_PLAYER_NAME_LENGTH = 50;
 const MAX_SEARCH_LENGTH = 100;
 const CURRENT_SEASON = 3;
 const ALLOWED_GAMES = new Set(["mkworld", "mkworld12p", "mkworld24p"]);
+const LEADERBOARD_SORT_FIELDS = new Set([
+  "mmr",
+  "maxmmr",
+  "eventsplayed",
+  "lastweekrankchange",
+]);
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 
 // Input validation and sanitization
 const validatePlayerName = (name) => {
@@ -144,6 +148,25 @@ const getCacheKey = (prefix, params = {}) => {
   return `${prefix}|${sorted}`;
 };
 
+// How long the CDN may keep serving a stale copy while it refetches in the
+// background, as a multiple of the fresh TTL
+const STALE_WHILE_REVALIDATE_FACTOR = 5;
+
+// Sends a successful payload and lets Vercel's CDN cache it for `ttl` (browsers
+// ignore s-maxage). Unlike the in-memory cache, the CDN is shared by every
+// serverless instance, and cached hits skip the function and the rate limit.
+// Error responses never go through here, so they are never cached.
+const sendCacheable = (res, value, ttl = DEFAULT_TTL_MS) => {
+  const seconds = Math.round(ttl / 1000);
+  res.set(
+    "Cache-Control",
+    `public, s-maxage=${seconds}, stale-while-revalidate=${
+      seconds * STALE_WHILE_REVALIDATE_FACTOR
+    }`,
+  );
+  return res.json(value);
+};
+
 const setCache = (key, value, ttl = DEFAULT_TTL_MS) => {
   enforceCacheLimit();
   cacheStore.set(key, { value, expiresAt: Date.now() + ttl });
@@ -163,14 +186,6 @@ const getCache = (key) => {
   }
   logger.cache("HIT", key);
   return entry.value;
-};
-
-const invalidateCache = (predicate) => {
-  for (const key of cacheStore.keys()) {
-    if (predicate(key)) {
-      cacheStore.delete(key);
-    }
-  }
 };
 
 // Validate season (non-negative integer in a reasonable range, 0 allowed for pre-season)
@@ -200,14 +215,12 @@ const validateGame = (game) => {
   if (!ALLOWED_GAMES.has(trimmed)) {
     return {
       valid: false,
-      error: "Unsupported game. Currently only mkworld is supported",
+      error: `Unsupported game. Supported games: ${[...ALLOWED_GAMES].join(", ")}`,
     };
   }
 
   return { valid: true, sanitized: trimmed };
 };
-
-app.use(express.json());
 
 // Lightweight validation for table IDs (numeric, reasonable length)
 const validateTableId = (id) => {
@@ -233,6 +246,45 @@ const validateTableId = (id) => {
   return { valid: true, sanitized: idStr };
 };
 
+// Validate an optional non-negative integer query param (empty means "not set")
+const validateOptionalNonNegativeInt = (value, label) => {
+  if (value === undefined || value === null || value === "") {
+    return { valid: true, sanitized: undefined };
+  }
+
+  const str = String(value).trim();
+  if (!/^\d{1,9}$/.test(str)) {
+    return { valid: false, error: `${label} must be a non-negative integer` };
+  }
+
+  return { valid: true, sanitized: Number(str) };
+};
+
+// Validate leaderboard sort field (case-insensitive, passed through as given)
+const validateSortBy = (sortBy) => {
+  if (
+    typeof sortBy !== "string" ||
+    !LEADERBOARD_SORT_FIELDS.has(sortBy.trim().toLowerCase())
+  ) {
+    return { valid: false, error: "Unsupported sortBy value" };
+  }
+
+  return { valid: true, sanitized: sortBy.trim() };
+};
+
+// Validate an optional ISO 3166-1 alpha-2 country code
+const validateCountryCode = (country) => {
+  if (country === undefined || country === null || country === "") {
+    return { valid: true, sanitized: undefined };
+  }
+
+  if (typeof country !== "string" || !/^[A-Za-z]{2}$/.test(country.trim())) {
+    return { valid: false, error: "Country must be a 2-letter country code" };
+  }
+
+  return { valid: true, sanitized: country.trim().toUpperCase() };
+};
+
 // Get a single lounge table by ID
 app.get("/api/table/:tableid", async (req, res) => {
   try {
@@ -245,7 +297,7 @@ app.get("/api/table/:tableid", async (req, res) => {
     const cacheKey = getCacheKey("table", { tableid });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached);
     }
 
     const base_url = "https://lounge.mkcentral.com/api/table";
@@ -255,7 +307,7 @@ app.get("/api/table/:tableid", async (req, res) => {
 
     setCache(cacheKey, data, DEFAULT_TTL_MS);
 
-    res.json(data);
+    sendCacheable(res, data);
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
@@ -305,7 +357,7 @@ app.get("/api/player/stats", async (req, res) => {
     });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached, 2 * DEFAULT_TTL_MS);
     }
 
     const baseUrl = "https://lounge.mkcentral.com/api/player/stats";
@@ -317,10 +369,8 @@ app.get("/api/player/stats", async (req, res) => {
     });
 
     setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
-    res.json(data);
+    sendCacheable(res, data, 2 * DEFAULT_TTL_MS);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("player-stats"));
-
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       if (status) {
@@ -372,16 +422,15 @@ app.get("/api/player/details/:name", async (req, res) => {
     });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached, 2 * DEFAULT_TTL_MS);
     }
 
     const { data } = await axios.get(full_url);
 
     setCache(cacheKey, data, 2 * DEFAULT_TTL_MS);
 
-    res.json(data);
+    sendCacheable(res, data, 2 * DEFAULT_TTL_MS);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("player-details"));
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       if (status === 404) {
@@ -431,7 +480,7 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
     });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached);
     }
 
     const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
@@ -440,18 +489,29 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
     )}`;
     const { data } = await axios.get(full_url);
 
-    const player = data.data.find(
-      (p) => p.name.toLowerCase() === playerName.toLowerCase(),
+    const players = Array.isArray(data?.data) ? data.data : [];
+    const player = players.find(
+      (p) => p?.name?.toLowerCase() === playerName.toLowerCase(),
     );
 
     if (player) {
       setCache(cacheKey, player, DEFAULT_TTL_MS);
-      res.json(player);
+      sendCacheable(res, player);
     } else {
       logger.warn(`Player not found in leaderboard: ${playerName}`);
       res.status(404).json({ error: "Player not found" });
     }
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Leaderboard search API error (${status}):`, error.message);
+        return res.status(status).json({
+          error: error.response?.data?.error || "Failed to fetch data",
+        });
+      }
+    }
+
     logger.error("Failed to fetch leaderboard search:", error.message);
     res.status(500).json({ error: "Failed to fetch data" });
   }
@@ -494,13 +554,15 @@ app.get("/api/players/compare", async (req, res) => {
 
     const season = seasonValidation.sanitized;
     const cacheKey = getCacheKey("players-compare", {
-      names: validatedNames.sort().join(","),
+      // Unsorted: results come back in the order requested, so "b,a" must not
+      // reuse the cached "a,b" response
+      names: validatedNames.join(","),
       season,
       game: normalizedGame,
     });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached);
     }
 
     const base_url = "https://lounge.mkcentral.com/api/player/details";
@@ -525,8 +587,17 @@ app.get("/api/players/compare", async (req, res) => {
 
     const results = await Promise.all(promises);
 
+    // A "not found" is a real answer, but a timeout or upstream error for one
+    // player is not worth repeating to everyone for the next few minutes
+    const hasTransientFailure = results.some(
+      (result) => result.error && result.message !== "Player not found",
+    );
+    if (hasTransientFailure) {
+      return res.json(results);
+    }
+
     setCache(cacheKey, results, DEFAULT_TTL_MS);
-    res.json(results);
+    sendCacheable(res, results);
   } catch (error) {
     logger.error("Failed to compare players:", error.message);
     res.status(500).json({ error: "Failed to fetch comparison data" });
@@ -537,17 +608,11 @@ app.get("/api/players/compare", async (req, res) => {
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const {
-      skip = 0,
-      pageSize = 50,
-      minMmr,
-      maxMmr,
-      minEventsPlayed,
-      maxEventsPlayed,
-      search,
       sortBy = "Mmr",
       season,
       game = "mkworld",
       country,
+      search,
     } = req.query;
 
     const seasonValidation = validateSeason(season || String(CURRENT_SEASON));
@@ -560,22 +625,55 @@ app.get("/api/leaderboard", async (req, res) => {
       return res.status(400).json({ error: gameValidation.error });
     }
 
+    const sortByValidation = validateSortBy(sortBy);
+    if (!sortByValidation.valid) {
+      return res.status(400).json({ error: sortByValidation.error });
+    }
+
+    const countryValidation = validateCountryCode(country);
+    if (!countryValidation.valid) {
+      return res.status(400).json({ error: countryValidation.error });
+    }
+
+    const numericParams = {};
+    for (const key of [
+      "skip",
+      "pageSize",
+      "minMmr",
+      "maxMmr",
+      "minEventsPlayed",
+      "maxEventsPlayed",
+    ]) {
+      const validation = validateOptionalNonNegativeInt(req.query[key], key);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+      numericParams[key] = validation.sanitized;
+    }
+
     const normalizedSeason = seasonValidation.sanitized;
     const normalizedGame = gameValidation.sanitized;
     const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
 
     const params = {
-      skip: parseInt(skip),
-      pageSize: Math.min(parseInt(pageSize), 100),
-      sortBy,
+      skip: numericParams.skip ?? 0,
+      pageSize: Math.min(
+        Math.max(numericParams.pageSize ?? DEFAULT_PAGE_SIZE, 1),
+        MAX_PAGE_SIZE,
+      ),
+      sortBy: sortByValidation.sanitized,
     };
 
-    if (minMmr) params.minMmr = parseInt(minMmr);
-    if (maxMmr) params.maxMmr = parseInt(maxMmr);
-    if (minEventsPlayed) params.minEventsPlayed = parseInt(minEventsPlayed);
-    if (maxEventsPlayed) params.maxEventsPlayed = parseInt(maxEventsPlayed);
-    if (country) params.country = country;
-    if (search) {
+    for (const key of [
+      "minMmr",
+      "maxMmr",
+      "minEventsPlayed",
+      "maxEventsPlayed",
+    ]) {
+      if (numericParams[key] !== undefined) params[key] = numericParams[key];
+    }
+    if (countryValidation.sanitized) params.country = countryValidation.sanitized;
+    if (typeof search === "string") {
       // Sanitize search parameter
       const sanitized = search
         .trim()
@@ -593,7 +691,7 @@ app.get("/api/leaderboard", async (req, res) => {
     });
     const cached = getCache(cacheKey);
     if (cached) {
-      return res.json(cached);
+      return sendCacheable(res, cached);
     }
 
     const full_url = `${base_url}${normalizedSeason}`;
@@ -608,9 +706,19 @@ app.get("/api/leaderboard", async (req, res) => {
     };
 
     setCache(cacheKey, response);
-    res.json(response);
+    sendCacheable(res, response);
   } catch (error) {
-    invalidateCache((key) => key.startsWith("leaderboard"));
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Leaderboard API error (${status}):`, error.message);
+        return res.status(status).json({
+          error:
+            error.response?.data?.error || "Failed to retrieve leaderboard",
+        });
+      }
+    }
+
     logger.error("Failed to fetch main leaderboard:", error.message);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }

@@ -4,9 +4,80 @@ import {
   getRankColor,
   getNextRank,
   formatTimeAgo,
+  formatWinRate,
+  winRateClassName,
+  parseRankThresholds,
+  RANK_THRESHOLDS_24P,
 } from "../playerUtils";
 
 describe("playerUtils", () => {
+  describe("parseRankThresholds", () => {
+    it("matches the bundled 24p table for the API's season 3 ranks", () => {
+      // As returned by /player/stats?game=mkworld24p&season=3 (keys alphabetical)
+      const ranks = {
+        Bronze: 2000,
+        Diamond: 13000,
+        Gold: 6000,
+        Grandmaster: 15500,
+        Iron: 0,
+        Master: 14500,
+        Platinum: 8000,
+        Ruby: 11500,
+        Sapphire: 10000,
+        Silver: 4000,
+      };
+
+      expect(parseRankThresholds(ranks)).toEqual(RANK_THRESHOLDS_24P);
+    });
+
+    it("returns null for a missing or unusable map", () => {
+      expect(parseRankThresholds(undefined)).toBeNull();
+      expect(parseRankThresholds({})).toBeNull();
+      expect(parseRankThresholds({ Gold: "n/a" })).toBeNull();
+    });
+  });
+
+  describe("thresholds override", () => {
+    const custom = [
+      { name: "Iron", min: 0, max: 999 },
+      { name: "Gold", min: 1000, max: Infinity },
+    ];
+
+    it("getRankForMmrValue uses thresholds passed in", () => {
+      expect(getRankForMmrValue(1500, 3, 24, custom).name).toBe("Gold");
+    });
+
+    it("getNextRank uses thresholds passed in", () => {
+      expect(getNextRank(400, 3, 24, custom)).toBe("600 MMR away from Gold");
+    });
+  });
+
+  describe("formatWinRate", () => {
+    it("formats a 0-1 rate as a percentage", () => {
+      expect(formatWinRate(0.625)).toBe("62.50%");
+      expect(formatWinRate(0.625, 1)).toBe("62.5%");
+      expect(formatWinRate(0)).toBe("0.00%");
+    });
+
+    it("returns N/A instead of NaN% when the rate is missing", () => {
+      expect(formatWinRate(undefined)).toBe("N/A");
+      expect(formatWinRate(null)).toBe("N/A");
+      expect(formatWinRate(NaN)).toBe("N/A");
+    });
+  });
+
+  describe("winRateClassName", () => {
+    it("marks 50% and above positive, below negative", () => {
+      expect(winRateClassName(0.5)).toBe("positive");
+      expect(winRateClassName(0.49)).toBe("negative");
+    });
+
+    it("returns no class when the rate is missing", () => {
+      expect(winRateClassName(undefined)).toBe("");
+      expect(winRateClassName(null)).toBe("");
+    });
+  });
+
   describe("getRankForMmrValue", () => {
     it("should return rank objects for MMR values", () => {
       expect(getRankForMmrValue(15500).name).toBe("Grandmaster");

@@ -1,5 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { getRankColor, getNextRank } from "./utils/playerUtils";
+import {
+    formatWinRate,
+    getRankColor,
+    getNextRank,
+    winRateClassName,
+} from "./utils/playerUtils";
 
 // Lazy load chart components
 const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
@@ -13,6 +18,7 @@ const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: 
 import { loungeApi } from "./api/loungeApi";
 import {
   calculateComparisonMmrData,
+  comparisonSeriesKey,
   MMR_CHART_Y_DOMAIN,
 } from "./utils/chartUtils";
 import PageHeader from "./components/PageHeader";
@@ -22,6 +28,7 @@ import MMRSelector from "./components/MMRSelector";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
+import { useRankThresholds } from "./hooks/useRankThresholds";
 import { CURRENT_SEASON } from "./config/seasons";
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
@@ -31,6 +38,8 @@ function PlayerComparison() {
     const { defaultGameMode } = useSettings();
     const [playerNames, setPlayerNames] = useState(["", ""]);
     const [playersData, setPlayersData] = useState([]);
+    // Names the backend could not load (not found, or an upstream error)
+    const [unloadedNames, setUnloadedNames] = useState([]);
     const { loading, error, run, setError } = useAbortableRequest();
     const { season, setSeason, setSelectedMmrType, mmrType } =
         useSeasonMmrSelection({
@@ -38,6 +47,7 @@ function PlayerComparison() {
             initialMmrType: null,
             defaultMmrType: defaultGameMode,
         });
+    const rankThresholds = useRankThresholds(season, mmrType);
 
     const handleMmrTypeChange = (nextMmrType) => {
         setSelectedMmrType(nextMmrType);
@@ -66,10 +76,12 @@ function PlayerComparison() {
         if (validNames.length < 2) {
             setError("Please enter at least 2 player names");
             setPlayersData([]);
+            setUnloadedNames([]);
             return;
         }
 
         setPlayersData([]);
+        setUnloadedNames([]);
         const data = await run(
             (signal) => loungeApi.comparePlayers(validNames, season, mmrType, signal),
             { mapError: (err) => err.message || "Failed to compare players" },
@@ -80,12 +92,18 @@ function PlayerComparison() {
         }
 
         const validPlayers = data.filter((p) => !p.error);
+        const failedNames = data.filter((p) => p.error).map((p) => p.name);
 
         if (validPlayers.length < 2) {
-            setError("Could not find enough valid players to compare");
+            setError(
+                failedNames.length > 0
+                    ? `Could not find enough players to compare. Couldn't load: ${failedNames.join(", ")}`
+                    : "Could not find enough valid players to compare",
+            );
             return;
         }
 
+        setUnloadedNames(failedNames);
         setPlayersData(validPlayers);
     };
 
@@ -199,6 +217,11 @@ function PlayerComparison() {
                         {error}
                     </p>
                 )}
+                {!error && unloadedNames.length > 0 && (
+                    <p className="player-error" role="status">
+                        Left out of the comparison (couldn't load): {unloadedNames.join(", ")}
+                    </p>
+                )}
                 {loading && (
                     <div className="loading-skeleton" aria-live="polite" aria-label="Comparing players">
                         <div className="skeleton-row"></div>
@@ -213,7 +236,7 @@ function PlayerComparison() {
                     {/* Side-by-side player stats */}
                     <div className="comparison-grid">
                         {playersData.map((player, index) => (
-                            <div key={player.playerId} className="player-summary">
+                            <div key={`${player.playerId}-${index}`} className="player-summary">
                                 <h2>
                                     <span style={{ color: PLAYER_COLORS[index] }}>●</span>{" "}
                                     <span style={{ color: getRankColor(player.rank) }}>
@@ -222,7 +245,7 @@ function PlayerComparison() {
                                 </h2>
                                 <p>Overall Rank: #{player.overallRank}</p>
                                 <p>Current Rank: {player.rank}</p>
-                                <p>{getNextRank(player.mmr, season, mmrType)}</p>
+                                <p>{getNextRank(player.mmr, season, mmrType, rankThresholds)}</p>
                                 <p>Current MMR: {player.mmr}</p>
                                 <p>Highest MMR: {player.maxMmr}</p>
                                 <p>
@@ -233,10 +256,9 @@ function PlayerComparison() {
                                 </p>
                                 <p>Events Played: {player.eventsPlayed}</p>
                                 <p
-                                    className={`player-winrate ${player.winRate >= 0.5 ? "positive" : "negative"
-                                        }`}
+                                    className={`player-winrate ${winRateClassName(player.winRate)}`}
                                 >
-                                    Win Rate: {(player.winRate * 100).toFixed(2)}%
+                                    Win Rate: {formatWinRate(player.winRate)}
                                 </p>
                             </div>
                         ))}
@@ -329,9 +351,10 @@ function PlayerComparison() {
                                         />
                                         {playersData.map((player, index) => (
                                             <Line
-                                                key={player.playerId}
+                                                key={`${player.playerId}-${index}`}
                                                 type="monotone"
-                                                dataKey={player.name}
+                                                dataKey={comparisonSeriesKey(index)}
+                                                name={player.name}
                                                 stroke={PLAYER_COLORS[index]}
                                                 strokeWidth={2.5}
                                                 strokeDasharray={PLAYER_LINE_STYLES[index % PLAYER_LINE_STYLES.length]}

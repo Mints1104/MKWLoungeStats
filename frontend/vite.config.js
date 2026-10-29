@@ -12,6 +12,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Rollup's CommonJS interop helper is shared by React and Recharts; left
+          // unassigned it lands in "charts" and makes React import (and preload) it.
+          if (id.includes("commonjsHelpers")) {
+            return "react-vendor";
+          }
+
           if (!id.includes("node_modules")) {
             return undefined;
           }
@@ -28,17 +34,16 @@ export default defineConfig({
             return "react-vendor";
           }
 
-          return "vendor";
+          // No catch-all vendor chunk: it would pull Recharts' own dependencies
+          // (d3, redux, ...) into the initial load. Rollup places them with the
+          // lazily loaded chunks that use them.
+          return undefined;
         },
       },
     },
   },
   server: {
     proxy: {
-      "/weather": "http://localhost:3000",
-      "/pokemon": "http://localhost:3000",
-      "/posts": "http://localhost:3000",
-      "/people": "http://localhost:3000",
       "/api": "http://localhost:3000",
     },
   },

@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
-import Flag from "react-world-flags";
-import { useParams, useNavigate } from "react-router-dom";
+import Flag from "./components/CountryFlag";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { loungeApi } from "./api/loungeApi";
 import PageHeader from "./components/PageHeader";
 import { getRankForMmrValue } from "./utils/playerUtils";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
+import { useRankThresholds } from "./hooks/useRankThresholds";
 
 function TableInfo() {
   const { tableId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [result, setResult] = useState(null);
   const { loading, error, run, setError } = useAbortableRequest();
 
@@ -43,6 +45,7 @@ function TableInfo() {
 
   const season = result?.season;
   const mmrType = result?.game === "mkworld12p" ? 12 : 24;
+  const rankThresholds = useRankThresholds(season ?? null, mmrType);
 
   const takeToProfile = (playerName) => {
     navigate(`/player/${encodeURIComponent(playerName)}?season=${season}&mmrType=${mmrType}`);
@@ -69,7 +72,8 @@ function TableInfo() {
           title={result ? `Table #${result.id}` : "Event Table"}
           subtitle="Viewing standings and MMR changes for this lounge event."
         >
-          {window.history.length > 1 && (
+          {/* "default" is the entry the app was opened on: nothing in-app to go back to */}
+          {location.key !== "default" && (
             <button
               className="player-button"
               type="button"
@@ -171,9 +175,8 @@ function TableInfo() {
                   <tbody>
                     {result.teams.map((team, teamIndex) =>
                       (team.scores || []).map((score, scoreIndex) => {
-                        const mmrType = result.numPlayers === 12 ? 12 : 24;
-                        const prevRank = getRankForMmrValue(score.prevMmr, result.season, mmrType);
-                        const newRank = getRankForMmrValue(score.newMmr, result.season, mmrType);
+                        const prevRank = getRankForMmrValue(score.prevMmr, result.season, mmrType, rankThresholds);
+                        const newRank = getRankForMmrValue(score.newMmr, result.season, mmrType, rankThresholds);
 
                         return (
                           <tr

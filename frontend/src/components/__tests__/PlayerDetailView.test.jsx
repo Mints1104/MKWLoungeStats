@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PlayerDetailView from "../PlayerDetailView";
 
-vi.mock("react-world-flags", () => ({
+vi.mock("../CountryFlag", () => ({
   default: ({ code }) => <span data-testid="flag">{code}</span>,
 }));
 
@@ -21,6 +21,14 @@ vi.mock("recharts", () => {
     ResponsiveContainer: passthrough,
   };
 });
+
+// Rank thresholds fall back to the bundled tables without touching the network
+vi.mock("../../api/loungeApi", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loungeApi: {
+    getPlayerStats: vi.fn(() => Promise.reject(new Error("offline"))),
+  },
+}));
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {

@@ -1,3 +1,5 @@
+import { getCountedTableEvents } from "./playerStats";
+
 /**
  * Calculates score distribution data for a bar chart
  * @param {Array} events - Array of event objects with score and numPlayers properties
@@ -7,8 +9,8 @@
 export function calculateScoreDistribution(events, filter = "all") {
   if (!events || !Array.isArray(events)) return [];
 
-  // Only include table events (exclude penalties)
-  const tableEvents = events.filter((e) => e.reason === "Table");
+  // Only include table events (exclude penalties and deleted tables)
+  const tableEvents = getCountedTableEvents(events);
 
   let filteredEvents = tableEvents;
   if (filter === "12") {
@@ -115,24 +117,34 @@ export function calculateMmrHistoryData(
 }
 
 /**
+ * Data key for the player at `index` in calculateComparisonMmrData. Keyed by position
+ * rather than name: Recharts reads a dotted dataKey like "J.R." as a nested path.
+ * @param {number} index - Player's index in playersData
+ * @returns {string} Data key for that player's series
+ */
+export const comparisonSeriesKey = (index) => `player${index}`;
+
+/**
  * Prepares MMR history data for comparing multiple players on an overlaid line chart
  * @param {Array} playersData - Array of player objects with mmrChanges
- * @returns {Array} Array of data points for the chart with event numbers and player MMR values
+ * @returns {Array} Array of data points with event numbers and one MMR value per
+ *   player, keyed by comparisonSeriesKey(index)
  */
 export function calculateComparisonMmrData(playersData) {
   if (!playersData || playersData.length === 0) return [];
 
-  const maxEvents = Math.max(
-    ...playersData.map((p) => p.mmrChanges?.length || 0),
+  // Oldest event first
+  const histories = playersData.map(
+    (player) => player.mmrChanges?.slice().reverse() || [],
   );
+  const maxEvents = Math.max(...histories.map((events) => events.length));
   const data = [];
 
   for (let i = 0; i < maxEvents; i++) {
     const point = { event: i + 1 };
-    playersData.forEach((player) => {
-      const events = player.mmrChanges?.slice().reverse() || [];
+    histories.forEach((events, index) => {
       if (events[i]) {
-        point[player.name] = events[i].newMmr;
+        point[comparisonSeriesKey(index)] = events[i].newMmr;
       }
     });
     data.push(point);

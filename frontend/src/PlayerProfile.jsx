@@ -1,4 +1,9 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useParams,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import PlayerDetailView from "./components/PlayerDetailView";
@@ -14,10 +19,9 @@ import {
 function PlayerProfile() {
   const { playerName } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { defaultGameMode } = useSettings();
-
-  console.log("Player Name:", playerName);
 
   const season = parseSeasonValue(searchParams.get("season"));
   const mmrType = parseNullableMmrType(searchParams.get("mmrType")) ?? defaultGameMode;
@@ -48,7 +52,9 @@ function PlayerProfile() {
   }, [playerName, season, mmrType, fetchPlayerDetails]);
 
   const handleBack = () => {
-    if (window.history.length <= 1) {
+    // "default" is the key of the entry the app was opened on: there is no in-app
+    // page to go back to (window.history.length also counts other sites' entries).
+    if (location.key === "default") {
       navigate("/leaderboard");
       return;
     }

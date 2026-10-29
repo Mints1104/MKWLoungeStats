@@ -61,12 +61,20 @@ Conventions:
 - Validators (`validatePlayerName`, `validateSeason`, `validateGame`, `validateTableId`)
   return `{ valid, sanitized }` or `{ valid, error }`. Follow that shape for new ones.
 - In-memory `Map` cache, 60s default TTL (2× for player details/stats), 1000-entry FIFO cap,
-  `invalidateCache(prefix)` on error paths. Per-serverless-instance, so best-effort in prod.
-- `helmet`, `express-rate-limit` (100 req / 15 min / IP), and a CORS allowlist.
+  only successes are cached (errors never clear other entries). Per-serverless-instance, so
+  best-effort in prod. Upstream axios calls time out after `UPSTREAM_TIMEOUT_MS` (8s).
+- **CDN cache**: successful responses go out through `sendCacheable(res, value, ttl)`, which
+  sets `Cache-Control: public, s-maxage=<ttl>, stale-while-revalidate=<5×ttl>` so Vercel's
+  CDN caches them across instances (browsers ignore `s-maxage`). Error responses must keep
+  using `res.status(...).json(...)` so they are never cached. Compare results with a
+  transient (non-404) player failure are not cached at all.
+- `helmet`, `express-rate-limit` (100 req / 15 min / IP), and a CORS allowlist (GET only,
+  no credentials; Vercel previews are same-origin and need no entry).
 - Logging goes through `server/utils/logger.js` — **never bare `console.*`**. `debug`/`cache`
   are gated behind `process.env.DEBUG`; `info`/`warn`/`request` are dev-only.
 - `app.listen` is skipped when `NODE_ENV` is `production` or `test`; the app is exported.
-- Payloads are passed through verbatim (`res.json(data)`) — the backend never reshapes them.
+- Payloads are passed through verbatim (`sendCacheable(res, data)`) — the backend never
+  reshapes them.
 
 ## Frontend
 
@@ -84,17 +92,34 @@ Conventions:
   kebab-case class names. **No Tailwind, no CSS modules.** Accessibility attributes
   (`aria-*`, `role`, `sr-only`, `aria-live`) are used consistently; keep that up.
 - **Shared hooks**: `useAbortableRequest` (cancels the previous in-flight request),
-  `usePlayerDetails`, `useSeasonMmrSelection`. Prefer these over ad-hoc `fetch` + `useEffect`.
+  `usePlayerDetails`, `useSeasonMmrSelection`, `useRankThresholds`. Prefer these over
+  ad-hoc `fetch` + `useEffect`.
+- **Errors**: `main.jsx` has a root `ErrorBoundary`; `App.jsx` wraps the routes in a
+  `PageErrorBoundary` (keyed on pathname) so a crashing page keeps the navigation and
+  clears on navigating away.
 - Recharts is `lazy()`-imported inside `PlayerDetailView.jsx` behind `Suspense`, and split
-  into its own chunk in `vite.config.js`. Keep it out of the main bundle.
+  into its own chunk in `vite.config.js`. Keep it out of the main bundle. Every route except
+  the home page is `lazy()` in `App.jsx`, so pages that import Recharts directly (`Stats`)
+  stay out of the entry. `vite.config.js` has no catch-all vendor chunk on purpose — check
+  `dist/index.html` doesn't preload `charts-*.js` after changing chunking.
+- Flags: use `components/CountryFlag.jsx`, **not** `react-world-flags`' component (which
+  inlines every flag, ~3.7 MB). `utils/flagUrls.js` globs that package's SVGs as separate
+  assets instead.
 
 ## Domain model
 
 The upstream shapes are documented in `API-GET-Endpoints.md`. Things that bite:
 
-- `playerDetails.mmrChanges` mixes real events with penalties/bonuses. **Always filter to
-  `reason === "Table"` first** — `utils/playerStats.js` and `utils/chartUtils.js` do.
-  Other `reason` values: `Strike`, `TableDelete`, `Bonus`, `Placement`.
+- `playerDetails.mmrChanges` mixes real events with penalties/bonuses. **For stats, use
+  `getCountedTableEvents()`** (`utils/playerStats.js`), not a bare `reason === "Table"`
+  filter: it also drops tables that were later deleted. Other `reason` values: `Strike`,
+  `Penalty`, `StrikeDelete`, `TableDelete`, `Bonus`, `Placement`.
+- **Deleted tables** keep their `Table` entry; a later `TableDelete` with the **same
+  `changeId`** refunds the MMR. The API leaves them out of `eventsPlayed`, `averageScore`,
+  `winRate` and every other aggregate, so stats must too (verified against live data).
+  Keep both entries in the event list and MMR chart.
+- `changeId` is only unique **within a `reason`** (penalties and bonuses have their own ID
+  sequences), so dedupe/key mmrChanges with `getMmrChangeKey()` (reason + changeId).
 - `tier === "SQ"` marks a **Squad Queue** event. This is the only SQ discriminator — it is
   *not* the same as "has partners", since non-SQ team events exist (e.g. tier `S` with
   `numTeams: 12`). The API's own `noSQAverageScore` / `noSQPartnerAverage` are reproduced
@@ -104,18 +129,21 @@ The upstream shapes are documented in `API-GET-Endpoints.md`. Things that bite:
 - `changeId` on a table event **is** the table ID; link to `/table/:changeId`.
 - Game id: `mkworld` for season < 2, `mkworld12p` / `mkworld24p` for season ≥ 2
   (`api/loungeApi.js`).
-- Rank thresholds are per season *and* per mmrType — `getThresholds(season, mmrType)` in
-  `utils/playerUtils.js`.
+- Rank thresholds are per season *and* per mmrType. Pages get them from the API with
+  `useRankThresholds(season, mmrType)` (`/player/stats` → `ranks`, one request per ladder
+  per page load) and pass them to `getRankForMmrValue` / `getNextRank`. The bundled tables
+  in `getThresholds()` are only the fallback while loading or offline. The preseason
+  (season 0) has a single `Ranked` tier, so it shows no rank colours or next rank.
 
 ### Bumping the season
 
 Season is cross-cutting. All of these must change together:
 
 - `server.js` — `CURRENT_SEASON`
-- `frontend/src/config/seasons.js` — `CURRENT_SEASON`
-- `frontend/src/components/SeasonSelector.jsx` — the option list
-- `frontend/src/utils/playerUtils.js` — rank threshold tables, if they changed
+- `frontend/src/config/seasons.js` — `CURRENT_SEASON` (season pickers are built from it)
 - `tests/backend/api.validation.test.js` — the season-default assertions
+- Optionally `frontend/src/utils/playerUtils.js` — the fallback threshold tables, if the
+  new season changed them (the live ones come from the API)
 
 ## Testing
 
@@ -125,7 +153,7 @@ Season is cross-cutting. All of these must change together:
 - **Frontend**: Vitest + Testing Library. Config is **inlined in `frontend/vite.config.js`**
   (`test: { globals: true, environment: "jsdom" }`) — there is no `vitest.config.js` and no
   setup file. Tests are co-located in `__tests__/` folders next to the source.
-  `PlayerDetailView.test.jsx` mocks `recharts`, `react-world-flags` and `useNavigate`.
+  `PlayerDetailView.test.jsx` mocks `recharts`, `CountryFlag` and `useNavigate`.
 - Prefer putting new logic in `src/utils/` as a pure function so it can be unit-tested
   without rendering.
 
@@ -134,8 +162,6 @@ Season is cross-cutting. All of these must change together:
 - **Root `node_modules/` is committed** and there is no root `.gitignore` (only
   `frontend/.gitignore`). Be careful not to stage dependency churn.
 - Backend is CommonJS (`require`), frontend is ESM (`import`). Don't mix.
-- Root `package.json` metadata is stale: `"name": "js_practice"`, `"main": "code.js"`
-  (that file doesn't exist).
 - ESLint config is frontend-only and flat-config. It sets
   `no-unused-vars: ["error", { varsIgnorePattern: "^[A-Z_]" }]`, so unused capitalised
   imports don't error.
