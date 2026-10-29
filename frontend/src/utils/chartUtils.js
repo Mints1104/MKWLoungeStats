@@ -1,4 +1,4 @@
-import { getCountedTableEvents } from "./playerStats";
+import { getCountedTableEvents, getDeletedTableIds } from "./playerStats";
 
 /**
  * Calculates score distribution data for a bar chart
@@ -38,50 +38,29 @@ export function calculateScoreDistribution(events, filter = "all") {
 }
 
 /**
- * Calculates MMR history data for line chart with rank color information
- * @param {Array} mmrChanges - Array of MMR change events
- * @param {Function} getRankForMmrValue - Function to get rank info from MMR value
- * @returns {Object} Object with mmrHistoryData, gradientStops, and gradientId
+ * Horizontal gradient stops that switch colour sharply where the rank changes.
+ * The gradient spans the drawn line's bounding box, so pass exactly the points
+ * being drawn (e.g. the range picked with the chart's brush).
+ * @param {Array} points - `{ rankColor }` points, oldest first
+ * @param {string} [xKey] - Numeric x field (e.g. "time") for a value-scaled axis;
+ *   omit for an evenly spaced category axis
+ * @returns {Array} `{ offset, color }[]`
  */
-export function calculateMmrHistoryData(
-  mmrChanges,
-  getRankForMmrValue,
-  playerId = "default",
-) {
-  if (!mmrChanges || !Array.isArray(mmrChanges) || mmrChanges.length === 0) {
-    return {
-      mmrHistoryData: [],
-      gradientStops: [],
-      gradientId: `mmrGradient-${playerId}`,
-    };
-  }
+export function calculateGradientStops(points, xKey) {
+  if (!Array.isArray(points) || points.length === 0) return [];
 
-  const history = mmrChanges
-    .slice()
-    .reverse()
-    .map((event, index) => {
-      const mmr = event?.newMmr ?? event?.mmr ?? null;
-      if (mmr == null) return null;
-      const rankInfo = getRankForMmrValue(mmr);
-      return { event: index + 1, mmr, rankColor: rankInfo.color };
-    })
-    .filter(Boolean);
+  const first = xKey ? points[0][xKey] : 0;
+  const span = xKey ? points[points.length - 1][xKey] - first : points.length - 1;
+  const positionOf = (point, index) => {
+    if (span <= 0) return 0;
+    return (((xKey ? point[xKey] : index) - first) / span) * 100;
+  };
 
-  if (history.length === 0) {
-    return {
-      mmrHistoryData: [],
-      gradientStops: [],
-      gradientId: `mmrGradient-${playerId}`,
-    };
-  }
-
-  // Build gradient stops based on rank color changes
   const stops = [];
-  let lastColor = history[0].rankColor;
+  let lastColor = points[0].rankColor;
 
-  history.forEach((point, index) => {
-    const position =
-      history.length > 1 ? (index / (history.length - 1)) * 100 : 0;
+  points.forEach((point, index) => {
+    const position = positionOf(point, index);
 
     // Create sharp color transitions between rank changes
     if (point.rankColor !== lastColor && index > 0) {
@@ -101,7 +80,7 @@ export function calculateMmrHistoryData(
         offset: "0%",
         color: point.rankColor,
       });
-    } else if (index === history.length - 1) {
+    } else if (index === points.length - 1) {
       stops.push({
         offset: "100%",
         color: point.rankColor,
@@ -109,11 +88,93 @@ export function calculateMmrHistoryData(
     }
   });
 
+  return stops;
+}
+
+/**
+ * Calculates MMR history data for line chart with rank color information. Each
+ * point also carries what the tooltip and markers need: date, reason, score,
+ * placement, tier, format and whether the table was later deleted.
+ * @param {Array} mmrChanges - Array of MMR change events (newest first)
+ * @param {Function} getRankForMmrValue - Function to get rank info from MMR value
+ * @returns {Object} Object with mmrHistoryData, gradientStops, and gradientId
+ */
+export function calculateMmrHistoryData(
+  mmrChanges,
+  getRankForMmrValue,
+  playerId = "default",
+) {
+  if (!mmrChanges || !Array.isArray(mmrChanges) || mmrChanges.length === 0) {
+    return {
+      mmrHistoryData: [],
+      gradientStops: [],
+      gradientId: `mmrGradient-${playerId}`,
+    };
+  }
+
+  const deletedTableIds = getDeletedTableIds(mmrChanges);
+
+  const history = mmrChanges
+    .slice()
+    .reverse()
+    .map((event, index) => {
+      const mmr = event?.newMmr ?? event?.mmr ?? null;
+      if (mmr == null) return null;
+      const rankInfo = getRankForMmrValue(mmr);
+      const time = Date.parse(event.time);
+      return {
+        event: index + 1,
+        time: Number.isNaN(time) ? null : time,
+        mmr,
+        rankColor: rankInfo.color,
+        reason: event.reason,
+        mmrDelta: event.mmrDelta ?? null,
+        score: event.score ?? null,
+        placement: event.rank ?? null,
+        tier: event.tier ?? null,
+        numPlayers: event.numPlayers ?? null,
+        numTeams: event.numTeams ?? null,
+        tableDeleted:
+          event.reason === "Table" && deletedTableIds.has(event.changeId),
+      };
+    })
+    .filter(Boolean);
+
   return {
     mmrHistoryData: history,
-    gradientStops: stops,
+    gradientStops: calculateGradientStops(history),
     gradientId: `mmrGradient-${playerId}`,
   };
+}
+
+/**
+ * The highest point of an MMR history (the latest one on a tie).
+ * @param {Array} points - calculateMmrHistoryData points
+ * @returns {Object|null}
+ */
+export function findPeakPoint(points) {
+  if (!Array.isArray(points)) return null;
+  return points.reduce(
+    (peak, point) => (!peak || point.mmr >= peak.mmr ? point : peak),
+    null,
+  );
+}
+
+/**
+ * Rank thresholds worth drawing as reference lines: those whose floor falls
+ * inside the plotted MMR range (the bottom rank's 0 floor never does).
+ * @param {Array} thresholds - `{ name, min }[]`
+ * @param {Array} points - plotted `{ mmr }` points
+ * @returns {Array} `{ name, min }[]`
+ */
+export function getVisibleRankLines(thresholds, points) {
+  if (!Array.isArray(thresholds) || !Array.isArray(points) || !points.length) {
+    return [];
+  }
+  const mmrs = points.map((point) => point.mmr);
+  const low = Math.min(...mmrs);
+  const high = Math.max(...mmrs);
+  return thresholds.filter((rank) => rank.min > low && rank.min <= high);
 }
 
 /**

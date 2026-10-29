@@ -11,9 +11,11 @@ import Leaderboard from "../Leaderboard";
 import { SettingsProvider } from "../context/SettingsContext.jsx";
 import { loungeApi } from "../api/loungeApi";
 
-vi.mock("../api/loungeApi", () => ({
+vi.mock("../api/loungeApi", async (importOriginal) => ({
+  ...(await importOriginal()),
   loungeApi: {
     getLeaderboard: vi.fn(async () => ({ data: [], totalCount: 0 })),
+    getPlayerLeaderboardEntry: vi.fn(),
   },
 }));
 
@@ -153,6 +155,95 @@ describe("Leaderboard URL sync", () => {
     await waitFor(() =>
       expect(loungeApi.getLeaderboard).toHaveBeenLastCalledWith(
         expect.objectContaining({ minMmr: "9000" }),
+        expect.anything(),
+      ),
+    );
+  });
+});
+
+describe("Leaderboard extras", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    loungeApi.getLeaderboard.mockImplementation(async ({ page = 1 }) => ({
+      data: [
+        leaderboardRow(page === 3 ? "Target" : "Someone", (page - 1) * 50 + 1),
+      ],
+      totalCount: 400,
+    }));
+  });
+
+  it("finds a player's page from their overall rank, clearing filters", async () => {
+    loungeApi.getPlayerLeaderboardEntry.mockResolvedValue({
+      name: "Target",
+      overallRank: 120,
+    });
+    // Filtered down to a single page: finding must not clamp to it
+    loungeApi.getLeaderboard.mockImplementation(async ({ page = 1, minMmr }) => ({
+      data: [
+        leaderboardRow(page === 3 ? "Target" : "Someone", (page - 1) * 50 + 1),
+      ],
+      totalCount: minMmr ? 40 : 400,
+    }));
+    renderAt("/leaderboard?minMmr=8000&country=JP");
+    await screen.findByText("Page 1 of 1");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a player's position" }), {
+      target: { value: "target" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Find" }));
+    });
+
+    expect(loungeApi.getPlayerLeaderboardEntry).toHaveBeenCalledWith(
+      "target",
+      3,
+      24,
+      expect.anything(),
+    );
+    await waitFor(() =>
+      expect(loungeApi.getLeaderboard).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 3, minMmr: "", country: "", sortBy: "mmr" }),
+        expect.anything(),
+      ),
+    );
+    const row = await screen.findByRole("row", { current: true });
+    expect(row.textContent).toContain("Target");
+    expect(screen.getByLabelText("Min MMR").value).toBe("");
+  });
+
+  it("says when the player isn't on the ladder", async () => {
+    const notFound = new Error("Player not found");
+    notFound.status = 404;
+    loungeApi.getPlayerLeaderboardEntry.mockRejectedValue(notFound);
+    renderAt("/leaderboard");
+    await screen.findByText("Page 1 of 8");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a player's position" }), {
+      target: { value: "Nobody" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Find" }));
+    });
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Nobody isn't on this ladder",
+    );
+  });
+
+  it("jumps to a page", async () => {
+    renderAt("/leaderboard");
+    await screen.findByText("Page 1 of 8");
+
+    fireEvent.change(screen.getByLabelText("Go to page:"), {
+      target: { value: "5" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    });
+
+    await waitFor(() =>
+      expect(loungeApi.getLeaderboard).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 5 }),
         expect.anything(),
       ),
     );

@@ -22,23 +22,22 @@ import {
 import {
   calculateMmrHistoryData,
   calculateScoreDistribution,
-  MMR_CHART_Y_DOMAIN,
 } from "../utils/chartUtils";
 import FilterToggle from "./FilterToggle";
 import StatCard from "./StatCard";
 import EventCard from "./EventCard";
+import PlayerInsights from "./PlayerInsights";
+import PerformanceBreakdown from "./PerformanceBreakdown";
 import Selector from "./Selector";
 import { CURRENT_SEASON } from "../config/seasons";
 
-// Lazy load chart components
-const LineChart = lazy(() =>
-  import("recharts").then((m) => ({ default: m.LineChart })),
-);
+// Lazy load chart components: the MMR chart as one component, the score
+// distribution chart piece by piece
+const MmrHistoryChart = lazy(() => import("./MmrHistoryChart"));
 const BarChart = lazy(() =>
   import("recharts").then((m) => ({ default: m.BarChart })),
 );
 const Bar = lazy(() => import("recharts").then((m) => ({ default: m.Bar })));
-const Line = lazy(() => import("recharts").then((m) => ({ default: m.Line })));
 const XAxis = lazy(() =>
   import("recharts").then((m) => ({ default: m.XAxis })),
 );
@@ -281,6 +280,49 @@ function PlayerDetailView({
     return Array.from(modes).sort();
   }, [sanitizedEvents]);
 
+  // Every tier played this season (unlike availableTiers, not narrowed by the
+  // mode filter), so the breakdown can isolate one
+  const allTiers = useMemo(() => {
+    const tiers = new Set();
+    sanitizedEvents.forEach((e) => {
+      if (e.reason === "Table" && getEventTier(e)) tiers.add(getEventTier(e));
+    });
+    return Array.from(tiers);
+  }, [sanitizedEvents]);
+
+  // The breakdown row the recent events are narrowed to, if any. A row counts as
+  // selected when the filters leave exactly that tier / format.
+  const enabledTiers = allTiers.filter((tier) => !disabledTiers.has(tier));
+  const selectedTier =
+    allTiers.length > 1 && enabledTiers.length === 1 ? enabledTiers[0] : null;
+  const enabledModes = availableGameModes.filter(
+    (mode) => !disabledModes.has(mode),
+  );
+  const playerCountNarrowed = season < 2 && eventFilter !== "all";
+  const narrowedMode =
+    enabledModes.length === 1 &&
+    (availableGameModes.length > 1 || playerCountNarrowed) ?
+      enabledModes[0]
+    : null;
+  const selectedFormat =
+    narrowedMode && playerCountNarrowed ?
+      `${eventFilter}p ${narrowedMode}`
+    : narrowedMode;
+
+  const handleBreakdownSelect = ({ by, key, keys }) => {
+    if (by === "tier") {
+      setDisabledTiers(new Set(key ? keys.filter((tier) => tier !== key) : []));
+      return;
+    }
+    // Pre-split seasons label formats "24p FFA": narrow the player count too
+    const match = key ? /^(\d+)p (.+)$/.exec(key) : null;
+    const format = match ? match[2] : key;
+    setDisabledModes(
+      new Set(format ? availableGameModes.filter((mode) => mode !== format) : []),
+    );
+    if (season < 2) setEventFilter(match ? match[1] : "all");
+  };
+
   const toggleMode = (mode) => {
     setDisabledModes((prev) => {
       const next = new Set(prev);
@@ -312,7 +354,8 @@ function PlayerDetailView({
   const { twelveCount, twentyFourCount, avg12, avg24, winRate12, winRate24 } =
     calculateEventStats(sanitizedEvents);
 
-  const { mmrHistoryData, gradientStops, gradientId } = useMemo(() => {
+  // Gradient stops are worked out inside the chart, for the range it shows
+  const { mmrHistoryData, gradientId } = useMemo(() => {
     return calculateMmrHistoryData(
       sanitizedEvents,
       (val) => getRankForMmrValue(val, season, mmrType, rankThresholds),
@@ -637,77 +680,27 @@ function PlayerDetailView({
 
       </div>
 
+      <PlayerInsights events={sanitizedEvents} season={season} mmrType={mmrType} />
+
+      <PerformanceBreakdown
+        events={sanitizedEvents}
+        splitByPlayerCount={season < 2}
+        selectedTier={selectedTier}
+        selectedFormat={selectedFormat}
+        onSelect={handleBreakdownSelect}
+      />
+
       {/* MMR History Chart */}
       <div className="player-summary mmr">
-        <h3>MMR History</h3>
-        <div
-          className="mmr-chart-frame"
-          role="img"
-          aria-label="Line chart showing this player's MMR changes over time. Horizontal axis shows events, vertical axis shows MMR with colors indicating rank ranges."
+        <Suspense
+          fallback={<div className="chart-loader">Loading chart...</div>}
         >
-          <Suspense
-            fallback={<div className="chart-loader">Loading chart...</div>}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={mmrHistoryData}
-                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-              >
-                <defs>
-                  <linearGradient
-                    id={gradientId}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    {gradientStops.map((stop, idx) => (
-                      <stop
-                        key={idx}
-                        offset={stop.offset}
-                        stopColor={stop.color}
-                      />
-                    ))}
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis
-                  dataKey="event"
-                  stroke="#9ca3af"
-                  label={{
-                    value: "Events",
-                    position: "insideBottom",
-                    offset: -5,
-                  }}
-                />
-                <YAxis
-                  stroke="#9ca3af"
-                  label={{ value: "MMR", angle: -90, position: "insideLeft" }}
-                  domain={MMR_CHART_Y_DOMAIN}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #334155",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: "#e5e7eb" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="mmr"
-                  stroke={`url(#${gradientId})`}
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={false}
-                  isAnimationActive={false}
-                  strokeLinecap="round"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Suspense>
-        </div>
-
+          <MmrHistoryChart
+            data={mmrHistoryData}
+            gradientId={gradientId}
+            thresholds={rankThresholds}
+          />
+        </Suspense>
       </div>
 
       {/* Score Distribution Chart */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Flag from "./components/CountryFlag";
 import {
     useLocation,
@@ -13,6 +13,7 @@ import { debounce } from "./utils/debounce";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import PlayerNameInput from "./components/PlayerNameInput";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
@@ -178,6 +179,68 @@ function Leaderboard() {
         }
     };
 
+    // Jump to page
+    const [pageInput, setPageInput] = useState("");
+
+    const jumpToPage = (e) => {
+        e.preventDefault();
+        const page = Number(pageInput);
+        if (!Number.isInteger(page) || totalPages < 1) return;
+        setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+        setPageInput("");
+    };
+
+    // Find player: overallRank is the player's position on the unfiltered,
+    // MMR-sorted ladder, so clear the filters and open the page that holds it
+    const [findName, setFindName] = useState("");
+    const [highlightName, setHighlightName] = useState(null);
+    const highlightRowRef = useRef(null);
+    const {
+        loading: finding,
+        error: findError,
+        run: runFind,
+    } = useAbortableRequest();
+
+    const findPlayer = async (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+
+        const entry = await runFind(
+            (signal) => loungeApi.getPlayerLeaderboardEntry(trimmed, season, mmrType, signal),
+            {
+                mapError: (err) =>
+                    err.status === 404
+                        ? `${trimmed} isn't on this ladder`
+                        : err.message || "Failed to find player",
+            },
+        );
+        if (!entry?.overallRank) return;
+
+        setMinMmr("");
+        setMaxMmr("");
+        setMinEventsPlayed("");
+        setMaxEventsPlayed("");
+        setSearchQuery("");
+        setDebouncedSearch("");
+        setCountry("");
+        setSortBy("mmr");
+        // The total still describes the old (filtered) results; left in place, the
+        // page clamp below would pull the new page back inside it
+        setTotalCount(0);
+        setCurrentPage(Math.ceil(entry.overallRank / pageSize));
+        setHighlightName(entry.name);
+    };
+
+    const isHighlighted = (player) =>
+        highlightName != null &&
+        player.name.toLowerCase() === highlightName.toLowerCase();
+
+    // Bring the found player's row into view once its page has loaded
+    useEffect(() => {
+        highlightRowRef.current?.scrollIntoView?.({ block: "center" });
+        highlightRowRef.current?.focus({ preventScroll: true });
+    }, [leaderboardData, highlightName]);
+
     return (
         <div className="player-info-page">
             <div className="player-card">
@@ -342,6 +405,39 @@ function Leaderboard() {
                     </div>
                 </div>
 
+                <form
+                    className="find-player-form"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        findPlayer(findName);
+                    }}
+                >
+                    <label htmlFor="find-player">Find a player's position</label>
+                    <div className="find-player-row">
+                        <PlayerNameInput
+                            id="find-player"
+                            value={findName}
+                            onChange={setFindName}
+                            onSelect={findPlayer}
+                            season={season}
+                            mmrType={mmrType}
+                            ariaLabel="Find a player's position"
+                        />
+                        <button
+                            type="submit"
+                            className="pagination-btn"
+                            disabled={!findName.trim() || finding}
+                        >
+                            {finding ? "Finding…" : "Find"}
+                        </button>
+                    </div>
+                    {findError && (
+                        <p className="player-error" role="alert">
+                            {findError}
+                        </p>
+                    )}
+                </form>
+
                 {error && (
                     <p className="player-error" role="alert" aria-live="assertive">
                         {error}
@@ -382,6 +478,9 @@ function Leaderboard() {
                                         key={player.id}
                                         tabIndex={0}
                                         onKeyDown={(e) => handleRowKeyPress(e, player.name)}
+                                        ref={isHighlighted(player) ? highlightRowRef : undefined}
+                                        className={isHighlighted(player) ? "leaderboard-row-highlight" : undefined}
+                                        aria-current={isHighlighted(player) ? "true" : undefined}
                                     >
                                         <td className="rank-cell">{player.overallRank || "N/A"}</td>
                                         <td className="player-name-cell">
@@ -445,6 +544,23 @@ function Leaderboard() {
                                 Next →
                             </button>
                         </div>
+
+                        <form className="page-size-selector" onSubmit={jumpToPage}>
+                            <label htmlFor="jumpToPage">Go to page:</label>
+                            <input
+                                id="jumpToPage"
+                                type="number"
+                                min={1}
+                                max={totalPages}
+                                value={pageInput}
+                                onChange={(e) => setPageInput(e.target.value)}
+                                className="page-size-select jump-to-page-input"
+                                placeholder={String(currentPage)}
+                            />
+                            <button type="submit" className="pagination-btn">
+                                Go
+                            </button>
+                        </form>
 
                         <div className="page-size-selector">
                             <label htmlFor="pageSize">Per page:</label>

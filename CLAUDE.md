@@ -87,18 +87,34 @@ Conventions:
   store is `SettingsContext` (split across `context/settingsContext.js` and
   `context/SettingsContext.jsx` to satisfy `react-refresh` lint rules). URL search params
   are the source of truth for season / mmrType / pagination / filters; per-view UI prefs go
-  to `sessionStorage` under keys declared at the top of `PlayerDetailView.jsx`.
+  to `sessionStorage` under keys declared at the top of `PlayerDetailView.jsx` (the MMR
+  chart's and breakdown's own toggles: top of `MmrHistoryChart.jsx` /
+  `PerformanceBreakdown.jsx`). Picking a breakdown row narrows the recent events through
+  the same `disabledTiers` / `disabledModes` state as the Tiers / Modes dropdowns. The
+  favourites list (`useFavourites`, localStorage `favouritePlayers`) is shared through
+  `useSyncExternalStore`, so every star button and list stays in sync.
+- **Links are the shareable state**: the home search only navigates to
+  `/player/:name?season&mmrType`, and `/compare?names=a,b&season&mmrType` is read on mount
+  and rewritten after each comparison. Build them with `utils/playerLinks.js`.
 - **Styling**: plain global CSS — `src/index.css` plus a single large `src/App.css` with
   kebab-case class names. **No Tailwind, no CSS modules.** Accessibility attributes
   (`aria-*`, `role`, `sr-only`, `aria-live`) are used consistently; keep that up.
 - **Shared hooks**: `useAbortableRequest` (cancels the previous in-flight request),
-  `usePlayerDetails`, `useSeasonMmrSelection`, `useRankThresholds`. Prefer these over
-  ad-hoc `fetch` + `useEffect`.
+  `usePlayerDetails`, `useSeasonMmrSelection`, `useRankThresholds`, `useFavourites`,
+  `usePlayerSuggestions` (autocomplete, used by `components/PlayerNameInput.jsx`),
+  `usePartnerNames`. Prefer these over ad-hoc `fetch` + `useEffect`.
+- **Request budget**: the backend allows 100 requests / 15 min / IP. Features that fan out
+  must stay opt-in or cached: autocomplete waits for 2 characters, debounces and caches
+  per query; the career view only loads when opened (one request per ladder); partner
+  names cost one table request per top-5 partner, cached per page load.
 - **Errors**: `main.jsx` has a root `ErrorBoundary`; `App.jsx` wraps the routes in a
   `PageErrorBoundary` (keyed on pathname) so a crashing page keeps the navigation and
   clears on navigating away.
-- Recharts is `lazy()`-imported inside `PlayerDetailView.jsx` behind `Suspense`, and split
-  into its own chunk in `vite.config.js`. Keep it out of the main bundle. Every route except
+- Recharts is `lazy()`-imported inside `PlayerDetailView.jsx` behind `Suspense` (the MMR
+  chart as one `lazy()` component, `components/MmrHistoryChart.jsx`), and split into its
+  own chunk in `vite.config.js`. Keep it out of the main bundle. The MMR line's rank-colour
+  gradient spans the drawn line's bounding box, so its stops are recomputed for the
+  range shown (`calculateGradientStops`, by index or by `time` on the date axis). Every route except
   the home page is `lazy()` in `App.jsx`, so pages that import Recharts directly (`Stats`)
   stay out of the entry. `vite.config.js` has no catch-all vendor chunk on purpose — check
   `dist/index.html` doesn't preload `charts-*.js` after changing chunking.
@@ -127,6 +143,14 @@ The upstream shapes are documented in `API-GET-Endpoints.md`. Things that bite:
 - `partnerScores` averages are means of the **flattened** arrays across events (a 3v3
   contributes 2 values, an FFA contributes 0) — not a mean of per-event means.
 - `changeId` on a table event **is** the table ID; link to `/table/:changeId`.
+- Table events carry `partnerIds` / `partnerScores` (same order) but **no partner names**;
+  a shared table (`/table/:id` → `teams[].scores[].playerName`) resolves them. `rank` is
+  the team's placement, so teammates share it — head-to-head compares `rank` only between
+  opponents (`utils/playerInsights.js`).
+- `overallRank` from `/player/leaderboard/:name` is the player's position on the
+  unfiltered, MMR-sorted ladder (verified), which is how "find player" picks a page.
+- `/player/details` answers for ladders a player never played with a 0-event
+  `Placement` record rather than a 404; treat `eventsPlayed === 0` as "didn't play".
 - Game id: `mkworld` for season < 2, `mkworld12p` / `mkworld24p` for season ≥ 2
   (`api/loungeApi.js`).
 - Rank thresholds are per season *and* per mmrType. Pages get them from the API with

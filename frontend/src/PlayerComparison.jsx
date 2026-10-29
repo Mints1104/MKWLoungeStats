@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     formatWinRate,
     getRankColor,
@@ -25,26 +26,41 @@ import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import PlayerNameInput from "./components/PlayerNameInput";
+import CopyLinkButton from "./components/CopyLinkButton";
+import HeadToHead from "./components/HeadToHead";
 import { useSettings } from "./context/settingsContext";
 import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
 import { useRankThresholds } from "./hooks/useRankThresholds";
 import { CURRENT_SEASON } from "./config/seasons";
+import { getCompareParams, parseCompareNames } from "./utils/playerLinks";
+
+const MAX_COMPARED_PLAYERS = 4;
 
 const PLAYER_COLORS = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444"];
 const PLAYER_LINE_STYLES = ["", "8 4", "3 3", "12 4 4 4"];
 
 function PlayerComparison() {
     const { defaultGameMode } = useSettings();
-    const [playerNames, setPlayerNames] = useState(["", ""]);
+    // The URL (?names=a,b&season=&mmrType=) is the shareable state: read once on
+    // mount, written back after each comparison
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [playerNames, setPlayerNames] = useState(() => {
+        const names = parseCompareNames(
+            searchParams.get("names"),
+            MAX_COMPARED_PLAYERS,
+        );
+        return names.length >= 2 ? names : [...names, ...["", ""]].slice(0, 2);
+    });
     const [playersData, setPlayersData] = useState([]);
     // Names the backend could not load (not found, or an upstream error)
     const [unloadedNames, setUnloadedNames] = useState([]);
     const { loading, error, run, setError } = useAbortableRequest();
     const { season, setSeason, setSelectedMmrType, mmrType } =
         useSeasonMmrSelection({
-            initialSeason: CURRENT_SEASON,
-            initialMmrType: null,
+            initialSeason: () => searchParams.get("season") ?? CURRENT_SEASON,
+            initialMmrType: () => searchParams.get("mmrType"),
             defaultMmrType: defaultGameMode,
         });
     const rankThresholds = useRankThresholds(season, mmrType);
@@ -60,7 +76,7 @@ function PlayerComparison() {
     };
 
     const addPlayerField = () => {
-        if (playerNames.length < 4) {
+        if (playerNames.length < MAX_COMPARED_PLAYERS) {
             setPlayerNames([...playerNames, ""]);
         }
     };
@@ -82,6 +98,9 @@ function PlayerComparison() {
 
         setPlayersData([]);
         setUnloadedNames([]);
+        setSearchParams(getCompareParams(validNames, season, mmrType), {
+            replace: true,
+        });
         const data = await run(
             (signal) => loungeApi.comparePlayers(validNames, season, mmrType, signal),
             { mapError: (err) => err.message || "Failed to compare players" },
@@ -154,13 +173,14 @@ function PlayerComparison() {
                             <label htmlFor={`player-${index}`} className="sr-only">
                                 Player {index + 1} name
                             </label>
-                            <input
+                            <PlayerNameInput
                                 id={`player-${index}`}
-                                className="player-input"
                                 value={name}
-                                onChange={(e) => handlePlayerNameChange(index, e.target.value)}
+                                onChange={(value) => handlePlayerNameChange(index, value)}
+                                season={season}
+                                mmrType={mmrType}
                                 placeholder={`Enter player ${index + 1} name`}
-                                aria-label={`Player ${index + 1} name`}
+                                ariaLabel={`Player ${index + 1} name`}
                             />
                             {playerNames.length > 2 && (
                                 <button
@@ -176,7 +196,7 @@ function PlayerComparison() {
                     ))}
 
                     <div className="comparison-actions">
-                        {playerNames.length < 4 && (
+                        {playerNames.length < MAX_COMPARED_PLAYERS && (
                             <button
                                 className="add-player-btn"
                                 onClick={addPlayerField}
@@ -195,6 +215,8 @@ function PlayerComparison() {
                         >
                             Compare Players
                         </button>
+
+                        {playersData.length >= 2 && <CopyLinkButton />}
 
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <SeasonSelector
@@ -264,9 +286,9 @@ function PlayerComparison() {
                         ))}
                     </div>
 
-                    {/* Head-to-head comparison */}
+                    {/* Season leaders */}
                     <div className="player-summary">
-                        <h3>Head-to-Head Comparison</h3>
+                        <h3>Who leads</h3>
                         <div className="comparison-stats-grid">
                             <StatCard
                                 label="Highest MMR"
@@ -302,6 +324,8 @@ function PlayerComparison() {
                             />
                         </div>
                     </div>
+
+                    <HeadToHead players={playersData} colors={PLAYER_COLORS} />
 
                     {/* MMR History Comparison Chart */}
                     <div className="player-summary">

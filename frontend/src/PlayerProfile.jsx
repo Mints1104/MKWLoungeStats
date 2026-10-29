@@ -1,4 +1,5 @@
 import {
+  Link,
   useLocation,
   useParams,
   useNavigate,
@@ -10,7 +11,12 @@ import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
+import FavouriteButton from "./components/FavouriteButton";
+import CopyLinkButton from "./components/CopyLinkButton";
+import CareerView from "./components/CareerView";
 import { useSettings } from "./context/settingsContext";
+import { rememberRecentSearch } from "./utils/recentSearches";
+import { getComparePath } from "./utils/playerLinks";
 import {
   parseNullableMmrType,
   parseSeasonValue,
@@ -46,10 +52,22 @@ function PlayerProfile() {
   } = usePlayerDetails();
 
   useEffect(() => {
-    if (playerName) {
-      fetchPlayerDetails(playerName, season, mmrType);
-    }
+    if (!playerName) return;
+    fetchPlayerDetails(playerName, season, mmrType).then((data) => {
+      // Only names that resolve to a player become recent searches
+      if (data?.name) rememberRecentSearch(data.name);
+    });
   }, [playerName, season, mmrType, fetchPlayerDetails]);
+
+  const handleSelectLadder = (nextSeason, nextMmrType) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("season", nextSeason);
+    if (nextMmrType != null) newParams.set("mmrType", nextMmrType);
+    // A new history entry: scroll restoration takes it to the top
+    setSearchParams(newParams);
+  };
+
+  const displayName = detailedInfo?.name || playerName;
 
   const handleBack = () => {
     // "default" is the key of the entry the app was opened on: there is no in-app
@@ -66,7 +84,7 @@ function PlayerProfile() {
       <div className="player-card">
         <PageHeader
           title="Player Profile"
-          subtitle={`Viewing stats for ${detailedInfo?.name || playerName}`}
+          subtitle={`Viewing stats for ${displayName}`}
         >
           <button
             className="player-button"
@@ -77,24 +95,29 @@ function PlayerProfile() {
           </button>
         </PageHeader>
 
-        <div
-          style={{
-            marginBottom: "1rem",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "0.5rem",
-          }}
-        >
-          <SeasonSelector
-            selectedSeason={season}
-            onSeasonChange={handleSeasonChange}
-          />
-          {season >= 2 && (
-            <MMRSelector
-              selectedMMR={mmrType}
-              onMMRChange={handleMmrTypeChange}
+        <div className="profile-toolbar">
+          <div className="profile-actions">
+            <FavouriteButton name={displayName} />
+            <CopyLinkButton />
+            <Link
+              className="secondary-button"
+              to={getComparePath([displayName], season, mmrType)}
+            >
+              Compare with…
+            </Link>
+          </div>
+          <div className="profile-selectors">
+            <SeasonSelector
+              selectedSeason={season}
+              onSeasonChange={handleSeasonChange}
             />
-          )}
+            {season >= 2 && (
+              <MMRSelector
+                selectedMMR={mmrType}
+                onMMRChange={handleMmrTypeChange}
+              />
+            )}
+          </div>
         </div>
 
         {error && (
@@ -121,6 +144,17 @@ function PlayerProfile() {
           season={season}
           mmrType={mmrType}
           gradientIdPrefix="mmrGradient-profile"
+        />
+      )}
+
+      {playerName && (
+        <CareerView
+          // Remount (collapse) when the profile switches to another player
+          key={playerName.toLowerCase()}
+          playerName={playerName}
+          season={season}
+          mmrType={mmrType}
+          onSelectLadder={handleSelectLadder}
         />
       )}
     </div>

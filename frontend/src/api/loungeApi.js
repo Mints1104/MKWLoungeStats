@@ -141,6 +141,32 @@ export const loungeApi = {
   },
 
   /**
+   * Fetch a player's leaderboard entry (includes overallRank)
+   * @param {string} name - Player name (exact, case-insensitive)
+   * @param {number} season - Season number (default: current season)
+   * @param {number} mmrType - MMR format (12 or 24) - only used for season >= 2
+   * @param {AbortSignal} signal - Optional abort signal for cancellation
+   */
+  async getPlayerLeaderboardEntry(
+    name,
+    season = CURRENT_SEASON,
+    mmrType = 24,
+    signal,
+  ) {
+    if (!name?.trim()) {
+      throw new Error("Player name is required");
+    }
+
+    const encodedName = encodeURIComponent(name.trim());
+    logger.api("GET", `/player/leaderboard/${encodedName}`);
+
+    const gameParam = getGameId(season, mmrType);
+    const url = `${API_BASE}/player/leaderboard/${encodedName}?season=${season}&game=${gameParam}`;
+
+    return fetchApi(url, { signal });
+  },
+
+  /**
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
    * @param {number} season - Season number (default: current season)
