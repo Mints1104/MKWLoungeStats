@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { TbArrowLeft } from "react-icons/tb";
 import {
     formatWinRate,
     getRankColor,
@@ -46,6 +47,10 @@ function PlayerComparison() {
     // The URL (?names=a,b&season=&mmrType=) is the shareable state: read once on
     // mount, written back after each comparison
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+    // Set by a profile's Compare button; shared /compare links don't carry it
+    const fromProfile = location.state?.fromProfile;
     const [playerNames, setPlayerNames] = useState(() => {
         const names = parseCompareNames(
             searchParams.get("names"),
@@ -100,6 +105,8 @@ function PlayerComparison() {
         setUnloadedNames([]);
         setSearchParams(getCompareParams(validNames, season, mmrType), {
             replace: true,
+            // Keep the profile we came from, so its back link survives
+            state: location.state,
         });
         const data = await run(
             (signal) => loungeApi.comparePlayers(validNames, season, mmrType, signal),
@@ -162,6 +169,22 @@ function PlayerComparison() {
     return (
         <div className="player-info-page">
             <div className="player-card">
+                {fromProfile && (
+                    <Link
+                        className="back-link"
+                        to={fromProfile.path}
+                        // A real back step: the profile comes back as it was left,
+                        // scroll position included. The href still works in a new tab.
+                        onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                            e.preventDefault();
+                            navigate(-1);
+                        }}
+                    >
+                        <TbArrowLeft aria-hidden="true" />
+                        Back to {fromProfile.name}&apos;s profile
+                    </Link>
+                )}
                 <PageHeader
                     title="Compare Players"
                     subtitle="Compare up to 4 players side-by-side using recent lounge events."

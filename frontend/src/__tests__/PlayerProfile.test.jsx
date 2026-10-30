@@ -112,4 +112,35 @@ describe("PlayerProfile header", () => {
         .getAttribute("href"),
     ).toBe("/compare?names=Vanilla+Lake&season=3&mmrType=12");
   });
+
+  it("tells the Compare page which profile to come back to", async () => {
+    function ComparePage() {
+      const location = useLocation();
+      return <p data-testid="compare-state">{JSON.stringify(location.state)}</p>;
+    }
+    render(
+      <SettingsProvider>
+        <MemoryRouter initialEntries={["/player/vanilla%20lake?season=3&mmrType=12"]}>
+          <Routes>
+            <Route path="/player/:playerName" element={<PlayerProfile />} />
+            <Route path="/compare" element={<ComparePage />} />
+          </Routes>
+        </MemoryRouter>
+      </SettingsProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Vanilla Lake" });
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("link", { name: "Compare Vanilla Lake with other players" }),
+      );
+    });
+
+    expect(JSON.parse(screen.getByTestId("compare-state").textContent)).toEqual({
+      fromProfile: {
+        name: "Vanilla Lake",
+        path: "/player/vanilla%20lake?season=3&mmrType=12",
+      },
+    });
+  });
 });

@@ -134,6 +134,13 @@ function PlayerProfile() {
             <Link
               className="icon-button"
               to={getComparePath([displayName], season, mmrType)}
+              // Lets the Compare page offer a way back to this exact profile view
+              state={{
+                fromProfile: {
+                  name: displayName,
+                  path: location.pathname + location.search,
+                },
+              }}
               aria-label={`Compare ${displayName} with other players`}
               title="Compare with other players"
             >

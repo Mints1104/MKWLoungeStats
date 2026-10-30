@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import PlayerComparison from "../PlayerComparison";
 import { SettingsProvider } from "../context/SettingsContext.jsx";
 import { loungeApi } from "../api/loungeApi";
@@ -230,5 +230,81 @@ describe("PlayerComparison", () => {
 
     expect(screen.getByText("Win Rate: N/A")).toBeTruthy();
     expect(screen.queryByText(/NaN/)).toBeNull();
+  });
+});
+
+describe("PlayerComparison back to profile", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  const profileUrl = "/player/Amy?season=2&mmrType=12";
+  const fromProfile = { name: "Amy", path: profileUrl };
+
+  // History as left by a profile's Compare button: the profile, then /compare
+  const renderFromProfile = (state = { fromProfile }) =>
+    render(
+      <SettingsProvider>
+        <MemoryRouter
+          initialEntries={[
+            profileUrl,
+            {
+              pathname: "/compare",
+              search: "?names=Amy&season=2&mmrType=12",
+              state,
+            },
+          ]}
+          initialIndex={1}
+        >
+          <Routes>
+            <Route path="/compare" element={<PlayerComparison />} />
+            <Route path="/player/:playerName" element={<p>Profile page</p>} />
+          </Routes>
+          <LocationProbe />
+        </MemoryRouter>
+      </SettingsProvider>,
+    );
+
+  it("links back to the profile it was opened from", async () => {
+    renderFromProfile();
+
+    const back = screen.getByRole("link", { name: "Back to Amy's profile" });
+    expect(back.getAttribute("href")).toBe(profileUrl);
+
+    await act(async () => {
+      fireEvent.click(back);
+    });
+
+    expect(screen.getByText("Profile page")).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe(profileUrl);
+  });
+
+  it("keeps the back link after comparing rewrites the URL", async () => {
+    loungeApi.comparePlayers.mockResolvedValue([
+      player("Amy", 1),
+      player("Zed", 2),
+    ]);
+    renderFromProfile();
+
+    fireEvent.change(screen.getByLabelText("Player 2 name"), {
+      target: { value: "Zed" },
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Compare selected players" }),
+      );
+    });
+
+    expect(screen.getByTestId("location").textContent).toBe(
+      "/compare?names=Amy%2CZed&season=2&mmrType=12",
+    );
+    expect(screen.getByRole("link", { name: "Back to Amy's profile" })).toBeTruthy();
+  });
+
+  it("has no back link when opened from a shared link", () => {
+    renderFromProfile(null);
+
+    expect(screen.queryByRole("link", { name: /Back to/ })).toBeNull();
   });
 });
