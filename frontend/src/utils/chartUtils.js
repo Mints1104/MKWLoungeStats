@@ -160,6 +160,43 @@ export function findPeakPoint(points) {
   );
 }
 
+// WCAG relative luminance of an [r, g, b] colour (0-255 channels)
+function relativeLuminance(channels) {
+  const [r, g, b] = channels.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Lightens a "#RRGGBB" colour towards white, in 10% steps, until it is bright enough
+ * to read on the site's dark cards; colours already bright enough come back as is.
+ * Keeps the hue, so a dark red rank colour stays recognisably red.
+ * @param {string} hex - "#RRGGBB"
+ * @param {number} [minLuminance=0.2]
+ * @returns {string} "#RRGGBB" (input returned unchanged if it isn't "#RRGGBB")
+ */
+export function brightenForDarkBackground(hex, minLuminance = 0.2) {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex ?? "");
+  if (!match) return hex;
+
+  const channels = [0, 2, 4].map((start) =>
+    Number.parseInt(match[1].slice(start, start + 2), 16),
+  );
+  if (relativeLuminance(channels) >= minLuminance) return hex;
+
+  for (let step = 1; step <= 10; step += 1) {
+    const mixed = channels.map((channel) =>
+      Math.round(channel + (255 - channel) * (step / 10)),
+    );
+    if (relativeLuminance(mixed) >= minLuminance) {
+      return `#${mixed.map((channel) => channel.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+    }
+  }
+  return "#FFFFFF";
+}
+
 const MMR_TICK_STEPS = [100, 250, 500, 1000, 2000, 2500, 5000];
 
 /**

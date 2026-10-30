@@ -23,7 +23,11 @@ vi.mock("recharts", () => {
       tooltip.point ?
         cloneElement(content, { active: true, payload: [{ payload: tooltip.point }] })
       : null,
-    ReferenceLine: ({ label }) => <span data-testid="rank-line">{label.value}</span>,
+    ReferenceLine: ({ label, stroke }) => (
+      <span data-testid="rank-line" data-stroke={stroke} data-label-fill={label.fill}>
+        {label.value}
+      </span>
+    ),
     ReferenceDot: ({ label }) => <span data-testid="peak">{label.value}</span>,
     Brush: () => <span data-testid="brush" />,
   };
@@ -73,7 +77,12 @@ describe("MmrHistoryChart", () => {
       "Gold 6000",
     ]);
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Rank lines" }));
+    // Drawn in the colour of the rank that starts there
+    const gold = screen.getByTestId("rank-line");
+    expect(gold.dataset.stroke).toBe("#F1C232");
+    expect(gold.dataset.labelFill).toBe("#F1C232");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /Rank lines/ }));
 
     expect(screen.queryByTestId("rank-line")).toBeNull();
     expect(sessionStorage.getItem("mmrChartRankLinesPref")).toBe("false");

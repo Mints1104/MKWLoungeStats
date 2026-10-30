@@ -2356,9 +2356,10 @@ a.recent-chip {
   border: 1.5px solid;
 }
 
+/* Neutral: each rank line uses its own rank's colour */
 .legend-dash {
   width: 14px;
-  border-top: 1.5px dashed #f59e0b;
+  border-top: 1.5px dashed #94a3b8;
 }
 
 .mmr-chart-hint {

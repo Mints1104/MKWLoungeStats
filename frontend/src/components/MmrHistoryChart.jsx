@@ -13,12 +13,13 @@ import {
 } from "recharts";
 import FilterToggle from "./FilterToggle";
 import {
+  brightenForDarkBackground,
   calculateGradientStops,
   findPeakPoint,
   getMmrAxis,
   getVisibleRankLines,
 } from "../utils/chartUtils";
-import { getEventFormat } from "../utils/playerUtils";
+import { getEventFormat, getRankColor } from "../utils/playerUtils";
 
 // Per-view UI prefs (sessionStorage)
 const X_MODE_KEY = "mmrChartXModePref";
@@ -36,7 +37,6 @@ const PENALTY_REASONS = new Set(["Strike", "Penalty"]);
 const PEAK_COLOR = "#38bdf8";
 const PENALTY_COLOR = "#ef4444";
 const DELETED_COLOR = "#94a3b8";
-const RANK_LINE_COLOR = "#f59e0b";
 
 // Outline in the card colour so labels stay readable where they cross the line
 const LABEL_HALO = { stroke: "#0f172a", strokeWidth: 3, paintOrder: "stroke" };
@@ -299,23 +299,28 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
               allowDataOverflow
             />
             <Tooltip content={<MmrTooltip />} />
-            {rankLines.map((rank) => (
-              <ReferenceLine
-                key={rank.name}
-                y={rank.min}
-                stroke={RANK_LINE_COLOR}
-                strokeDasharray="5 4"
-                strokeOpacity={0.75}
-                label={{
-                  value: `${rank.name} ${rank.min}`,
-                  // Left end: seasons usually climb, so the line is lower there
-                  position: "insideTopLeft",
-                  fill: "#fbbf24",
-                  fontSize: 11,
-                  ...LABEL_HALO,
-                }}
-              />
-            ))}
+            {rankLines.map((rank) => {
+              // Each line is where a rank starts, drawn in that rank's colour
+              // (lightened if too dark to read on the card, e.g. Grandmaster)
+              const color = brightenForDarkBackground(getRankColor(rank.name));
+              return (
+                <ReferenceLine
+                  key={rank.name}
+                  y={rank.min}
+                  stroke={color}
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.8}
+                  label={{
+                    value: `${rank.name} ${rank.min}`,
+                    // Left end: seasons usually climb, so the line is lower there
+                    position: "insideTopLeft",
+                    fill: color,
+                    fontSize: 11,
+                    ...LABEL_HALO,
+                  }}
+                />
+              );
+            })}
             <Line
               type="monotone"
               dataKey="mmr"
@@ -383,7 +388,7 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
         {showRankLines && (
           <li>
             <span className="legend-dash" aria-hidden="true" />
-            Rank boundary
+            Rank boundary (in that rank&apos;s colour)
           </li>
         )}
         {showBrush && <li className="mmr-chart-hint">Drag the bar below the chart to zoom</li>}

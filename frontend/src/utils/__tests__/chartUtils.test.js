@@ -4,6 +4,7 @@ import {
   calculateGradientStops,
   calculateMmrHistoryData,
   calculateScoreDistribution,
+  brightenForDarkBackground,
   findPeakPoint,
   getMmrAxis,
   getVisibleRankLines,
@@ -247,5 +248,27 @@ describe("getMmrAxis", () => {
 
   it("returns null without points", () => {
     expect(getMmrAxis([])).toBeNull();
+  });
+});
+
+describe("brightenForDarkBackground", () => {
+  it("leaves colours that already read well on the dark cards", () => {
+    expect(brightenForDarkBackground("#F1C232")).toBe("#F1C232"); // Gold
+    expect(brightenForDarkBackground("#B9F2FF")).toBe("#B9F2FF"); // Diamond
+    expect(brightenForDarkBackground("#9370DB")).toBe("#9370DB"); // Master
+  });
+
+  it("lightens dark rank colours just enough, keeping the hue", () => {
+    const grandmaster = brightenForDarkBackground("#A3022C");
+
+    expect(grandmaster).not.toBe("#A3022C");
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(grandmaster.slice(i, i + 2), 16));
+    expect(r).toBeGreaterThan(g); // still red
+    expect(r).toBeGreaterThan(b);
+  });
+
+  it("returns anything that isn't #RRGGBB unchanged", () => {
+    expect(brightenForDarkBackground("red")).toBe("red");
+    expect(brightenForDarkBackground(undefined)).toBeUndefined();
   });
 });
