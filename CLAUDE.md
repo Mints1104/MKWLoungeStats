@@ -102,7 +102,10 @@ Conventions:
 - **Shared hooks**: `useAbortableRequest` (cancels the previous in-flight request),
   `usePlayerDetails`, `useSeasonMmrSelection`, `useRankThresholds`, `useFavourites`,
   `usePlayerSuggestions` (autocomplete, used by `components/PlayerNameInput.jsx`),
-  `usePartnerNames`. Prefer these over ad-hoc `fetch` + `useEffect`.
+  `usePartnerNames`, `useCareer`. Prefer these over ad-hoc `fetch` + `useEffect`.
+  `useCareer` lives in `PlayerProfile`, not the career card: the card renders inside
+  `PlayerDetailView` (passed as `careerSection`), which unmounts while the profile
+  reloads, and the career must stay open and loaded across season switches.
 - **Request budget**: the backend allows 100 requests / 15 min / IP. Features that fan out
   must stay opt-in or cached: autocomplete waits for 2 characters, debounces and caches
   per query; the career view only loads when opened (one request per ladder); partner

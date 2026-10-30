@@ -62,6 +62,8 @@ const ResponsiveContainer = lazy(() =>
  * Displays player stats, MMR history chart, score distribution, and recent events
  */
 const EVENT_LIMIT_STORAGE_KEY = "playerDetailEventLimitPref";
+// How many more events the button under the recent events list adds
+const SHOW_MORE_STEP = 10;
 const GAME_MODE_FILTER_KEY = "playerGameModeFilterPref";
 const TIER_FILTER_KEY = "playerTierFilterPref";
 const SORT_METHOD_KEY = "playerSortMethodPref";
@@ -95,6 +97,8 @@ function PlayerDetailView({
   season = CURRENT_SEASON,
   mmrType = 24,
   gradientIdPrefix = "mmrGradient",
+  // Optional career card, placed between the stats/chart row and form and streaks
+  careerSection = null,
 }) {
   // Restore event limit preference from sessionStorage, default to number mode with 10
   const [eventLimitMode, setEventLimitMode] = useState(() => {
@@ -488,6 +492,20 @@ function PlayerDetailView({
     eventLimitPreference,
   ]);
 
+  // "Show N more" under the list: up to SHOW_MORE_STEP of the events not shown yet
+  const nextEventBatch = Math.min(
+    SHOW_MORE_STEP,
+    Math.max(0, totalFilteredEvents - eventsToShow.length),
+  );
+
+  const showMoreEvents = () => {
+    const next = eventLimit + nextEventBatch;
+    setEventLimitMode("number");
+    setEventLimitPreference(next);
+    setEventLimit(next);
+    setEventInputValue(String(next));
+  };
+
   // Stats for the currently displayed events
   const {
     avgScore: recentAvgScore,
@@ -695,6 +713,8 @@ function PlayerDetailView({
 
       {/* After the chart when stacked on narrow screens; full-width grid rows
           under it on desktop */}
+      {careerSection}
+
       <PlayerInsights events={sanitizedEvents} season={season} mmrType={mmrType} />
 
       <PerformanceBreakdown
@@ -1095,20 +1115,35 @@ function PlayerDetailView({
         <p className="no-events-message" aria-live="polite">
           No events match these filters yet.
         </p>
-      : <div className="events-grid">
-          {eventsToShow.map((event) => (
-            <EventCard
-              key={getMmrChangeKey(event)}
-              event={event}
-              tableWasDeleted={
-                event.reason === "Table" && deletedTableIds.has(event.changeId)
-              }
-              averageScore={playerDetails.averageScore}
-              avg12={avg12}
-              avg24={avg24}
-            />
-          ))}
-        </div>
+      : <>
+          <div className="events-grid">
+            {eventsToShow.map((event) => (
+              <EventCard
+                key={getMmrChangeKey(event)}
+                event={event}
+                tableWasDeleted={
+                  event.reason === "Table" && deletedTableIds.has(event.changeId)
+                }
+                averageScore={playerDetails.averageScore}
+                avg12={avg12}
+                avg24={avg24}
+              />
+            ))}
+          </div>
+          <div className="events-more">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={showMoreEvents}
+              disabled={nextEventBatch === 0}
+            >
+              {nextEventBatch > 0 ? `Show ${nextEventBatch} more` : "No more events"}
+            </button>
+            <span className="events-more-count" aria-live="polite">
+              Showing {eventsToShow.length} of {totalFilteredEvents}
+            </span>
+          </div>
+        </>
       }
     </div>
   );

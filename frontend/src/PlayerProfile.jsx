@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
+import { useCareer } from "./hooks/useCareer";
 import PlayerDetailView from "./components/PlayerDetailView";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
@@ -68,6 +69,17 @@ function PlayerProfile() {
   };
 
   const displayName = detailedInfo?.name || playerName;
+
+  const career = useCareer(playerName);
+  const careerSection = playerName && (
+    <CareerView
+      career={career}
+      playerName={playerName}
+      season={season}
+      mmrType={mmrType}
+      onSelectLadder={handleSelectLadder}
+    />
+  );
 
   const handleBack = () => {
     // "default" is the key of the entry the app was opened on: there is no in-app
@@ -144,19 +156,12 @@ function PlayerProfile() {
           season={season}
           mmrType={mmrType}
           gradientIdPrefix="mmrGradient-profile"
+          careerSection={careerSection}
         />
       )}
 
-      {playerName && (
-        <CareerView
-          // Remount (collapse) when the profile switches to another player
-          key={playerName.toLowerCase()}
-          playerName={playerName}
-          season={season}
-          mmrType={mmrType}
-          onSelectLadder={handleSelectLadder}
-        />
-      )}
+      {/* No record on this ladder: the career still shows where they did play */}
+      {!detailedInfo && !loading && careerSection}
     </div>
   );
 }

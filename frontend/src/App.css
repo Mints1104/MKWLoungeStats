@@ -271,6 +271,7 @@ body {
        never the 320px column. */
     grid-template-areas:
       "stats mmr mmr"
+      "career career career"
       "insights insights insights"
       "breakdown breakdown breakdown"
       "score events events";
@@ -279,6 +280,7 @@ body {
   }
 
   .player-results > .player-summary.stats { grid-area: stats; }
+  .player-results > .player-summary.career-card { grid-area: career; }
   .player-results > .player-summary.insights-card { grid-area: insights; }
   .player-results > .player-summary.breakdown-card { grid-area: breakdown; }
   .player-results > .player-summary.mmr {
@@ -295,7 +297,8 @@ body {
 
   /* keep the list spanning full width under the events card */
   .player-results .events-grid,
-  .player-results .no-events-message {
+  .player-results .no-events-message,
+  .player-results .events-more {
     grid-column: 1 / -1;
   }
 }
@@ -2369,4 +2372,27 @@ a.recent-chip {
 /* Short values: two streak cards per row even on phones */
 .insights-card .recent-stats-row {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+/* Show more under the recent events */
+
+.events-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.events-more-count {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.secondary-button:disabled {
+  cursor: default;
+  color: #64748b;
+  border-color: rgba(148, 163, 184, 0.3);
+  background: transparent;
 }

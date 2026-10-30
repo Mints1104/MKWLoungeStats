@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import CareerView from "../CareerView";
+import { useCareer } from "../../hooks/useCareer";
 import { loungeApi } from "../../api/loungeApi";
 
 vi.mock("../../api/loungeApi", async (importOriginal) => ({
@@ -25,13 +26,21 @@ const details = (extra) => ({
   ...extra,
 });
 
+// As on the profile page: the hook lives in the page, the card can come and go
+function Career({ playerName = "Guti", showCard = true, ...props }) {
+  const career = useCareer(playerName);
+  return showCard ?
+      <CareerView career={career} playerName={playerName} {...props} />
+    : null;
+}
+
 describe("CareerView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("stays collapsed, without requests, until opened", () => {
-    render(<CareerView playerName="Guti" season={3} mmrType={24} onSelectLadder={vi.fn()} />);
+    render(<Career season={3} mmrType={24} onSelectLadder={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Show all seasons" })).toBeTruthy();
     expect(loungeApi.getPlayerDetails).not.toHaveBeenCalled();
@@ -50,7 +59,7 @@ describe("CareerView", () => {
     const onSelectLadder = vi.fn();
 
     render(
-      <CareerView playerName="Guti" season={3} mmrType={24} onSelectLadder={onSelectLadder} />,
+      <Career season={3} mmrType={24} onSelectLadder={onSelectLadder} />,
     );
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Show all seasons" }));
@@ -76,7 +85,7 @@ describe("CareerView", () => {
       throw notFound();
     });
 
-    render(<CareerView playerName="Guti" season={3} mmrType={24} onSelectLadder={vi.fn()} />);
+    render(<Career season={3} mmrType={24} onSelectLadder={vi.fn()} />);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Show all seasons" }));
     });
@@ -89,5 +98,37 @@ describe("CareerView", () => {
       fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     });
     expect(loungeApi.getPlayerDetails).toHaveBeenCalledTimes(12);
+  });
+
+  it("stays open and loaded when the card remounts (the profile reloading)", async () => {
+    loungeApi.getPlayerDetails.mockImplementation(async (name, season, mmrType) => {
+      if (season === 3 && mmrType === 24) return details();
+      throw notFound();
+    });
+    const props = { season: 3, mmrType: 24, onSelectLadder: vi.fn() };
+
+    const { rerender } = render(<Career {...props} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Show all seasons" }));
+    });
+
+    rerender(<Career {...props} showCard={false} />);
+    rerender(<Career {...props} season={2} />);
+
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(2);
+    expect(loungeApi.getPlayerDetails).toHaveBeenCalledTimes(6);
+  });
+
+  it("starts collapsed again for a different player", async () => {
+    loungeApi.getPlayerDetails.mockResolvedValue(details());
+    const props = { season: 3, mmrType: 24, onSelectLadder: vi.fn() };
+
+    const { rerender } = render(<Career {...props} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Show all seasons" }));
+    });
+    rerender(<Career {...props} playerName="Someone Else" />);
+
+    expect(screen.getByRole("button", { name: "Show all seasons" })).toBeTruthy();
   });
 });

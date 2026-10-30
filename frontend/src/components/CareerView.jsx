@@ -1,7 +1,4 @@
-import { useCallback, useState } from "react";
-import { loungeApi } from "../api/loungeApi";
-import { useAbortableRequest } from "../hooks/useAbortableRequest";
-import { getAllLadders, getSeasonLabel } from "../config/seasons";
+import { getSeasonLabel } from "../config/seasons";
 import { formatWinRate, getRankColor, winRateClassName } from "../utils/playerUtils";
 
 function ladderLabel(mmrType) {
@@ -10,61 +7,17 @@ function ladderLabel(mmrType) {
 
 /**
  * One player's record on every season and ladder. Collapsed until opened, since it
- * needs one request per ladder (six for seasons 0-3).
+ * needs one request per ladder. The data comes from useCareer in the profile page,
+ * so it survives this card remounting when the profile reloads.
+ * @param {Object} props
+ * @param {Object} props.career - useCareer(playerName)
+ * @param {string} props.playerName
+ * @param {number} props.season - Season being viewed (its row is highlighted)
+ * @param {number} props.mmrType - Ladder being viewed
+ * @param {Function} props.onSelectLadder - `(season, mmrType)` for a picked row
  */
-function CareerView({ playerName, season, mmrType, onSelectLadder }) {
-  const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState(null);
-  const [failedCount, setFailedCount] = useState(0);
-  const { loading, error, run } = useAbortableRequest();
-
-  const loadCareer = useCallback(() => {
-    setRows(null);
-    setFailedCount(0);
-
-    run(
-      async (signal) => {
-        const ladders = getAllLadders();
-        const settled = await Promise.allSettled(
-          ladders.map((ladder) =>
-            loungeApi.getPlayerDetails(
-              playerName,
-              ladder.season,
-              ladder.mmrType ?? 24,
-              signal,
-            ),
-          ),
-        );
-
-        const aborted = settled.find(
-          (result) => result.reason?.name === "AbortError",
-        );
-        if (aborted) throw aborted.reason;
-
-        const played = [];
-        let failed = 0;
-        settled.forEach((result, index) => {
-          if (result.status === "fulfilled") {
-            // The API answers for ladders never played too, as a 0-event
-            // "Placement" record
-            if ((result.value?.eventsPlayed ?? 0) > 0) {
-              played.push({ ...ladders[index], details: result.value });
-            }
-          } else if (result.reason?.status !== 404) {
-            // 404 just means no games on that ladder
-            failed += 1;
-          }
-        });
-        return { played, failed };
-      },
-      { mapError: (err) => err.message || "Failed to load career" },
-    ).then((data) => {
-      if (data) {
-        setRows(data.played);
-        setFailedCount(data.failed);
-      }
-    });
-  }, [playerName, run]);
+function CareerView({ career, playerName, season, mmrType, onSelectLadder }) {
+  const { open, rows, failedCount, loading, error, load: loadCareer } = career;
 
   if (!open) {
     return (
@@ -74,10 +27,7 @@ function CareerView({ playerName, season, mmrType, onSelectLadder }) {
           <button
             type="button"
             className="secondary-button"
-            onClick={() => {
-              setOpen(true);
-              loadCareer();
-            }}
+            onClick={loadCareer}
           >
             Show all seasons
           </button>

@@ -325,3 +325,58 @@ describe("PlayerDetailView performance breakdown", () => {
     expect(sessionStorage.getItem("playerBreakdownPref")).toBe("format");
   });
 });
+
+describe("PlayerDetailView show more events", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  const manyEvents = (count) => ({
+    ...makePlayerDetails(),
+    mmrChanges: Array.from({ length: count }, (_, index) => ({
+      changeId: 1000 + index,
+      reason: "Table",
+      numPlayers: 12,
+      numTeams: 12,
+      tier: "A",
+      score: 70,
+      mmrDelta: index % 2 ? 5 : -5,
+      newMmr: 6000 + index,
+      rank: 4,
+      time: 2000 - index,
+    })),
+  });
+
+  const cardCount = () => document.querySelectorAll(".event-card").length;
+
+  it("adds 10 events at a time, then the remainder, then says there are no more", async () => {
+    render(
+      <PlayerDetailView playerDetails={manyEvents(23)} season={3} mmrType={24} />,
+    );
+
+    const button = await screen.findByRole("button", { name: "Show 10 more" });
+    expect(cardCount()).toBe(10);
+    expect(screen.getByText("Showing 10 of 23")).toBeTruthy();
+
+    fireEvent.click(button);
+    expect(cardCount()).toBe(20);
+
+    fireEvent.click(screen.getByRole("button", { name: "Show 3 more" }));
+    expect(cardCount()).toBe(23);
+
+    const done = screen.getByRole("button", { name: "No more events" });
+    expect(done.disabled).toBe(true);
+    // Keeps the events input in step
+    expect(screen.getByRole("spinbutton").value).toBe("23");
+  });
+
+  it("says there are no more when everything already fits", async () => {
+    render(
+      <PlayerDetailView playerDetails={makePlayerDetails()} season={3} mmrType={24} />,
+    );
+
+    expect(
+      (await screen.findByRole("button", { name: "No more events" })).disabled,
+    ).toBe(true);
+  });
+});
