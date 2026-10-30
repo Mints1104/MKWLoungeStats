@@ -82,16 +82,44 @@ describe("MmrHistoryChart", () => {
     expect(gold.dataset.stroke).toBe("#F1C232");
     expect(gold.dataset.labelFill).toBe("#F1C232");
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /Rank lines/ }));
+    // Hidden from its legend item
+    const toggle = screen.getByRole("button", { name: /Rank lines/ });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(toggle);
 
     expect(screen.queryByTestId("rank-line")).toBeNull();
-    expect(sessionStorage.getItem("mmrChartRankLinesPref")).toBe("false");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    expect(JSON.parse(sessionStorage.getItem("mmrChartOverlaysPref"))).toEqual({
+      peak: true,
+      penalties: true,
+      deleted: true,
+      rankLines: false,
+    });
   });
 
-  it("marks the peak", () => {
+  it("marks the peak, and hides it from the legend", () => {
     renderChart();
 
     expect(screen.getByTestId("peak").textContent).toBe("Peak 6150");
+
+    fireEvent.click(screen.getByRole("button", { name: /Peak MMR/ }));
+
+    expect(screen.queryByTestId("peak")).toBeNull();
+  });
+
+  it("restores the overlays switched off earlier in the session", () => {
+    sessionStorage.setItem(
+      "mmrChartOverlaysPref",
+      JSON.stringify({ peak: false, rankLines: false }),
+    );
+
+    renderChart();
+
+    expect(screen.queryByTestId("peak")).toBeNull();
+    expect(screen.queryByTestId("rank-line")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Penalty/ }).getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
   it("explains a deleted table in the tooltip", () => {

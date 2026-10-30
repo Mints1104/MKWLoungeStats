@@ -16,6 +16,7 @@ import {
   brightenForDarkBackground,
   calculateGradientStops,
   findPeakPoint,
+  getMarkerKind,
   getMmrAxis,
   getVisibleRankLines,
 } from "../utils/chartUtils";
@@ -23,7 +24,29 @@ import { getEventFormat, getRankColor } from "../utils/playerUtils";
 
 // Per-view UI prefs (sessionStorage)
 const X_MODE_KEY = "mmrChartXModePref";
-const RANK_LINES_KEY = "mmrChartRankLinesPref";
+// JSON { peak, penalties, deleted, rankLines }: which overlays the legend has on
+const OVERLAYS_KEY = "mmrChartOverlaysPref";
+
+const DEFAULT_OVERLAYS = {
+  peak: true,
+  penalties: true,
+  deleted: true,
+  rankLines: true,
+};
+
+function readOverlays() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(OVERLAYS_KEY) || "{}");
+    return Object.fromEntries(
+      Object.keys(DEFAULT_OVERLAYS).map((key) => [
+        key,
+        typeof saved?.[key] === "boolean" ? saved[key] : DEFAULT_OVERLAYS[key],
+      ]),
+    );
+  } catch {
+    return DEFAULT_OVERLAYS;
+  }
+}
 
 // Below this many points the range picker is more clutter than help
 const BRUSH_MIN_POINTS = 30;
@@ -33,10 +56,42 @@ const X_MODE_OPTIONS = [
   { value: "event", label: "By event" },
 ];
 
-const PENALTY_REASONS = new Set(["Strike", "Penalty"]);
 const PEAK_COLOR = "#38bdf8";
 const PENALTY_COLOR = "#ef4444";
 const DELETED_COLOR = "#94a3b8";
+
+const LEGEND_ITEMS = [
+  {
+    key: "peak",
+    label: "Peak MMR",
+    hint: "the peak MMR marker",
+    swatch: <span className="legend-dot" style={{ background: PEAK_COLOR }} aria-hidden="true" />,
+  },
+  {
+    key: "penalties",
+    label: "Penalty / strike",
+    hint: "penalty and strike markers",
+    swatch: <span className="legend-dot" style={{ background: PENALTY_COLOR }} aria-hidden="true" />,
+  },
+  {
+    key: "deleted",
+    label: "Deleted table",
+    hint: "deleted table markers",
+    swatch: (
+      <span
+        className="legend-dot legend-dot-hollow"
+        style={{ borderColor: DELETED_COLOR }}
+        aria-hidden="true"
+      />
+    ),
+  },
+  {
+    key: "rankLines",
+    label: "Rank lines",
+    hint: "rank boundary lines (drawn in each rank's colour)",
+    swatch: <span className="legend-dash" aria-hidden="true" />,
+  },
+];
 
 // Outline in the card colour so labels stay readable where they cross the line
 const LABEL_HALO = { stroke: "#0f172a", strokeWidth: 3, paintOrder: "stroke" };
@@ -139,10 +194,11 @@ function MmrTooltip({ active, payload }) {
   );
 }
 
-function renderMarker({ cx, cy, payload, index }) {
+function renderMarker({ cx, cy, payload, index }, overlays) {
   const key = `marker-${index}`;
   if (cx == null || cy == null) return <g key={key} />;
-  if (PENALTY_REASONS.has(payload.reason)) {
+  const kind = getMarkerKind(payload, overlays);
+  if (kind === "penalty") {
     return (
       <circle
         key={key}
@@ -155,7 +211,7 @@ function renderMarker({ cx, cy, payload, index }) {
       />
     );
   }
-  if (payload.tableDeleted) {
+  if (kind === "deleted") {
     return (
       <circle
         key={key}
@@ -185,9 +241,15 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
   const [xMode, setXMode] = useState(() =>
     readPref(X_MODE_KEY, "date") === "event" ? "event" : "date",
   );
-  const [showRankLines, setShowRankLines] = useState(
-    () => readPref(RANK_LINES_KEY, "true") !== "false",
-  );
+  // Overlays switched on and off by tapping their legend item
+  const [overlays, setOverlays] = useState(readOverlays);
+  const toggleOverlay = (key) => {
+    setOverlays((current) => {
+      const next = { ...current, [key]: !current[key] };
+      writePref(OVERLAYS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
   // Brush range, remembered only for the data it was picked on
   const [range, setRange] = useState(null);
 
@@ -210,8 +272,8 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
   );
   const peak = useMemo(() => findPeakPoint(points), [points]);
   const rankLines = useMemo(
-    () => (showRankLines ? getVisibleRankLines(thresholds, visible) : []),
-    [showRankLines, thresholds, visible],
+    () => (overlays.rankLines ? getVisibleRankLines(thresholds, visible) : []),
+    [overlays.rankLines, thresholds, visible],
   );
 
   if (!points.length) {
@@ -239,17 +301,6 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
             options={X_MODE_OPTIONS}
             ariaLabel="Horizontal axis"
           />
-          <label className="mmr-chart-checkbox">
-            <input
-              type="checkbox"
-              checked={showRankLines}
-              onChange={(e) => {
-                setShowRankLines(e.target.checked);
-                writePref(RANK_LINES_KEY, String(e.target.checked));
-              }}
-            />
-            Rank lines
-          </label>
         </div>
       </div>
 
@@ -326,12 +377,12 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
               dataKey="mmr"
               stroke={`url(#${gradientId})`}
               strokeWidth={2.5}
-              dot={renderMarker}
+              dot={(props) => renderMarker(props, overlays)}
               activeDot={{ r: 4, fill: "#e5e7eb", strokeWidth: 0 }}
               isAnimationActive={false}
               strokeLinecap="round"
             />
-            {peakIndex >= 0 && (
+            {overlays.peak && peakIndex >= 0 && (
               <ReferenceDot
                 x={peak[xKey]}
                 y={peak.mmr}
@@ -368,31 +419,27 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
         </ResponsiveContainer>
       </div>
 
-      <ul className="mmr-chart-legend">
-        <li>
-          <span className="legend-dot" style={{ background: PEAK_COLOR }} aria-hidden="true" />
-          Peak MMR
-        </li>
-        <li>
-          <span className="legend-dot" style={{ background: PENALTY_COLOR }} aria-hidden="true" />
-          Penalty / strike
-        </li>
-        <li>
-          <span
-            className="legend-dot legend-dot-hollow"
-            style={{ borderColor: DELETED_COLOR }}
-            aria-hidden="true"
-          />
-          Deleted table
-        </li>
-        {showRankLines && (
-          <li>
-            <span className="legend-dash" aria-hidden="true" />
-            Rank boundary (in that rank&apos;s colour)
+      {/* The key doubles as the switches: tap an item to show or hide it */}
+      <ul className="mmr-chart-legend" aria-label="Chart markers">
+        {LEGEND_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`legend-toggle${overlays[item.key] ? "" : " legend-toggle-off"}`}
+              aria-pressed={overlays[item.key]}
+              onClick={() => toggleOverlay(item.key)}
+              title={overlays[item.key] ? `Hide ${item.hint}` : `Show ${item.hint}`}
+            >
+              {item.swatch}
+              {item.label}
+            </button>
           </li>
-        )}
-        {showBrush && <li className="mmr-chart-hint">Drag the bar below the chart to zoom</li>}
+        ))}
       </ul>
+      <p className="mmr-chart-hint">
+        Tap an item above to show or hide it
+        {showBrush ? ". Drag the bar below the chart to zoom." : "."}
+      </p>
     </>
   );
 }

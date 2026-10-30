@@ -147,6 +147,20 @@ export function calculateMmrHistoryData(
   };
 }
 
+const PENALTY_REASONS = new Set(["Strike", "Penalty"]);
+
+/**
+ * Which marker an MMR history point gets, given the overlays switched on.
+ * @param {Object} point - calculateMmrHistoryData point
+ * @param {{ penalties: boolean, deleted: boolean }} overlays
+ * @returns {"penalty"|"deleted"|null}
+ */
+export function getMarkerKind(point, overlays) {
+  if (overlays?.penalties && PENALTY_REASONS.has(point?.reason)) return "penalty";
+  if (overlays?.deleted && point?.tableDeleted) return "deleted";
+  return null;
+}
+
 /**
  * The highest point of an MMR history (the latest one on a tie).
  * @param {Array} points - calculateMmrHistoryData points

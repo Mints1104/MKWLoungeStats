@@ -6,6 +6,7 @@ import {
   calculateScoreDistribution,
   brightenForDarkBackground,
   findPeakPoint,
+  getMarkerKind,
   getMmrAxis,
   getVisibleRankLines,
   comparisonSeriesKey,
@@ -270,5 +271,23 @@ describe("brightenForDarkBackground", () => {
   it("returns anything that isn't #RRGGBB unchanged", () => {
     expect(brightenForDarkBackground("red")).toBe("red");
     expect(brightenForDarkBackground(undefined)).toBeUndefined();
+  });
+});
+
+describe("getMarkerKind", () => {
+  const all = { penalties: true, deleted: true };
+
+  it("marks penalties, strikes and deleted tables", () => {
+    expect(getMarkerKind({ reason: "Strike" }, all)).toBe("penalty");
+    expect(getMarkerKind({ reason: "Penalty" }, all)).toBe("penalty");
+    expect(getMarkerKind({ reason: "Table", tableDeleted: true }, all)).toBe("deleted");
+    expect(getMarkerKind({ reason: "Table" }, all)).toBeNull();
+  });
+
+  it("leaves out markers switched off in the legend", () => {
+    expect(getMarkerKind({ reason: "Strike" }, { ...all, penalties: false })).toBeNull();
+    expect(
+      getMarkerKind({ reason: "Table", tableDeleted: true }, { ...all, deleted: false }),
+    ).toBeNull();
   });
 });

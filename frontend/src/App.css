@@ -2430,15 +2430,6 @@ a.recent-chip {
   gap: 0.75rem;
 }
 
-.mmr-chart-checkbox {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  color: #cbd5f5;
-  cursor: pointer;
-}
-
 .mmr-chart-frame-brush {
   height: 350px;
 }
@@ -2464,18 +2455,44 @@ a.recent-chip {
 .mmr-chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1.1rem;
+  gap: 0.4rem;
   margin: 0.6rem 0 0;
   padding: 0;
   list-style: none;
-  font-size: 0.8rem;
-  color: #94a3b8;
 }
 
-.mmr-chart-legend li {
+/* Legend items are the overlay switches */
+.legend-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+  background: transparent;
+  color: #cbd5f5;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.legend-toggle:hover {
+  border-color: #38bdf8;
+}
+
+.legend-toggle:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.legend-toggle-off {
+  border-style: dashed;
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.legend-toggle-off .legend-dot,
+.legend-toggle-off .legend-dash {
+  opacity: 0.4;
 }
 
 .legend-dot {
@@ -2496,6 +2513,8 @@ a.recent-chip {
 }
 
 .mmr-chart-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
   color: #64748b;
 }
 
