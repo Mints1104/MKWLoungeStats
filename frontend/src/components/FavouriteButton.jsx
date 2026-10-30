@@ -1,3 +1,4 @@
+import { TbStar, TbStarFilled } from "react-icons/tb";
 import { useFavourites } from "../hooks/useFavourites";
 
 /** Star toggle that adds or removes a player from the favourites list. */
@@ -16,7 +17,9 @@ function FavouriteButton({ name, className = "" }) {
       }
       title={active ? "Remove from favourites" : "Add to favourites"}
     >
-      <span aria-hidden="true">{active ? "★" : "☆"}</span>
+      {active ?
+        <TbStarFilled aria-hidden="true" />
+      : <TbStar aria-hidden="true" />}
     </button>
   );
 }

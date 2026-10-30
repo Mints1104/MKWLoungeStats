@@ -8,20 +8,28 @@ import {
 import { useEffect } from "react";
 import usePlayerDetails from "./hooks/usePlayerDetails";
 import { useCareer } from "./hooks/useCareer";
+import { TbArrowLeft, TbArrowsLeftRight } from "react-icons/tb";
 import PlayerDetailView from "./components/PlayerDetailView";
-import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
-import MMRSelector from "./components/MMRSelector";
+import FilterToggle from "./components/FilterToggle";
 import FavouriteButton from "./components/FavouriteButton";
 import CopyLinkButton from "./components/CopyLinkButton";
 import CareerView from "./components/CareerView";
 import { useSettings } from "./context/settingsContext";
 import { rememberRecentSearch } from "./utils/recentSearches";
 import { getComparePath } from "./utils/playerLinks";
+import { getRankColor } from "./utils/playerUtils";
+import { brightenForDarkBackground } from "./utils/chartUtils";
 import {
   parseNullableMmrType,
   parseSeasonValue,
 } from "./hooks/useSeasonMmrSelection";
+
+// Two ladders: a toggle switches in one tap where a dropdown took two
+const LADDER_OPTIONS = [
+  { value: 24, label: "24p" },
+  { value: 12, label: "12p" },
+];
 
 function PlayerProfile() {
   const { playerName } = useParams();
@@ -93,40 +101,57 @@ function PlayerProfile() {
 
   return (
     <div className="player-info-page">
-      <div className="player-card">
-        <PageHeader
-          title="Player Profile"
-          subtitle={`Viewing stats for ${displayName}`}
-        >
-          <button
-            className="player-button"
-            onClick={handleBack}
-            style={{ marginBottom: "0", width: "auto" }}
-          >
-            ← Back
-          </button>
-        </PageHeader>
+      <div className="player-card profile-header">
+        <button type="button" className="back-link" onClick={handleBack}>
+          <TbArrowLeft aria-hidden="true" />
+          Back
+        </button>
 
-        <div className="profile-toolbar">
+        <div className="profile-header-grid">
+          <div className="profile-identity">
+            <div className="profile-name-row">
+              <h1 className="profile-name">{displayName}</h1>
+              <FavouriteButton name={displayName} className="favourite-button-inline" />
+            </div>
+            {detailedInfo && (
+              <p className="profile-meta">
+                <span
+                  style={{
+                    color: brightenForDarkBackground(getRankColor(detailedInfo.rank)),
+                  }}
+                >
+                  {detailedInfo.rank}
+                </span>
+                {detailedInfo.overallRank != null && ` · #${detailedInfo.overallRank}`}
+                {detailedInfo.mmr != null &&
+                  ` · ${detailedInfo.mmr.toLocaleString()} MMR`}
+              </p>
+            )}
+          </div>
+
           <div className="profile-actions">
-            <FavouriteButton name={displayName} />
-            <CopyLinkButton />
+            <CopyLinkButton variant="icon" />
             <Link
-              className="secondary-button"
+              className="icon-button"
               to={getComparePath([displayName], season, mmrType)}
+              aria-label={`Compare ${displayName} with other players`}
+              title="Compare with other players"
             >
-              Compare with…
+              <TbArrowsLeftRight aria-hidden="true" />
             </Link>
           </div>
+
           <div className="profile-selectors">
             <SeasonSelector
               selectedSeason={season}
               onSeasonChange={handleSeasonChange}
             />
             {season >= 2 && (
-              <MMRSelector
-                selectedMMR={mmrType}
-                onMMRChange={handleMmrTypeChange}
+              <FilterToggle
+                activeFilter={mmrType}
+                onFilterChange={handleMmrTypeChange}
+                options={LADDER_OPTIONS}
+                ariaLabel="Ladder"
               />
             )}
           </div>
