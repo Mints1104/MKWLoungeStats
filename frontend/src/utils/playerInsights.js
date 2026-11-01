@@ -209,7 +209,8 @@ const formatSortKey = (format) => {
  *   pre-split seasons, where both player counts share one ladder)
  * @returns {Array<{
  *   key: string, label: string, events: number, wins: number, winRate: number,
- *   avgScore: number|null, avgPlacement: number|null, netMmr: number, share: number,
+ *   avgScore: number|null, avgPartnerScore: number|null, avgPlacement: number|null,
+ *   netMmr: number, share: number,
  * }>} Tiers by most events; formats FFA first then by team size. `share` is
  *   events relative to the largest row (0-1), for bar widths.
  */
@@ -232,23 +233,38 @@ export function calculateBreakdown(events = [], by = "tier", options = {}) {
 
     let group = groups.get(key);
     if (!group) {
-      group = { key, events: 0, wins: 0, scores: [], placements: [], netMmr: 0 };
+      group = {
+        key,
+        events: 0,
+        wins: 0,
+        scores: [],
+        partnerScores: [],
+        placements: [],
+        netMmr: 0,
+      };
       groups.set(key, group);
     }
     group.events += 1;
     if (isWin(event)) group.wins += 1;
     group.scores.push(event.score);
+    if (Array.isArray(event.partnerScores)) {
+      group.partnerScores.push(...event.partnerScores);
+    }
     if (Number.isFinite(event.rank)) group.placements.push(event.rank);
     group.netMmr += event.mmrDelta ?? 0;
   });
 
-  const rows = [...groups.values()].map(({ scores, placements, ...group }) => ({
-    ...group,
-    label: group.key,
-    winRate: group.wins / group.events,
-    avgScore: average(numericScores(scores)),
-    avgPlacement: average(placements),
-  }));
+  const rows = [...groups.values()].map(
+    ({ scores, partnerScores, placements, ...group }) => ({
+      ...group,
+      label: group.key,
+      winRate: group.wins / group.events,
+      avgScore: average(numericScores(scores)),
+      // Mean of the flattened partner scores, like the API's partnerAverage; FFA has none
+      avgPartnerScore: average(numericScores(partnerScores)),
+      avgPlacement: average(placements),
+    }),
+  );
 
   rows.sort((a, b) => {
     if (by === "format") {

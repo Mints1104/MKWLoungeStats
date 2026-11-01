@@ -171,7 +171,14 @@ describe("calculateBreakdown", () => {
     table(7, 20, { tier: "A", score: 90, rank: 2, numPlayers: 24, numTeams: 12 }),
     table(6, -10, { tier: "BC", score: 60, rank: 8, numPlayers: 24, numTeams: 24 }),
     table(5, 15, { tier: "BC", score: 80, rank: 3, numPlayers: 24, numTeams: 24 }),
-    table(4, -5, { tier: "BC", score: 70, rank: 6, numPlayers: 24, numTeams: 8 }),
+    table(4, -5, {
+      tier: "BC",
+      score: 70,
+      rank: 6,
+      numPlayers: 24,
+      numTeams: 8,
+      partnerScores: [50, 65],
+    }),
     { reason: "TableDelete", changeId: 3, mmrDelta: 40 },
     table(3, -40, { tier: "SQ", score: 10, rank: 12, numPlayers: 24, numTeams: 12 }),
     { reason: "Strike", changeId: 99, mmrDelta: -100 },
@@ -188,6 +195,7 @@ describe("calculateBreakdown", () => {
       wins: 1,
       winRate: 1 / 3,
       avgScore: 70,
+      avgPartnerScore: 57.5,
       avgPlacement: (8 + 3 + 6) / 3,
       netMmr: 0,
       share: 1,
@@ -203,6 +211,7 @@ describe("calculateBreakdown", () => {
       ["2v2", 1],
       ["3v3", 1],
     ]);
+    expect(rows.map((row) => row.avgPartnerScore)).toEqual([null, null, 57.5]);
   });
 
   it("can split formats by player count for pre-split seasons", () => {

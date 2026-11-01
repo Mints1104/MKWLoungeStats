@@ -77,6 +77,9 @@ function PerformanceBreakdown({
               <th scope="col">{by === "tier" ? "Tier" : "Format"}</th>
               <th scope="col">Events</th>
               <th scope="col">Avg score</th>
+              <th scope="col">
+                <abbr title="Partner average score">PAvg score</abbr>
+              </th>
               <th scope="col">Avg place</th>
               <th scope="col">Win rate</th>
               <th scope="col">Net MMR</th>
@@ -118,6 +121,11 @@ function PerformanceBreakdown({
                     </div>
                   </td>
                   <td>{row.avgScore != null ? row.avgScore.toFixed(1) : "N/A"}</td>
+                  <td>
+                    {row.avgPartnerScore != null ?
+                      row.avgPartnerScore.toFixed(1)
+                    : "N/A"}
+                  </td>
                   <td>
                     {row.avgPlacement != null ? row.avgPlacement.toFixed(1) : "N/A"}
                   </td>
