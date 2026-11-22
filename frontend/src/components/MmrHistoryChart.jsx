@@ -320,8 +320,11 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
           <LineChart data={points} margin={{ top: 16, right: 20, left: 10, bottom: 5 }}>
             <defs>
               <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                {/* Keyed by colour too: browsers can miss a stop-color change on a
+                    reused <stop> while dragging the brush, leaving the previous
+                    window's colours painted at the new offsets */}
                 {gradientStops.map((stop, idx) => (
-                  <stop key={idx} offset={stop.offset} stopColor={stop.color} />
+                  <stop key={`${idx}-${stop.color}`} offset={stop.offset} stopColor={stop.color} />
                 ))}
               </linearGradient>
             </defs>
