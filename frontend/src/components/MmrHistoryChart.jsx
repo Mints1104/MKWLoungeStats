@@ -50,6 +50,10 @@ function readOverlays() {
 
 // Below this many points the range picker is more clutter than help
 const BRUSH_MIN_POINTS = 30;
+// The brush prints the range's last value just right of its end handle, past the
+// plot area: leave room for it (up to "1234", or a date like "20 Nov") so it is not cut off
+const BRUSH_RIGHT_MARGIN = { event: 44, date: 62 };
+const DEFAULT_RIGHT_MARGIN = 20;
 
 const X_MODE_OPTIONS = [
   { value: "date", label: "By date" },
@@ -317,7 +321,15 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
         aria-describedby={summaryId}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 16, right: 20, left: 10, bottom: 5 }}>
+          <LineChart
+            data={points}
+            margin={{
+              top: 16,
+              right: showBrush ? BRUSH_RIGHT_MARGIN[xMode] : DEFAULT_RIGHT_MARGIN,
+              left: 10,
+              bottom: 5,
+            }}
+          >
             <defs>
               <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
                 {/* Keyed by colour too: browsers can miss a stop-color change on a
@@ -342,7 +354,10 @@ function MmrHistoryChart({ data, gradientId, thresholds }) {
             : <XAxis
                 dataKey="event"
                 stroke="#9ca3af"
-                label={{ value: "Events", position: "insideBottom", offset: -5 }}
+                // Tall enough to hold the label below the ticks, so it stays
+                // clear of the brush underneath
+                height={44}
+                label={{ value: "Events", position: "insideBottom", offset: 6 }}
               />
             }
             <YAxis
