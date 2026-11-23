@@ -156,7 +156,7 @@ function TableInfo() {
           {Array.isArray(result.teams) && result.teams.length > 0 && (
             <div className="player-card leaderboard-card">
               <div className="leaderboard-table-wrapper">
-                <table className="leaderboard-table">
+                <table className="leaderboard-table fits-mobile row-link-table">
                   <caption className="sr-only">
                     Event standings showing rank, player, score, and MMR
                     changes.
@@ -165,10 +165,9 @@ function TableInfo() {
                     <tr>
                       <th>Rank</th>
                       <th>Player</th>
-                      <th>Country</th>
                       <th>Score</th>
-                      <th>Prev MMR</th>
-                      <th>New MMR</th>
+                      <th className="col-optional">Prev MMR</th>
+                      <th className="col-optional">New MMR</th>
                       <th>MMR Change</th>
                     </tr>
                   </thead>
@@ -183,37 +182,34 @@ function TableInfo() {
                             key={`${teamIndex}-${score.playerId}-${scoreIndex}`}
                           >
                             <td className="rank-cell">#{team.rank}</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="leaderboard-name"
-                                onClick={() =>
-                                  takeToProfile(score.playerName)
-                                  
-                                }
-                                aria-label={`View profile for ${score.playerName}`}
-                              >
-                                {score.playerName}
-                              </button>
-                            </td>
-                            <td>
-                              {score.playerCountryCode ? (
-                                <Flag
-                                  code={score.playerCountryCode}
-                                  className="flag-icon-small inline-flag"
-                                  aria-label={`Flag of ${score.playerCountryCode}`}
-                                />
-                              ) : (
-                                "—"
-                              )}
+                            <td className="player-name-cell">
+                              <div className="player-name-container">
+                                {score.playerCountryCode && (
+                                  <Flag
+                                    code={score.playerCountryCode}
+                                    className="flag-icon-small"
+                                    aria-label={`Flag of ${score.playerCountryCode}`}
+                                  />
+                                )}
+                                <button
+                                  type="button"
+                                  className="leaderboard-name"
+                                  onClick={() =>
+                                    takeToProfile(score.playerName)
+                                  }
+                                  aria-label={`View profile for ${score.playerName}`}
+                                >
+                                  {score.playerName}
+                                </button>
+                              </div>
                             </td>
                             <td>{score.score}</td>
-                            <td>
+                            <td className="col-optional">
                               <span style={{ color: prevRank.color }}>
                                 {score.prevMmr}
                               </span>
                             </td>
-                            <td>
+                            <td className="col-optional">
                               <span style={{ color: newRank.color }}>
                                 {score.newMmr}
                               </span>

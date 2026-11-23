@@ -1572,9 +1572,9 @@ body {
     font-size: 0.875rem;
   }
 
-  /* Stack stat cards better on mobile */
+  /* Two stat cards per row on mobile; one per row ran a screen long */
   .recent-stats-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .comparison-stats-grid {
@@ -2654,6 +2654,10 @@ a.recent-chip {
 }
 
 .records-score {
+  /* Bigger hit area than the number itself, without moving it */
+  display: inline-block;
+  padding: 0.6rem 0.5rem;
+  margin: -0.6rem -0.5rem;
   font-weight: 700;
   color: #38bdf8;
   font-variant-numeric: tabular-nums;
@@ -2668,4 +2672,112 @@ a.recent-chip {
   margin: 0;
   color: #94a3b8;
   font-size: 0.9rem;
+}
+
+/* Mobile usability. html drops to 14px under 480px, which shrinks every rem-sized
+   control, so the sizes that matter for touch and legibility are set in px here. */
+@media (max-width: 640px) {
+  /* iOS Safari zooms the page when a control under 16px gains focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .nav-link {
+    font-size: 13px;
+  }
+
+  /* The nav strip scrolls sideways; fade its right edge so that shows */
+  .nav-links {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+    padding-right: 1.5rem;
+  }
+
+  /* Tables marked fits-mobile drop their col-optional columns instead of
+     scrolling sideways */
+  .leaderboard-table.fits-mobile {
+    min-width: 0;
+  }
+
+  .leaderboard-table.fits-mobile .col-optional {
+    display: none;
+  }
+
+  .leaderboard-table.fits-mobile th {
+    padding: 0.6rem 0.35rem;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  .leaderboard-table.fits-mobile td {
+    padding: 0.75rem 0.35rem;
+  }
+
+  .leaderboard-table td {
+    font-size: 14px;
+  }
+
+  /* In row-link tables the name's link covers its whole row */
+  .row-link-table tbody tr {
+    position: relative;
+  }
+
+  .row-link-table .leaderboard-name::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .row-link-table tbody tr:active {
+    background: rgba(56, 189, 248, 0.12);
+  }
+
+  /* 40px controls: segmented toggles keep a 40px frame around 32px options,
+     matching the 40px dropdowns beside them */
+  .filter-toggle,
+  .profile-selectors .filter-toggle {
+    box-sizing: border-box;
+    height: 40px;
+    align-items: center;
+  }
+
+  .filter-button,
+  .profile-selectors .filter-button {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 0.9rem;
+  }
+
+  .profile-selectors .season-select {
+    height: 40px;
+  }
+
+  .pagination-btn,
+  .back-link,
+  .secondary-button,
+  .game-mode-trigger,
+  .show-all-events-btn {
+    min-height: 40px;
+  }
+
+  .events-controls .season-select,
+  .events-count-input {
+    box-sizing: border-box;
+    height: 40px;
+  }
+
+  /* MMR chart legend chips */
+  .legend-toggle {
+    min-height: 36px;
+  }
+
+  .favourite-button,
+  .icon-button {
+    width: 40px;
+    height: 40px;
+  }
 }
