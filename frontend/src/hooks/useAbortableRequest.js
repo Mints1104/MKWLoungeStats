@@ -9,6 +9,7 @@ export function useAbortableRequest() {
     if (inFlightRef.current) {
       inFlightRef.current.abort();
       inFlightRef.current = null;
+      setLoading(false);
     }
   }, []);
 
@@ -35,10 +36,12 @@ export function useAbortableRequest() {
         setError(message);
         return null;
       } finally {
+        // A request superseded by a newer run() must not clear the newer one's
+        // loading state.
         if (inFlightRef.current === controller) {
           inFlightRef.current = null;
+          setLoading(false);
         }
-        setLoading(false);
       }
     },
     [abort],

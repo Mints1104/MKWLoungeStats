@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const logger = require("./server/utils/logger");
+const { computeRecords } = require("./server/records");
 
 // Fail upstream calls before Vercel's function timeout kills the request
 const UPSTREAM_TIMEOUT_MS = 8000;
@@ -156,13 +157,18 @@ const STALE_WHILE_REVALIDATE_FACTOR = 5;
 // ignore s-maxage). Unlike the in-memory cache, the CDN is shared by every
 // serverless instance, and cached hits skip the function and the rate limit.
 // Error responses never go through here, so they are never cached.
-const sendCacheable = (res, value, ttl = DEFAULT_TTL_MS) => {
-  const seconds = Math.round(ttl / 1000);
+// `staleTtl` overrides how long a stale copy may be served while refetching.
+const sendCacheable = (
+  res,
+  value,
+  ttl = DEFAULT_TTL_MS,
+  staleTtl = ttl * STALE_WHILE_REVALIDATE_FACTOR,
+) => {
   res.set(
     "Cache-Control",
-    `public, s-maxage=${seconds}, stale-while-revalidate=${
-      seconds * STALE_WHILE_REVALIDATE_FACTOR
-    }`,
+    `public, s-maxage=${Math.round(ttl / 1000)}, stale-while-revalidate=${Math.round(
+      staleTtl / 1000,
+    )}`,
   );
   return res.json(value);
 };
@@ -721,6 +727,120 @@ app.get("/api/leaderboard", async (req, res) => {
 
     logger.error("Failed to fetch main leaderboard:", error.message);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+// Records of finished seasons, snapshotted by scripts/build-records.js, keyed
+// "<game>|<season>"; the season in progress is computed live.
+let recordsArchive = {};
+try {
+  recordsArchive = require("./server/data/records-archive.json");
+} catch {
+  logger.warn("No records archive found; every season will be computed live");
+}
+
+// The full table list of a season is tens of MB and takes 10-30 s upstream, so
+// this route gets a longer timeout (and a longer function maxDuration in
+// vercel.json) and long caches: records only move when a new table beats one.
+const RECORDS_UPSTREAM_TIMEOUT_MS = 55 * 1000;
+const RECORDS_TTL_MS = 30 * 60 * 1000;
+// Records rarely move, so the CDN may keep serving an older copy for a day while
+// it refetches in the background: a visitor only waits on the slow fetch after a
+// deploy or a day with no visits.
+const RECORDS_STALE_MS = 24 * 60 * 60 * 1000;
+const ARCHIVED_RECORDS_TTL_MS = 24 * 60 * 60 * 1000;
+const FIRST_SPLIT_SEASON = 2;
+// Concurrent requests for the same ladder share one upstream fetch
+const recordsInFlight = new Map();
+
+const fetchLiveRecords = async (game, season) => {
+  const { data } = await axios.get("https://lounge.mkcentral.com/api/table/list", {
+    params: { game, season },
+    timeout: RECORDS_UPSTREAM_TIMEOUT_MS,
+  });
+  return {
+    season,
+    game,
+    generatedAt: new Date().toISOString(),
+    ...computeRecords(data),
+  };
+};
+
+// Top scores per format and tier for one ladder
+app.get("/api/records", async (req, res) => {
+  try {
+    const { season, game } = req.query;
+
+    const seasonValidation = validateSeason(season ?? String(CURRENT_SEASON));
+    if (!seasonValidation.valid) {
+      return res.status(400).json({ error: seasonValidation.error });
+    }
+    const normalizedSeason = seasonValidation.sanitized;
+
+    const defaultGame =
+      normalizedSeason >= FIRST_SPLIT_SEASON ? "mkworld24p" : "mkworld";
+    const gameValidation = validateGame(game ?? defaultGame);
+    if (!gameValidation.valid) {
+      return res.status(400).json({ error: gameValidation.error });
+    }
+    const normalizedGame = gameValidation.sanitized;
+
+    if ((normalizedGame === "mkworld") !== (normalizedSeason < FIRST_SPLIT_SEASON)) {
+      return res.status(400).json({
+        error:
+          normalizedSeason < FIRST_SPLIT_SEASON ?
+            "Seasons before 2 use game mkworld"
+          : "Seasons from 2 on use game mkworld12p or mkworld24p",
+      });
+    }
+    if (normalizedSeason > CURRENT_SEASON) {
+      return res.status(400).json({ error: "That season has not started yet" });
+    }
+
+    const key = `${normalizedGame}|${normalizedSeason}`;
+    if (normalizedSeason < CURRENT_SEASON && recordsArchive[key]) {
+      return sendCacheable(res, recordsArchive[key], ARCHIVED_RECORDS_TTL_MS);
+    }
+
+    const cacheKey = getCacheKey("records", {
+      game: normalizedGame,
+      season: normalizedSeason,
+    });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return sendCacheable(res, cached, RECORDS_TTL_MS, RECORDS_STALE_MS);
+    }
+
+    let pending = recordsInFlight.get(cacheKey);
+    if (!pending) {
+      pending = fetchLiveRecords(normalizedGame, normalizedSeason).finally(() =>
+        recordsInFlight.delete(cacheKey),
+      );
+      recordsInFlight.set(cacheKey, pending);
+    }
+    const records = await pending;
+
+    setCache(cacheKey, records, RECORDS_TTL_MS);
+    sendCacheable(res, records, RECORDS_TTL_MS, RECORDS_STALE_MS);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status) {
+        logger.error(`Records API error (${status}):`, error.message);
+        return res.status(status).json({
+          error: error.response?.data?.error || "Failed to retrieve records",
+        });
+      }
+      if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+        logger.error("Records upstream timed out:", error.message);
+        return res
+          .status(504)
+          .json({ error: "The Lounge API took too long to answer, please try again" });
+      }
+    }
+
+    logger.error("Failed to build records:", error.message);
+    res.status(500).json({ error: "Failed to fetch records" });
   }
 });
 

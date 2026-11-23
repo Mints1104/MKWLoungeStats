@@ -100,7 +100,7 @@ function PlayerInsights({ events, season, mmrType }) {
         <>
           <h4 className="insights-subheading">Most frequent partners</h4>
           <div className="leaderboard-table-wrapper">
-            <table className="leaderboard-table partners-table">
+            <table className="leaderboard-table partners-table row-link-table">
               <caption className="sr-only">
                 Teammates this season, with results when playing together
               </caption>

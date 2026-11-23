@@ -29,6 +29,7 @@ const Leaderboard = lazy(() => import("./Leaderboard"));
 const PlayerProfile = lazy(() => import("./PlayerProfile"));
 const TableInfo = lazy(() => import("./TableInfo"));
 const Stats = lazy(() => import("./Stats"));
+const Records = lazy(() => import("./Records"));
 
 const SCROLL_RESTORE_TOLERANCE_PX = 2;
 const SCROLL_RESTORE_MAX_MS = 5000;
@@ -336,6 +337,7 @@ function App() {
               <Route path="/compare" element={<PlayerComparison />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/stats" element={<Stats />} />
+              <Route path="/records" element={<Records />} />
               <Route
                 path="/table"
                 element={

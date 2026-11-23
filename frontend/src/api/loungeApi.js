@@ -290,6 +290,23 @@ export const loungeApi = {
   },
 
   /**
+   * Top single-event scores per format and tier for one ladder. The current season
+   * is built from every table of the season upstream, so an uncached load can take
+   * 10-30 s: wait longer than usual and retry only once.
+   * @param {number} season - Season number (default: current season)
+   * @param {number} mmrType - MMR format (12 or 24) - only used for season >= 2
+   * @param {AbortSignal} signal - Optional abort signal for cancellation
+   */
+  async getRecords(season = CURRENT_SEASON, mmrType = 24, signal) {
+    const queryParams = new URLSearchParams({
+      season: String(season),
+      game: getGameId(season, mmrType),
+    });
+    logger.api("GET", `/records?${queryParams}`);
+    return fetchApi(`${API_BASE}/records?${queryParams}`, { signal }, 1, 70000);
+  },
+
+  /**
    * Fetch global player statistics (players per rank, activity, etc.)
    * @param {Object} params - Query parameters
    * @param {number} params.season - Season number (default: current season)
