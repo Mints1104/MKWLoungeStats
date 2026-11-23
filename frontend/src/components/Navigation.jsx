@@ -75,6 +75,13 @@ function Navigation() {
               Leaderboard
             </Link>
             <Link
+              to="/records"
+              className={`nav-link ${location.pathname === "/records" ? "nav-link-active" : ""}`}
+              aria-current={location.pathname === "/records" ? "page" : undefined}
+            >
+              Records
+            </Link>
+            <Link
               to="/stats"
               className={`nav-link ${location.pathname === "/stats" ? "nav-link-active" : ""}`}
               aria-current={location.pathname === "/stats" ? "page" : undefined}

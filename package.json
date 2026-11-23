@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "node --test tests/backend/api.validation.test.js",
+    "test": "node --test tests/backend/api.validation.test.js tests/backend/records.test.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build": "cd frontend && npm install && npm run build",

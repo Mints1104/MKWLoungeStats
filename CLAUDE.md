@@ -16,6 +16,9 @@ Two independent packages, **not** a workspace monorepo — root `package.json` a
 ```
 server.js                 the entire backend API (routes, validation, cache, CORS)
 server/utils/logger.js
+server/records.js         pure records computation (top scores per format/tier)
+server/data/records-archive.json   snapshot of finished seasons' records
+scripts/build-records.js  rebuilds that snapshot
 api/index.js              Vercel entry — just `module.exports = require("../server")`
 tests/backend/            backend tests
 API-GET-Endpoints.md      cheat sheet for the upstream MKCentral Lounge API
@@ -44,8 +47,8 @@ npm run build
 **Local dev needs both servers running.** Vite proxies `/api` to `http://localhost:3000`
 (`frontend/vite.config.js`).
 
-The root `test` script names **one specific file**. Adding a backend test file means editing
-that script too. CI (`.github/workflows/ci.yml`) runs: `node --check` on `server.js` and
+The root `test` script names **specific files** (`api.validation.test.js`,
+`records.test.js`). Adding a backend test file means editing that script too. CI (`.github/workflows/ci.yml`) runs: `node --check` on `server.js` and
 `api/index.js`, backend tests, frontend lint, frontend tests, frontend build.
 
 ## Backend
@@ -54,7 +57,17 @@ that script too. CI (`.github/workflows/ci.yml`) runs: `node --check` on `server
 over `https://lounge.mkcentral.com/api`, called with axios.
 
 Routes: `/api/table/:tableid`, `/api/player/stats`, `/api/player/details/:name`,
-`/api/player/leaderboard/:name`, `/api/players/compare?names=a,b,c`, `/api/leaderboard`.
+`/api/player/leaderboard/:name`, `/api/players/compare?names=a,b,c`, `/api/leaderboard`,
+`/api/records?season&game`.
+
+**Records** have no upstream endpoint: `/api/records` rebuilds them from
+`/api/table/list` (every table of the ladder — 10–30 s and tens of MB upstream) with
+`computeRecords()` (`server/records.js`). It skips deleted tables and breaks ties by the
+earlier table, which reproduces the Lounge site's Records page (verified). Finished
+seasons are served from `server/data/records-archive.json`; only the current season is
+fetched live, with its own 55 s timeout, a 30 min cache (CDN may serve it stale for
+24 h while refreshing, so visitors rarely wait on the fetch), in-flight dedupe, and
+`maxDuration: 60` on the function in `vercel.json`.
 
 Conventions:
 
@@ -63,8 +76,9 @@ Conventions:
 - In-memory `Map` cache, 60s default TTL (2× for player details/stats), 1000-entry FIFO cap,
   only successes are cached (errors never clear other entries). Per-serverless-instance, so
   best-effort in prod. Upstream axios calls time out after `UPSTREAM_TIMEOUT_MS` (8s).
-- **CDN cache**: successful responses go out through `sendCacheable(res, value, ttl)`, which
-  sets `Cache-Control: public, s-maxage=<ttl>, stale-while-revalidate=<5×ttl>` so Vercel's
+- **CDN cache**: successful responses go out through `sendCacheable(res, value, ttl, staleTtl?)`,
+  which sets `Cache-Control: public, s-maxage=<ttl>, stale-while-revalidate=<staleTtl,
+  default 5×ttl>` so Vercel's
   CDN caches them across instances (browsers ignore `s-maxage`). Error responses must keep
   using `res.status(...).json(...)` so they are never cached. Compare results with a
   transient (non-404) player failure are not cached at all.
@@ -80,7 +94,7 @@ Conventions:
 
 - **Pages** live directly in `frontend/src/` as PascalCase `.jsx` (`PlayerInfo.jsx`,
   `Leaderboard.jsx`, `PlayerProfile.jsx`, `Stats.jsx`, `TableInfo.jsx`,
-  `PlayerComparison.jsx`). Reusable pieces in `src/components/`, hooks in `src/hooks/`,
+  `PlayerComparison.jsx`, `Records.jsx`). Reusable pieces in `src/components/`, hooks in `src/hooks/`,
   pure helpers in `src/utils/`, API layer in `src/api/loungeApi.js`, constants in
   `src/config/`.
 - **State**: local `useState` only — no Redux/Zustand/React Query. The one cross-cutting
@@ -171,6 +185,8 @@ Season is cross-cutting. All of these must change together:
 - `tests/backend/api.validation.test.js` — the season-default assertions
 - Optionally `frontend/src/utils/playerUtils.js` — the fallback threshold tables, if the
   new season changed them (the live ones come from the API)
+- `node scripts/build-records.js <finished season>` — snapshot the season that just
+  ended into the records archive (otherwise it keeps being rebuilt live)
 
 ## Testing
 

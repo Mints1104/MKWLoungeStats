@@ -2545,3 +2545,127 @@ a.recent-chip {
   border-color: rgba(148, 163, 184, 0.3);
   background: transparent;
 }
+
+/* Records page */
+
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.records-selectors {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.records-meta,
+.records-loading-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1.25rem;
+}
+
+.records-tier-card {
+  background: radial-gradient(circle at top left, #1f2937, #020617);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  padding: 1rem 1rem 0.6rem;
+  text-align: left;
+}
+
+.records-tier-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  color: #e5e7eb;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.records-table th {
+  padding: 0 0.4rem 0.4rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.records-table td {
+  padding: 0.45rem 0.4rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  color: #e5e7eb;
+  vertical-align: top;
+}
+
+.records-table tr:last-child td {
+  border-bottom: none;
+}
+
+.records-place {
+  width: 2.25rem;
+  white-space: nowrap;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.records-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.records-players li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.records-score-col {
+  text-align: right;
+  width: 3.5rem;
+}
+
+.records-table th.records-score-col {
+  text-align: right;
+}
+
+.records-score {
+  font-weight: 700;
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+}
+
+.records-score:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.records-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
