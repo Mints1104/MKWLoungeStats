@@ -35,7 +35,7 @@ import { useSeasonMmrSelection } from "./hooks/useSeasonMmrSelection";
 import { useAbortableRequest } from "./hooks/useAbortableRequest";
 import { useRankThresholds } from "./hooks/useRankThresholds";
 import { CURRENT_SEASON } from "./config/seasons";
-import { getCompareParams, parseCompareNames } from "./utils/playerLinks";
+import { getCompareParams, parseCompareNames, uniqueNames } from "./utils/playerLinks";
 
 const MAX_COMPARED_PLAYERS = 4;
 
@@ -93,9 +93,9 @@ function PlayerComparison() {
     };
 
     const comparePlayers = async () => {
-        const validNames = playerNames.filter((name) => name.trim());
+        const validNames = uniqueNames(playerNames);
         if (validNames.length < 2) {
-            setError("Please enter at least 2 player names");
+            setError("Please enter at least 2 different player names");
             setPlayersData([]);
             setUnloadedNames([]);
             return;

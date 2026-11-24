@@ -287,3 +287,81 @@ test("CORS preflight only allows GET and no credentials", async () => {
   assert.equal(response.headers["access-control-allow-methods"], "GET");
   assert.equal(response.headers["access-control-allow-credentials"], undefined);
 });
+
+test("GET /api/player/leaderboard/:name pages past fuzzy matches to the exact name", async (t) => {
+  // Upstream sorts search hits by MMR: "Sam" sits behind 100 names containing it
+  const others = Array.from({ length: 100 }, (_, i) => ({ name: `Samurai${i}` }));
+  const getMock = t.mock.method(axios, "get", async (url, { params }) => ({
+    data: {
+      data:
+        params.skip === 0 ? others : [{ name: "sam", overallRank: 9000 }],
+    },
+  }));
+
+  const response = await request(app).get(
+    "/api/player/leaderboard/Sam?season=3&game=mkworld24p",
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.overallRank, 9000);
+  assert.deepEqual(
+    getMock.mock.calls.map((call) => call.arguments[1].params.skip),
+    [0, 100],
+  );
+  assert.equal(getMock.mock.calls[0].arguments[1].params.pageSize, 100);
+});
+
+test("GET /api/player/leaderboard/:name stops paging at the last page", async (t) => {
+  const getMock = t.mock.method(axios, "get", async () => ({
+    data: { data: [{ name: "Samson" }] },
+  }));
+
+  const response = await request(app).get(
+    "/api/player/leaderboard/NotSam?season=3&game=mkworld24p",
+  );
+
+  assert.equal(response.status, 404);
+  assert.equal(getMock.mock.calls.length, 1);
+});
+
+test("GET /api/players/compare drops repeated names", async (t) => {
+  const getMock = t.mock.method(axios, "get", async (url, { params }) => ({
+    data: { name: params.name },
+  }));
+
+  const response = await request(app).get(
+    "/api/players/compare?names=Dup,dup,Other,DUP&game=mkworld24p",
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    response.body.map((player) => player.name),
+    ["Dup", "Other"],
+  );
+  assert.equal(getMock.mock.calls.length, 2);
+});
+
+test("GET /api/player/id/:id returns only the player's ID and name", async (t) => {
+  const getMock = t.mock.method(axios, "get", async () => ({
+    data: {
+      id: 16052,
+      name: "Renamed",
+      discordId: "123",
+      switchFc: "0000-0000-0000",
+    },
+  }));
+
+  const response = await request(app).get("/api/player/id/16052");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { id: 16052, name: "Renamed" });
+  assert.equal(getMock.mock.calls[0].arguments[1].params.id, "16052");
+});
+
+test("GET /api/player/id/:id rejects IDs that aren't positive integers", async () => {
+  for (const id of ["abc", "0", "-1", "1.5"]) {
+    const response = await request(app).get(`/api/player/id/${id}`);
+    assert.equal(response.status, 400, id);
+    assert.equal(response.body.error, "Player ID must be a positive integer");
+  }
+});

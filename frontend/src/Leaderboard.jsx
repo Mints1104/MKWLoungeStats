@@ -10,6 +10,12 @@ import { formatWinRate, getRankColor, winRateClassName } from "./utils/playerUti
 import { COUNTRY_MAPPING } from "./utils/countryMapping";
 import { loungeApi } from "./api/loungeApi";
 import { debounce } from "./utils/debounce";
+import {
+    DEFAULT_PAGE_SIZE,
+    cleanRangeFilters,
+    parsePageParam,
+    parsePageSizeParam,
+} from "./utils/leaderboardParams";
 import PageHeader from "./components/PageHeader";
 import SeasonSelector from "./components/SeasonSelector";
 import MMRSelector from "./components/MMRSelector";
@@ -45,21 +51,19 @@ function Leaderboard() {
     });
 
     // Pagination
-    const [currentPage, setCurrentPage] = useState(() => {
-        const param = searchParams.get("page");
-        return param ? Number(param) : 1;
-    });
-    const [pageSize, setPageSize] = useState(() => {
-        const param = searchParams.get("pageSize");
-        return param ? Number(param) : 50;
-    });
+    const [currentPage, setCurrentPage] = useState(() =>
+        parsePageParam(searchParams.get("page"))
+    );
+    const [pageSize, setPageSize] = useState(() =>
+        parsePageSizeParam(searchParams.get("pageSize"))
+    );
     const [totalCount, setTotalCount] = useState(0);
 
-    // Filters
-    const [minMmr, setMinMmr] = useState(searchParams.get("minMmr") || "");
-    const [maxMmr, setMaxMmr] = useState(searchParams.get("maxMmr") || "");
-    const [minEventsPlayed, setMinEventsPlayed] = useState(searchParams.get("minEventsPlayed") || "");
-    const [maxEventsPlayed, setMaxEventsPlayed] = useState(searchParams.get("maxEventsPlayed") || "");
+    // Range filters: the inputs show what is typed, the request uses the cleaned
+    // values once typing pauses (one request for "8000", not four)
+    const [rangeInputs, setRangeInputs] = useState(() => cleanRangeFilters(searchParams));
+    const [rangeFilters, setRangeFilters] = useState(() => cleanRangeFilters(searchParams));
+    const { minMmr, maxMmr, minEventsPlayed, maxEventsPlayed } = rangeFilters;
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
     const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "");
     const [country, setCountry] = useState(searchParams.get("country") || "");
@@ -74,7 +78,7 @@ function Leaderboard() {
         if (season !== CURRENT_SEASON) params.set("season", season);
         if (mmrType !== defaultGameMode) params.set("mmrType", mmrType);
         if (currentPage !== 1) params.set("page", currentPage);
-        if (pageSize !== 50) params.set("pageSize", pageSize);
+        if (pageSize !== DEFAULT_PAGE_SIZE) params.set("pageSize", pageSize);
         if (sortBy !== "mmr") params.set("sortBy", sortBy);
         if (minMmr) params.set("minMmr", minMmr);
         if (maxMmr) params.set("maxMmr", maxMmr);
@@ -102,6 +106,20 @@ function Leaderboard() {
         const value = e.target.value;
         setSearchQuery(value);
         debouncedSetSearch(value);
+    };
+
+    const debouncedSetRange = useMemo(
+        () => debounce((next) => {
+            setRangeFilters(next);
+            setCurrentPage(1);
+        }, 400),
+        []
+    );
+
+    const handleRangeChange = (key) => (e) => {
+        const next = { ...rangeInputs, [key]: e.target.value };
+        setRangeInputs(next);
+        debouncedSetRange(cleanRangeFilters(next));
     };
 
     const fetchLeaderboard = useCallback(async () => {
@@ -199,6 +217,7 @@ function Leaderboard() {
         loading: finding,
         error: findError,
         run: runFind,
+        setError: setFindError,
     } = useAbortableRequest();
 
     const findPlayer = async (name) => {
@@ -214,12 +233,19 @@ function Leaderboard() {
                         : err.message || "Failed to find player",
             },
         );
-        if (!entry?.overallRank) return;
+        if (!entry) return;
+        // Players still in placement are listed but have no position yet
+        if (!entry.overallRank) {
+            setFindError(`${entry.name} is still in placement, so has no position yet`);
+            return;
+        }
 
-        setMinMmr("");
-        setMaxMmr("");
-        setMinEventsPlayed("");
-        setMaxEventsPlayed("");
+        // A filter still waiting on its debounce would bring a cleared one back
+        debouncedSetRange.cancel();
+        debouncedSetSearch.cancel();
+        const noRange = cleanRangeFilters({});
+        setRangeInputs(noRange);
+        setRangeFilters(noRange);
         setSearchQuery("");
         setDebouncedSearch("");
         setCountry("");
@@ -284,11 +310,8 @@ function Leaderboard() {
                                 id="minMmr"
                                 type="number"
                                 className="player-input"
-                                value={minMmr}
-                                onChange={(e) => {
-                                    setMinMmr(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                value={rangeInputs.minMmr}
+                                onChange={handleRangeChange("minMmr")}
                                 placeholder="e.g., 8000"
                             />
                         </div>
@@ -301,11 +324,8 @@ function Leaderboard() {
                                 id="maxMmr"
                                 type="number"
                                 className="player-input"
-                                value={maxMmr}
-                                onChange={(e) => {
-                                    setMaxMmr(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                value={rangeInputs.maxMmr}
+                                onChange={handleRangeChange("maxMmr")}
                                 placeholder="e.g., 8000"
                             />
                         </div>
@@ -354,11 +374,8 @@ function Leaderboard() {
                                 type="number"
                                 className="player-input"
                                 placeholder="e.g., 10"
-                                value={minEventsPlayed}
-                                onChange={(e) => {
-                                    setMinEventsPlayed(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                value={rangeInputs.minEventsPlayed}
+                                onChange={handleRangeChange("minEventsPlayed")}
                             />
                         </div>
 
@@ -369,11 +386,8 @@ function Leaderboard() {
                                 type="number"
                                 className="player-input"
                                 placeholder="e.g., 10"
-                                value={maxEventsPlayed}
-                                onChange={(e) => {
-                                    setMaxEventsPlayed(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                value={rangeInputs.maxEventsPlayed}
+                                onChange={handleRangeChange("maxEventsPlayed")}
                             />
                         </div>
 

@@ -39,12 +39,24 @@ export function getComparePath(names, season, mmrType) {
   return `/compare?${getCompareParams(names, season, mmrType)}`;
 }
 
-/** Splits a compare URL's `names` param into at most `max` trimmed names. */
+/**
+ * Trimmed, non-empty names with repeats dropped (case-insensitively, as the
+ * Lounge matches names), keeping the first spelling and the order.
+ */
+export function uniqueNames(names) {
+  const seen = new Set();
+  return (Array.isArray(names) ? names : [])
+    .map((name) => (typeof name === "string" ? name.trim() : ""))
+    .filter((name) => {
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+/** Splits a compare URL's `names` param into at most `max` distinct names. */
 export function parseCompareNames(value, max = 4) {
   if (typeof value !== "string") return [];
-  return value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .slice(0, max);
+  return uniqueNames(value.split(",")).slice(0, max);
 }

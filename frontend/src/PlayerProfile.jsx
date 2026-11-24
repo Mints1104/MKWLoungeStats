@@ -16,7 +16,10 @@ import FavouriteButton from "./components/FavouriteButton";
 import CopyLinkButton from "./components/CopyLinkButton";
 import CareerView from "./components/CareerView";
 import { useSettings } from "./context/settingsContext";
-import { rememberRecentSearch } from "./utils/recentSearches";
+import { rememberRecentSearch, renameRecentSearch } from "./utils/recentSearches";
+import { renameFavourite } from "./hooks/useFavourites";
+import { getRememberedPlayerId, rememberPlayerId } from "./utils/playerIds";
+import { loungeApi } from "./api/loungeApi";
 import { getComparePath } from "./utils/playerLinks";
 import { getRankColor } from "./utils/playerUtils";
 import { brightenForDarkBackground } from "./utils/chartUtils";
@@ -57,6 +60,7 @@ function PlayerProfile() {
     playerDetails: detailedInfo,
     loading,
     error,
+    notFound,
     fetchPlayerDetails,
   } = usePlayerDetails();
 
@@ -65,8 +69,46 @@ function PlayerProfile() {
     fetchPlayerDetails(playerName, season, mmrType).then((data) => {
       // Only names that resolve to a player become recent searches
       if (data?.name) rememberRecentSearch(data.name);
+      if (data?.name) rememberPlayerId(data.name, data.playerId);
     });
   }, [playerName, season, mmrType, fetchPlayerDetails]);
+
+  // A name this browser has seen before but that no longer exists is most likely
+  // a rename: look the remembered ID up, move favourites and recent searches to
+  // the new name, and open it instead
+  useEffect(() => {
+    if (!notFound || !playerName) return undefined;
+    const id = getRememberedPlayerId(playerName);
+    if (id == null) return undefined;
+
+    const controller = new AbortController();
+    loungeApi
+      .getPlayerById(id, controller.signal)
+      .then((player) => {
+        const newName = player?.name;
+        if (!newName || newName.toLowerCase() === playerName.toLowerCase()) {
+          return;
+        }
+        renameFavourite(playerName, newName);
+        renameRecentSearch(playerName, newName);
+        rememberPlayerId(newName, id);
+        navigate(
+          {
+            pathname: `/player/${encodeURIComponent(newName)}`,
+            search: location.search,
+          },
+          { replace: true, state: { renamedFrom: playerName } },
+        );
+      })
+      .catch(() => {
+        // Keep showing the not-found message
+      });
+    return () => controller.abort();
+    // location.search is read when the lookup finishes, not a reason to redo it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notFound, playerName, navigate]);
+
+  const renamedFrom = location.state?.renamedFrom;
 
   const handleSelectLadder = (nextSeason, nextMmrType) => {
     const newParams = new URLSearchParams(searchParams);
@@ -164,6 +206,11 @@ function PlayerProfile() {
           </div>
         </div>
 
+        {renamedFrom && (
+          <p className="profile-renamed" role="status">
+            {renamedFrom} has been renamed to {displayName}.
+          </p>
+        )}
         {error && (
           <p className="player-error" role="alert" aria-live="assertive">
             {error}

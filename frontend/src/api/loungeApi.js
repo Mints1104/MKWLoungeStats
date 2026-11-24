@@ -167,6 +167,22 @@ export const loungeApi = {
   },
 
   /**
+   * A player's current name from their ID (follows renames)
+   * @param {number} id - Lounge player ID
+   * @param {AbortSignal} signal - Optional abort signal for cancellation
+   * @returns {Promise<{ id: number, name: string }>}
+   */
+  async getPlayerById(id, signal) {
+    const idStr = String(id ?? "").trim();
+    if (!/^\d+$/.test(idStr)) {
+      throw new Error("Player ID is required");
+    }
+
+    logger.api("GET", `/player/id/${idStr}`);
+    return fetchApi(`${API_BASE}/player/id/${idStr}`, { signal });
+  },
+
+  /**
    * Compare multiple players head-to-head
    * @param {string[]} names - Array of player names (2-4 players)
    * @param {number} season - Season number (default: current season)
@@ -292,7 +308,9 @@ export const loungeApi = {
   /**
    * Top single-event scores per format and tier for one ladder. The current season
    * is built from every table of the season upstream, so an uncached load can take
-   * 10-30 s: wait longer than usual and retry only once.
+   * 10-30 s: wait longer than usual, and don't retry. A failure here is almost
+   * always the server's own 55 s upstream timeout (a 504), and a retry would just
+   * wait out another one; the page offers a manual retry instead.
    * @param {number} season - Season number (default: current season)
    * @param {number} mmrType - MMR format (12 or 24) - only used for season >= 2
    * @param {AbortSignal} signal - Optional abort signal for cancellation
@@ -303,7 +321,7 @@ export const loungeApi = {
       game: getGameId(season, mmrType),
     });
     logger.api("GET", `/records?${queryParams}`);
-    return fetchApi(`${API_BASE}/records?${queryParams}`, { signal }, 1, 70000);
+    return fetchApi(`${API_BASE}/records?${queryParams}`, { signal }, 0, 70000);
   },
 
   /**

@@ -123,6 +123,8 @@ function Records() {
     () => searchParams.get("format") || DEFAULT_FORMAT,
   );
   const [records, setRecords] = useState(null);
+  // Bumped by "Try again": failed loads are not retried automatically
+  const [attempt, setAttempt] = useState(0);
   const { loading, error, run } = useAbortableRequest();
 
   useEffect(() => {
@@ -151,7 +153,7 @@ function Records() {
     return () => {
       active = false;
     };
-  }, [season, mmrType, run]);
+  }, [season, mmrType, run, attempt]);
 
   const shown = pickFormat(records, format);
   const isTeamFormat = shown != null && shown.format !== "FFA";
@@ -202,9 +204,18 @@ function Records() {
         )}
 
         {error && (
-          <p className="player-error" role="alert" aria-live="assertive">
-            {error}
-          </p>
+          <div className="records-error">
+            <p className="player-error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+            <button
+              type="button"
+              className="pagination-btn"
+              onClick={() => setAttempt((count) => count + 1)}
+            >
+              Try again
+            </button>
+          </div>
         )}
         {loading && (
           <div

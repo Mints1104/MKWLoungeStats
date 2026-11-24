@@ -249,3 +249,88 @@ describe("Leaderboard extras", () => {
     );
   });
 });
+
+describe("Leaderboard request budget and URL params", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    loungeApi.getLeaderboard.mockResolvedValue({ data: [], totalCount: 0 });
+  });
+
+  it("sends one request for an MMR bound typed a digit at a time", async () => {
+    vi.useFakeTimers();
+    try {
+      renderAt("/leaderboard");
+      await act(async () => vi.advanceTimersByTime(10));
+      const before = loungeApi.getLeaderboard.mock.calls.length;
+
+      const input = screen.getByLabelText("Min MMR");
+      for (const value of ["8", "80", "800", "8000"]) {
+        fireEvent.change(input, { target: { value } });
+        await act(async () => vi.advanceTimersByTime(100));
+      }
+      expect(input.value).toBe("8000");
+      // The debounce settles, then the fetch runs on its own 0 ms timer
+      await act(async () => vi.advanceTimersByTime(1000));
+      await act(async () => vi.advanceTimersByTime(10));
+
+      const calls = loungeApi.getLeaderboard.mock.calls.slice(before);
+      expect(calls).toHaveLength(1);
+      expect(calls[0][0]).toEqual(expect.objectContaining({ minMmr: "8000", page: 1 }));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("doesn't send a bound the API would reject", async () => {
+    vi.useFakeTimers();
+    try {
+      renderAt("/leaderboard");
+      await act(async () => vi.advanceTimersByTime(10));
+
+      fireEvent.change(screen.getByLabelText("Max Events"), {
+        target: { value: "-5" },
+      });
+      await act(async () => vi.advanceTimersByTime(1000));
+      await act(async () => vi.advanceTimersByTime(10));
+
+      expect(loungeApi.getLeaderboard).toHaveBeenLastCalledWith(
+        expect.objectContaining({ maxEventsPlayed: "" }),
+        expect.anything(),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ignores page values from the URL that the API can't take", async () => {
+    renderAt("/leaderboard?page=abc&pageSize=1000&season=x&mmrType=13&minMmr=1.5");
+
+    await waitFor(() => expect(loungeApi.getLeaderboard).toHaveBeenCalled());
+    expect(loungeApi.getLeaderboard.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        page: 1,
+        pageSize: 50,
+        season: 3,
+        mmrType: 24,
+        minMmr: "",
+      }),
+    );
+  });
+
+  it("says when a found player is still in placement", async () => {
+    loungeApi.getPlayerLeaderboardEntry.mockResolvedValue({ name: "Sam" });
+    renderAt("/leaderboard");
+    await waitFor(() => expect(loungeApi.getLeaderboard).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a player's position" }), {
+      target: { value: "sam" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Find" }));
+    });
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Sam is still in placement, so has no position yet",
+    );
+  });
+});

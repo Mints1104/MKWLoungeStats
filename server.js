@@ -94,6 +94,9 @@ const LEADERBOARD_SORT_FIELDS = new Set([
 ]);
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
+// Find-player pages through fuzzy search results; 500 covers names as common as
+// "Sam" with room to spare while bounding the upstream calls
+const MAX_FIND_PLAYER_PAGES = 5;
 
 // Input validation and sanitization
 const validatePlayerName = (name) => {
@@ -249,6 +252,15 @@ const validateTableId = (id) => {
     };
   }
 
+  return { valid: true, sanitized: idStr };
+};
+
+// Lounge player IDs are positive integers
+const validatePlayerId = (id) => {
+  const idStr = id === null || id === undefined ? "" : String(id).trim();
+  if (!/^[1-9]\d{0,9}$/.test(idStr)) {
+    return { valid: false, error: "Player ID must be a positive integer" };
+  }
   return { valid: true, sanitized: idStr };
 };
 
@@ -489,16 +501,28 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
       return sendCacheable(res, cached);
     }
 
-    const base_url = `https://lounge.mkcentral.com/api/player/leaderboard?game=${normalizedGame}&season=`;
-    const full_url = `${base_url}${season}&search=${encodeURIComponent(
-      playerName,
-    )}`;
-    const { data } = await axios.get(full_url);
-
-    const players = Array.isArray(data?.data) ? data.data : [];
-    const player = players.find(
-      (p) => p?.name?.toLowerCase() === playerName.toLowerCase(),
-    );
+    // The search is a fuzzy name match sorted by MMR, not exact matches first: a
+    // short name ("Sam") can sit past the first page of players whose names
+    // contain it, so keep paging until the exact name turns up
+    const wanted = playerName.toLowerCase();
+    let player;
+    for (let page = 0; page < MAX_FIND_PLAYER_PAGES && !player; page += 1) {
+      const { data } = await axios.get(
+        "https://lounge.mkcentral.com/api/player/leaderboard",
+        {
+          params: {
+            game: normalizedGame,
+            season,
+            search: playerName,
+            skip: page * MAX_PAGE_SIZE,
+            pageSize: MAX_PAGE_SIZE,
+          },
+        },
+      );
+      const players = Array.isArray(data?.data) ? data.data : [];
+      player = players.find((p) => p?.name?.toLowerCase() === wanted);
+      if (players.length < MAX_PAGE_SIZE) break;
+    }
 
     if (player) {
       setCache(cacheKey, player, DEFAULT_TTL_MS);
@@ -520,6 +544,52 @@ app.get("/api/player/leaderboard/:name", async (req, res) => {
 
     logger.error("Failed to fetch leaderboard search:", error.message);
     res.status(500).json({ error: "Failed to fetch data" });
+  }
+});
+
+// A player's current name from their ID, so a saved favourite can follow a rename
+// (an old name 404s upstream). Only the ID and name are returned: the upstream
+// record also carries Discord and Switch IDs, which nothing here needs.
+app.get("/api/player/id/:id", async (req, res) => {
+  try {
+    const validation = validatePlayerId(req.params.id);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const id = validation.sanitized;
+    const cacheKey = getCacheKey("player-name", { id });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return sendCacheable(res, cached, 2 * DEFAULT_TTL_MS);
+    }
+
+    // allgames answers for any registered player, whatever ladder they play
+    const { data } = await axios.get(
+      "https://lounge.mkcentral.com/api/player/allgames",
+      { params: { id } },
+    );
+    if (!data?.name) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const player = { id: data.id, name: data.name };
+    setCache(cacheKey, player, 2 * DEFAULT_TTL_MS);
+    sendCacheable(res, player, 2 * DEFAULT_TTL_MS);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 404) {
+        return res.status(404).json({ error: "Player not found" });
+      }
+      if (status) {
+        logger.error(`Player lookup API error (${status}):`, error.message);
+        return res.status(status).json({ error: "Failed to look up player" });
+      }
+    }
+
+    logger.error("Failed to look up player:", error.message);
+    res.status(500).json({ error: "Failed to look up player" });
   }
 });
 
@@ -555,7 +625,11 @@ app.get("/api/players/compare", async (req, res) => {
           .status(400)
           .json({ error: `Invalid player name: ${validation.error}` });
       }
-      validatedNames.push(validation.sanitized);
+      // The same player twice ("Sam,sam") would be fetched and shown twice
+      const isRepeat = validatedNames.some(
+        (seen) => seen.toLowerCase() === validation.sanitized.toLowerCase(),
+      );
+      if (!isRepeat) validatedNames.push(validation.sanitized);
     }
 
     const season = seasonValidation.sanitized;

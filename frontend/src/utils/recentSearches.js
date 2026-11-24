@@ -35,3 +35,27 @@ export function rememberRecentSearch(name) {
   }
   return next;
 }
+
+/** Replaces a renamed player's old name in the recent searches, keeping its place. */
+export function renameRecentSearch(oldName, newName) {
+  const clean = typeof newName === "string" ? newName.trim() : "";
+  const old = typeof oldName === "string" ? oldName.trim().toLowerCase() : "";
+  const current = loadRecentSearches();
+  if (!clean || !old || !current.some((saved) => saved.toLowerCase() === old)) {
+    return current;
+  }
+
+  const next = current
+    .map((saved) => (saved.toLowerCase() === old ? clean : saved))
+    .filter(
+      (saved, index, all) =>
+        all.findIndex((other) => other.toLowerCase() === saved.toLowerCase()) ===
+        index,
+    );
+  try {
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+  } catch (e) {
+    logger.warn("Failed to save recent searches", e);
+  }
+  return next;
+}

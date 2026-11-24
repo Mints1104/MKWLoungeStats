@@ -107,7 +107,10 @@ describe("PlayerDetailView mode filter persistence", () => {
   });
 
   it("restores disabled modes from storage and persists checkbox updates", async () => {
-    sessionStorage.setItem("playerGameModeFilterPref", JSON.stringify(["FFA"]));
+    sessionStorage.setItem(
+      "playerGameModeFilterPref",
+      JSON.stringify({ playerId: 123, values: ["FFA"] }),
+    );
 
     render(
       <PlayerDetailView
@@ -131,7 +134,7 @@ describe("PlayerDetailView mode filter persistence", () => {
     await waitFor(() => {
       expect(
         JSON.parse(sessionStorage.getItem("playerGameModeFilterPref")),
-      ).toEqual([]);
+      ).toEqual({ playerId: 123, values: [] });
     });
 
     expect(ffaCheckbox.checked).toBe(true);
@@ -187,7 +190,10 @@ describe("PlayerDetailView mode filter persistence", () => {
   });
 
   it("builds tiers from recent events and persists tier filter updates", async () => {
-    sessionStorage.setItem("playerTierFilterPref", JSON.stringify(["A"]));
+    sessionStorage.setItem(
+      "playerTierFilterPref",
+      JSON.stringify({ playerId: 123, values: ["A"] }),
+    );
 
     render(
       <PlayerDetailView
@@ -212,10 +218,45 @@ describe("PlayerDetailView mode filter persistence", () => {
     fireEvent.click(aCheckbox);
 
     await waitFor(() => {
-      expect(sessionStorage.getItem("playerTierFilterPref")).toBe("[]");
+      expect(
+        JSON.parse(sessionStorage.getItem("playerTierFilterPref")),
+      ).toEqual({ playerId: 123, values: [] });
     });
 
     expect(aCheckbox.checked).toBe(true);
+  });
+
+  it("keeps a player's tier filter on remount but not for another player", async () => {
+    sessionStorage.setItem(
+      "playerTierFilterPref",
+      JSON.stringify({ playerId: 123, values: ["A"] }),
+    );
+
+    const openTiers = async () => {
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Toggle tier filter" }),
+      );
+      return screen.findByRole("checkbox", { name: "A" });
+    };
+
+    const { unmount } = render(
+      <PlayerDetailView
+        playerDetails={makePlayerDetails()}
+        season={1}
+        mmrType={24}
+      />,
+    );
+    expect((await openTiers()).checked).toBe(false);
+    unmount();
+
+    render(
+      <PlayerDetailView
+        playerDetails={{ ...makePlayerDetails(), playerId: 456, name: "Other" }}
+        season={1}
+        mmrType={24}
+      />,
+    );
+    expect((await openTiers()).checked).toBe(true);
   });
 });
 

@@ -76,6 +76,36 @@ const SORT_OPTIONS = [
   { value: "score_desc", label: "Scores (Desc)" },
 ];
 
+// The Modes / Tiers filters are saved with the player they were set on, so they
+// survive opening a table and coming back, but a different player starts unfiltered
+// (another player's hidden tiers could otherwise hide most of their events).
+function readPlayerFilter(key, playerId) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+    if (
+      playerId != null &&
+      saved?.playerId === playerId &&
+      Array.isArray(saved.values)
+    ) {
+      return new Set(saved.values);
+    }
+  } catch {
+    // ignore
+  }
+  return new Set();
+}
+
+function writePlayerFilter(key, playerId, values) {
+  try {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({ playerId, values: [...values] }),
+    );
+  } catch {
+    // ignore
+  }
+}
+
 function getEventTier(event) {
   if (typeof event?.tier !== "string") return "";
   return event.tier.trim();
@@ -155,26 +185,15 @@ function PlayerDetailView({
     }
     return "recent";
   });
+  const playerId = playerDetails?.playerId ?? null;
   // Set of game mode labels (e.g. "FFA", "2v2") that are currently hidden
-  const [disabledModes, setDisabledModes] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem(GAME_MODE_FILTER_KEY);
-      if (saved) return new Set(JSON.parse(saved));
-    } catch {
-      // ignore
-    }
-    return new Set();
-  });
+  const [disabledModes, setDisabledModes] = useState(() =>
+    readPlayerFilter(GAME_MODE_FILTER_KEY, playerId),
+  );
   // Set of tier labels (e.g. "A", "BC") that are currently hidden
-  const [disabledTiers, setDisabledTiers] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem(TIER_FILTER_KEY);
-      if (saved) return new Set(JSON.parse(saved));
-    } catch {
-      // ignore
-    }
-    return new Set();
-  });
+  const [disabledTiers, setDisabledTiers] = useState(() =>
+    readPlayerFilter(TIER_FILTER_KEY, playerId),
+  );
   const [gameModeOpen, setGameModeOpen] = useState(false);
   const [tierOpen, setTierOpen] = useState(false);
   const gameModeMenuRef = useRef(null);
@@ -198,29 +217,14 @@ function PlayerDetailView({
     }
   }, [eventLimitMode, eventLimitPreference]);
 
-  // Persist disabled game modes to sessionStorage
+  // Persist disabled game modes and tiers to sessionStorage
   useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        GAME_MODE_FILTER_KEY,
-        JSON.stringify([...disabledModes]),
-      );
-    } catch {
-      // ignore
-    }
-  }, [disabledModes]);
+    writePlayerFilter(GAME_MODE_FILTER_KEY, playerId, disabledModes);
+  }, [disabledModes, playerId]);
 
-  // Persist disabled tiers to sessionStorage
   useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        TIER_FILTER_KEY,
-        JSON.stringify([...disabledTiers]),
-      );
-    } catch {
-      // ignore
-    }
-  }, [disabledTiers]);
+    writePlayerFilter(TIER_FILTER_KEY, playerId, disabledTiers);
+  }, [disabledTiers, playerId]);
 
   // Persist sort order to sessionStorage
   useEffect(() => {

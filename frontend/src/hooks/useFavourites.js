@@ -58,6 +58,22 @@ function subscribe(listener) {
 
 const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
 
+/** Points a favourite at a player's new name after a rename, in place. */
+export function renameFavourite(oldName, newName) {
+  const clean = typeof newName === "string" ? newName.trim() : "";
+  if (!clean || typeof oldName !== "string") return;
+  const current = readFavourites();
+  if (!current.some((saved) => sameName(saved, oldName))) return;
+  writeFavourites(
+    current
+      .map((saved) => (sameName(saved, oldName) ? clean : saved))
+      .filter(
+        (saved, index, all) =>
+          all.findIndex((other) => sameName(other, saved)) === index,
+      ),
+  );
+}
+
 /**
  * Favourite players, saved in localStorage and shared by every component (and tab)
  * that uses the hook. Names are matched case-insensitively.

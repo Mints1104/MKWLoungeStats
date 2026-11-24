@@ -2107,6 +2107,12 @@ body {
   color: #94a3b8;
 }
 
+.profile-renamed {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
 .profile-actions,
 .profile-selectors {
   display: flex;
@@ -2560,6 +2566,13 @@ a.recent-chip {
 .records-selectors {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.records-error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
 }
 

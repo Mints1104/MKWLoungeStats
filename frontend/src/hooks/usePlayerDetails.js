@@ -9,6 +9,8 @@ import { CURRENT_SEASON } from "../config/seasons";
  */
 function usePlayerDetails(initialData = null) {
   const [playerDetails, setPlayerDetails] = useState(initialData);
+  // True when the last request was a 404 (no player by that name, e.g. renamed)
+  const [notFound, setNotFound] = useState(false);
   const { loading, error, setError, run } = useAbortableRequest();
 
   const fetchPlayerDetails = useCallback(
@@ -20,12 +22,14 @@ function usePlayerDetails(initialData = null) {
       }
 
       setPlayerDetails(null);
+      setNotFound(false);
 
       const data = await run(
         (signal) =>
           loungeApi.getPlayerDetails(playerName, season, mmrType, signal),
         {
           mapError: (err) => {
+            setNotFound(err.status === 404);
             let message = err.message || "Failed to fetch player data";
             if (message.includes("404")) {
               message = `No lounge records found for "${playerName}"`;
@@ -48,6 +52,7 @@ function usePlayerDetails(initialData = null) {
     playerDetails,
     loading,
     error,
+    notFound,
     fetchPlayerDetails,
     setPlayerDetails,
   };

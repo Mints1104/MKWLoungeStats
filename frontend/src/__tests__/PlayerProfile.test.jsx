@@ -4,10 +4,11 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import PlayerProfile from "../PlayerProfile";
 import { SettingsProvider } from "../context/SettingsContext.jsx";
 import { loungeApi } from "../api/loungeApi";
+import { getRememberedPlayerId, rememberPlayerId } from "../utils/playerIds";
 
 vi.mock("../api/loungeApi", async (importOriginal) => ({
   ...(await importOriginal()),
-  loungeApi: { getPlayerDetails: vi.fn() },
+  loungeApi: { getPlayerDetails: vi.fn(), getPlayerById: vi.fn() },
 }));
 
 // The header is under test; the detail view below it has its own tests
@@ -142,5 +143,56 @@ describe("PlayerProfile header", () => {
         path: "/player/vanilla%20lake?season=3&mmrType=12",
       },
     });
+  });
+});
+
+describe("PlayerProfile renamed players", () => {
+  const notFound = () => {
+    const error = new Error('No lounge records found for "Absent"');
+    error.status = 404;
+    return error;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it("remembers the ID behind a name that loads", async () => {
+    loungeApi.getPlayerDetails.mockResolvedValue({ name: "Sam", playerId: 16052 });
+    renderProfile("/player/sam?season=3&mmrType=24");
+
+    await screen.findByRole("heading", { level: 1, name: "Sam" });
+    expect(getRememberedPlayerId("Sam")).toBe(16052);
+  });
+
+  it("follows a remembered player to their new name, moving the favourite", async () => {
+    rememberPlayerId("Absent", 16052);
+    localStorage.setItem("favouritePlayers", JSON.stringify(["Absent"]));
+    loungeApi.getPlayerDetails.mockImplementation(async (name) => {
+      if (name === "Absent") throw notFound();
+      return { name: "Sam", playerId: 16052 };
+    });
+    loungeApi.getPlayerById.mockResolvedValue({ id: 16052, name: "Sam" });
+
+    renderProfile("/player/Absent?season=3&mmrType=24");
+
+    expect(
+      await screen.findByText("Absent has been renamed to Sam."),
+    ).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe(
+      "/player/Sam?season=3&mmrType=24",
+    );
+    expect(loungeApi.getPlayerById).toHaveBeenCalledWith(16052, expect.anything());
+    expect(JSON.parse(localStorage.getItem("favouritePlayers"))).toEqual(["Sam"]);
+  });
+
+  it("just reports a name it has never seen as not found", async () => {
+    loungeApi.getPlayerDetails.mockRejectedValue(notFound());
+
+    renderProfile("/player/Absent?season=3&mmrType=24");
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Absent");
+    expect(loungeApi.getPlayerById).not.toHaveBeenCalled();
   });
 });

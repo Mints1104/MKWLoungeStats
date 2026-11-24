@@ -45,3 +45,23 @@ describe("loungeApi.getLeaderboard", () => {
     expect(await requestedGame({ season: 3, mmrType: 12 })).toBe("mkworld12p");
   });
 });
+
+describe("loungeApi.getRecords", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("doesn't retry a failed load (each try can take the server 55 s)", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: "took too long" }), {
+          status: 504,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loungeApi.getRecords(3, 24)).rejects.toThrow("took too long");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

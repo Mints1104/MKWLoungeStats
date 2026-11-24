@@ -57,8 +57,14 @@ The root `test` script names **specific files** (`api.validation.test.js`,
 over `https://lounge.mkcentral.com/api`, called with axios.
 
 Routes: `/api/table/:tableid`, `/api/player/stats`, `/api/player/details/:name`,
-`/api/player/leaderboard/:name`, `/api/players/compare?names=a,b,c`, `/api/leaderboard`,
-`/api/records?season&game`.
+`/api/player/leaderboard/:name`, `/api/player/id/:id`, `/api/players/compare?names=a,b,c`,
+`/api/leaderboard`, `/api/records?season&game`.
+
+`/api/player/leaderboard/:name` pages through the upstream search (100 at a time, up to
+5 pages): upstream search is a fuzzy match sorted by MMR, so an exact short name ("Sam")
+can sit past the first page. `/api/player/id/:id` returns only `{ id, name }` (the
+upstream record also carries Discord / Switch IDs); it is the one route that trims a
+payload.
 
 **Records** have no upstream endpoint: `/api/records` rebuilds them from
 `/api/table/list` (every table of the ladder — 10–30 s and tens of MB upstream) with
@@ -172,6 +178,12 @@ The upstream shapes are documented in `API-GET-Endpoints.md`. Things that bite:
   opponents (`utils/playerInsights.js`).
 - `overallRank` from `/player/leaderboard/:name` is the player's position on the
   unfiltered, MMR-sorted ladder (verified), which is how "find player" picks a page.
+- Players can **rename**; the old name then 404s everywhere upstream. Favourites and
+  recent searches are stored by name, so every profile load records name → `playerId`
+  (`utils/playerIds.js`) and a 404 on a remembered name follows the ID
+  (`/api/player/id/:id`) to the new name, renaming the favourite / recent search.
+- Players still in **placement** are listed on the leaderboard without `overallRank`
+  (`/player/details` gives them a meaningless one), so they have no position to find.
 - `/player/details` answers for ladders a player never played with a 0-event
   `Placement` record rather than a 404; treat `eventsPlayed === 0` as "didn't play".
 - Game id: `mkworld` for season < 2, `mkworld12p` / `mkworld24p` for season ≥ 2

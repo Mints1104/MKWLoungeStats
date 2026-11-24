@@ -3,6 +3,7 @@ import {
   getComparePath,
   getProfilePath,
   parseCompareNames,
+  uniqueNames,
 } from "../playerLinks";
 
 describe("playerLinks", () => {
@@ -27,5 +28,10 @@ describe("playerLinks", () => {
       "Cy",
     ]);
     expect(parseCompareNames(null)).toEqual([]);
+  });
+
+  it("drops repeated names, ignoring case", () => {
+    expect(uniqueNames([" Sam", "sam", "", "Bo", "SAM "])).toEqual(["Sam", "Bo"]);
+    expect(parseCompareNames("Sam,sam,Bo")).toEqual(["Sam", "Bo"]);
   });
 });

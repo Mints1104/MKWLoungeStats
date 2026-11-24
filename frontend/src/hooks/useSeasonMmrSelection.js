@@ -5,9 +5,17 @@ function resolveInitialValue(value) {
   return typeof value === "function" ? value() : value;
 }
 
+// A missing or hand-edited URL value (Number(null) is 0, the preseason) falls back
+// instead of reaching the API as a season or ladder that doesn't exist
 export function parseSeasonValue(value, fallback = CURRENT_SEASON) {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= CURRENT_SEASON ?
+      parsed
+    : fallback;
 }
 
 export function parseNullableMmrType(value) {
@@ -16,7 +24,7 @@ export function parseNullableMmrType(value) {
   }
 
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return parsed === 12 || parsed === 24 ? parsed : null;
 }
 
 export function useSeasonMmrSelection({
