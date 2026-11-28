@@ -471,7 +471,7 @@ function Leaderboard() {
             {leaderboardData.length > 0 && (
                 <div className="player-card leaderboard-card">
                     <div className="leaderboard-table-wrapper">
-                        <table className="leaderboard-table fits-mobile row-link-table">
+                        <table className="leaderboard-table">
                             <caption className="sr-only">
                                 Current leaderboard standings with ranks, MMR, win rate, and events played. Use the player name buttons to open detailed profiles.
                             </caption>
@@ -481,8 +481,8 @@ function Leaderboard() {
                                     <th>Player</th>
                                     <th>MMR</th>
                                     <th>Peak MMR</th>
-                                    <th className="col-optional">Last Week</th>
-                                    <th className="col-optional">Win Rate</th>
+                                    <th>Last Week</th>
+                                    <th>Win Rate</th>
                                     <th>Events</th>
                                 </tr>
                             </thead>
@@ -518,11 +518,11 @@ function Leaderboard() {
                                         </td>
                                         <td className="mmr-cell" style={{ color: getRankColor(player.mmrRank?.name) }}>{player.mmr}</td>
                                         <td style={{ color: getRankColor(player.maxMmrRank?.name) }}>{player.maxMmr}</td>
-                                        <td className={`col-optional ${player.lastWeekRankChange < 0 ? "positive" : player.lastWeekRankChange > 0 ? "negative" : ""}`}>
+                                        <td className={player.lastWeekRankChange < 0 ? "positive" : player.lastWeekRankChange > 0 ? "negative" : ""}>
                                             {player.lastWeekRankChange < 0 ? "▲ " : player.lastWeekRankChange > 0 ? "▼ " : ""}
                                             {player.lastWeekRankChange !== 0 && player.lastWeekRankChange != null ? Math.abs(player.lastWeekRankChange) : "—"}
                                         </td>
-                                        <td className={`col-optional ${winRateClassName(player.winRate)}`}>
+                                        <td className={winRateClassName(player.winRate)}>
                                             {formatWinRate(player.winRate, 1)}
                                         </td>
                                         <td>{player.eventsPlayed}</td>

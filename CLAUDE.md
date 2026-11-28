@@ -122,9 +122,6 @@ Conventions:
 - **Mobile** (≤640px, block at the end of `App.css`): `html` drops to 14px under 480px,
   so touch and legibility sizes there are in px — 16px form controls (iOS zooms on
   focus otherwise), 40px controls, segmented toggles a 40px frame around 32px options.
-  Wide tables: add `fits-mobile` and mark droppable columns `col-optional` instead of
-  scrolling sideways; `row-link-table` stretches each row's single `.leaderboard-name`
-  over the row (only for tables with one link per row).
 - **Shared hooks**: `useAbortableRequest` (cancels the previous in-flight request),
   `usePlayerDetails`, `useSeasonMmrSelection`, `useRankThresholds`, `useFavourites`,
   `usePlayerSuggestions` (autocomplete, used by `components/PlayerNameInput.jsx`),
